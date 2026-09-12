@@ -4,12 +4,24 @@ Tài liệu này ánh xạ toàn bộ cấu trúc thư mục chuẩn mực của
 
 ## 1. Kiến trúc Tổng thể (Monorepo)
 
+**CẢNH BÁO KỶ LUẬT:** Mọi thành viên TUYỆT ĐỐI KHÔNG tự ý tạo thêm thư mục hoặc file lung tung ở thư mục gốc hoặc các thư mục mã nguồn. Mọi thay đổi cấu trúc phải tuân thủ nghiêm ngặt bản đồ dưới đây. Bất kỳ file nháp, script chạy thử nghiệm nào đều phải được tạo và lưu trữ trong thư mục `scratch/`.
+
 ```text
 BanHangAI/
-├── backend/                # Mã nguồn Node.js/Express Server
+├── backend/                # Mã nguồn Node.js/Express Server (theo chuẩn phân tầng)
 ├── frontend/               # Mã nguồn Giao diện Vanilla JS MVC
-├── database/               # (Thường nằm trong backend) File SQLite và Script DB
-└── (Các file tài liệu .md)
+├── docs/                   # Chứa các tài liệu hướng dẫn, tài liệu kỹ thuật
+├── issues/                 # Thư mục lưu vết và quản lý lỗi, bug, task
+├── prompts/                # Thư mục chứa các file prompt mẫu cho AI
+├── scratch/                # Thư mục chứa file nháp, script chạy thử nghiệm, data tạm thời
+├── specs/                  # Thư mục chứa tài liệu đặc tả yêu cầu, thiết kế hệ thống
+├── ANTIGRAVITY.md          # Các quy chuẩn kỹ thuật BẮT BUỘC tuân thủ của dự án
+├── codebasemap.md          # (File này) Bản đồ ánh xạ cấu trúc toàn bộ dự án
+├── de_tai_01.md            # Tài liệu mô tả đề tài
+├── informember.md          # File chứa thông tin thành viên nhóm
+├── Dockerfile              # File cấu hình build Docker image
+├── docker-compose.yml      # Cấu hình triển khai toàn bộ hệ thống bằng Docker
+└── README.md               # Tài liệu giới thiệu tổng quan dự án
 ```
 
 ## 2. Cấu trúc Backend (Node.js & SQLite)

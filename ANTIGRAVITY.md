@@ -118,8 +118,10 @@
 
 ## 5. Quy chuẩn Tổ chức Thư mục & Tạo File (Folder & File Conventions)
 
-### 5.1. Quy chuẩn chung
+### 5.1. Quy chuẩn chung (NGUYÊN TẮC BẤT DI BẤT DỊCH)
 
+* **Kỷ luật kiến trúc:** **TUYỆT ĐỐI KHÔNG** được phép tự ý tạo thêm thư mục mới, file lung tung, file nháp (scratch) ở thư mục gốc (root) hay các thư mục lõi (`backend/src`, `frontend/src`) trái với quy chuẩn. Bất kỳ sự thêm mới hay thay đổi kiến trúc nào phải được thông qua. Mọi thành viên và bot AI phải tuân thủ 100% bản đồ cấu trúc được định nghĩa chi tiết tại `codebasemap.md`. 
+* **Quản lý file nháp/rác:** Nếu cần viết mã chạy thử, file log tạm, file text tạm, **CHỈ ĐƯỢC PHÉP** tạo và lưu trữ tại thư mục `scratch/`.
 * **Ngôn ngữ đặt tên:** Sử dụng 100% Tiếng Anh cho tên thư mục và tên file code để đảm bảo tính chuyên nghiệp và đồng bộ. (Ngoại trừ các file tài liệu Markdown).
 * **Không sử dụng dấu cách:** Tuyệt đối không dùng khoảng trắng (space) hoặc ký tự đặc biệt (tiếng Việt có dấu) trong tên file/thư mục. Dùng dấu gạch ngang `-` (kebab-case) hoặc viết liền camelCase/PascalCase tùy quy định.
 
