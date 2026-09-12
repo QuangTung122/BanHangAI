@@ -77,3 +77,28 @@ export const resetData = async (req, res) => {
         res.status(500).json({ success: false, message: 'Lỗi máy chủ: ' + error.message });
     }
 };
+
+// Kiểm tra kết nối Ollama (Proxy qua Backend để tránh lỗi CORS)
+export const checkOllama = async (req, res) => {
+    try {
+        const { host } = req.body;
+        if (!host) {
+            return res.status(400).json({ success: false, message: 'Vui lòng cung cấp địa chỉ host' });
+        }
+        
+        let baseUrl = host.replace(/\/$/, '');
+        // Sửa lỗi Node 18+ fetch failed khi dùng localhost do IPv6 trên Windows
+        baseUrl = baseUrl.replace('://localhost', '://127.0.0.1');
+        const response = await fetch(`${baseUrl}/api/tags`);
+        
+        if (!response.ok) {
+            return res.status(400).json({ success: false, message: `Ollama trả về lỗi: ${response.status}` });
+        }
+        
+        const data = await response.json();
+        res.status(200).json({ success: true, models: data.models || [] });
+    } catch (error) {
+        console.error('Lỗi kết nối Ollama:', error.message);
+        res.status(500).json({ success: false, message: 'Không thể kết nối đến Ollama Host. Hãy chắc chắn Ollama đang chạy.' });
+    }
+};

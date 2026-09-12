@@ -1,6 +1,6 @@
-import AuthController from './controllers/AuthController.js';
-import AuthModel from './models/AuthModel.js';
-import LayoutController from './controllers/LayoutController.js';
+import AuthController from './controllers/AuthController.js?v=211';
+import AuthModel from './models/AuthModel.js?v=209';
+import LayoutController from './controllers/LayoutController.js?v=209';
 
 class App {
     constructor() {

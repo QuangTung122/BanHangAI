@@ -20,7 +20,9 @@ Hệ thống backend sử dụng kiến trúc phân tầng (Layered Architecture
 backend/
 ├── database/               # Thư mục chứa dữ liệu và cấu trúc DB
 │   ├── ecom_ai.db          # File cơ sở dữ liệu SQLite
-│   └── init.sql            # Script khởi tạo bảng
+│   ├── init.sql            # Script khởi tạo bảng
+│   └── scripts/            # Script tạo/sửa bảng và seed data (vd: seed.js, update_db.cjs...)
+├── tests/                  # Thư mục chứa các file kiểm thử tự động (Unit, API test)
 ├── environments/           # Cấu hình môi trường
 ├── src/                    # Chứa toàn bộ mã nguồn chính của Backend
 │   ├── controllers/        # Xử lý logic request/response cho từng nghiệp vụ
@@ -49,7 +51,6 @@ backend/
 │   │   └── authMiddleware.js
 │   └── services/           # (Tùy chọn) Chứa logic nghiệp vụ lõi, kết nối DB
 ├── node_modules/           # Thư viện tải từ npm
-├── *.cjs / *.js            # Các script tiện ích/kiểm thử/migration (VD: migrate_transactions.cjs, seed.js...)
 ├── package.json            # Thông tin dependencies của backend
 └── server.js               # ĐIỂM VÀO CHÍNH: Khởi tạo Express app, nạp middlewares và nạp Routes
 ```
@@ -74,19 +75,19 @@ frontend/
 │   │
 │   ├── services/           # Lớp Giao tiếp Mạng (Ánh xạ 1-1 với API Backend)
 │   │   ├── AttendanceService.js
-│   │   ├── AuthService.js     
-│   │   ├── ChatService.js     
+│   │   ├── AuthService.js   
+│   │   ├── ChatService.js   
 │   │   ├── DashboardService.js
 │   │   ├── NotificationService.js
-│   │   ├── OrderService.js    
+│   │   ├── OrderService.js  
 │   │   ├── ProductService.js  
 │   │   ├── SystemService.js   
 │   │   ├── TransactionService.js
-│   │   └── UserService.js     
+│   │   └── UserService.js   
 │   │
 │   ├── models/             # Quản lý Trạng thái & Logic Nghiệp vụ nội bộ (Không gọi thẳng API)
-│   │   ├── AuthModel.js       
-│   │   ├── CartModel.js       
+│   │   ├── AuthModel.js   
+│   │   ├── CartModel.js   
 │   │   ├── NotificationModel.js
 │   │   ├── OrderModel.js
 │   │   ├── ProductModel.js
@@ -95,7 +96,7 @@ frontend/
 │   │
 │   ├── views/              # Chuyên tạo HTML (Template Literals) & Lắng nghe DOM Events
 │   │   ├── components/     # UI Component tái sử dụng
-│   │   ├── layouts/    
+│   │   ├── layouts/  
 │   │   │   ├── ChatModule.js  
 │   │   │   └── LayoutView.js  
 │   │   └── pages/          # Giao diện chính của từng Role

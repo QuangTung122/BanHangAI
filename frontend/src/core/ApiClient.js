@@ -1,5 +1,6 @@
 export default class ApiClient {
-    static baseUrl = 'http://localhost:5000/api';
+   static baseUrl = '/api';
+   // static baseUrl = 'http://localhost:5000/api'; 
 
     static async request(endpoint, options = {}) {
         const url = `${this.baseUrl}${endpoint}`;
@@ -19,6 +20,15 @@ export default class ApiClient {
         try {
             const response = await fetch(url, config);
             const data = await response.json();
+            
+            // Tự động đăng xuất nếu token hết hạn hoặc bị thiết bị khác đăng nhập
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                alert('Tài khoản của bạn đã được đăng nhập ở thiết bị khác, hoặc phiên đăng nhập đã hết hạn. Hệ thống sẽ tự động đăng xuất.');
+                window.location.reload();
+            }
+            
             return { status: response.status, data };
         } catch (error) {
             console.error('API Error:', error);

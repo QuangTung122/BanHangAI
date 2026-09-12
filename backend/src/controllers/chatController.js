@@ -38,27 +38,18 @@ Quy tắc:
 
         messages.push({ role: 'user', content: message });
 
-        // 3. Gọi Ollama API
-        const aiResponse = await aiService.generateChatResponse(messages, { stream: true });
+        // 3. Gọi AI API (Ollama hoặc Gemini)
+        const chatStream = aiService.generateChatStream(messages);
 
         // 4. Trả về dưới dạng Server-Sent Events (SSE)
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
         
-        for await (const chunk of aiResponse.body) {
-             const chunkStr = Buffer.from(chunk).toString('utf-8');
-             const lines = chunkStr.split('\n').filter(line => line.trim() !== '');
-             for (const line of lines) {
-                 try {
-                     const parsed = JSON.parse(line);
-                     if (parsed.message && parsed.message.content) {
-                         res.write(`data: ${JSON.stringify({ content: parsed.message.content })}\n\n`);
-                     }
-                 } catch(e) {
-                     // Bỏ qua lỗi parse JSON cho các chunk dở dang
-                 }
-             }
+        for await (const chunkText of chatStream) {
+            if (chunkText) {
+                res.write(`data: ${JSON.stringify({ content: chunkText })}\n\n`);
+            }
         }
         
         res.write('data: [DONE]\n\n');

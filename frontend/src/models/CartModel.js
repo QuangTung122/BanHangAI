@@ -44,8 +44,13 @@ export default class CartModel {
         this.items = [];
     }
 
+    getDiscountedPrice(product) {
+        if (!product.discount_percent) return product.price;
+        return product.price * (1 - product.discount_percent / 100);
+    }
+
     getTotalPrice() {
-        return this.items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+        return this.items.reduce((sum, item) => sum + (this.getDiscountedPrice(item.product) * item.quantity), 0);
     }
 
     async createOrder(orderData) {
@@ -56,7 +61,7 @@ export default class CartModel {
             items: this.items.map(i => ({
                 product_id: i.product.id,
                 quantity: i.quantity,
-                unit_price: i.product.price
+                unit_price: this.getDiscountedPrice(i.product)
             }))
         };
         return await ApiClient.request('/orders', {

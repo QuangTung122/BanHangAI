@@ -13,30 +13,52 @@ export default class ChatModule {
     render() {
         this.container.innerHTML = `
             <!-- Nút bật tắt chat -->
-            <button id="btn-toggle-chat" class="w-14 h-14 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 shadow-lg flex items-center justify-center text-white hover:scale-105 transition-transform">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+            <button id="btn-toggle-chat" class="w-16 h-16 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-500 shadow-[0_10px_25px_rgba(99,102,241,0.5)] flex items-center justify-center text-white hover:scale-110 hover:shadow-[0_15px_35px_rgba(99,102,241,0.6)] transition-all duration-300 relative overflow-hidden group border-2 border-white/20 backdrop-blur-sm z-50">
+                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay"></div>
+                <!-- Vòng tròn sáng nhấp nháy -->
+                <div class="absolute inset-0 rounded-full animate-ping bg-white/20 opacity-75 duration-1000"></div>
+                <!-- Ảnh Robot 3D nổi bật -->
+                <img src="assets/images/logo-ai.png" alt="AI Chat" class="w-12 h-12 object-contain relative z-10 drop-shadow-xl group-hover:rotate-12 transition-transform duration-300">
+                
+                <!-- Badge chưa đọc (nếu có) -->
+                <span class="absolute top-0 right-0 w-4 h-4 bg-rose-500 border-2 border-white rounded-full flex items-center justify-center text-[9px] font-black shadow-sm hidden">1</span>
             </button>
 
             <!-- Cửa sổ Chat -->
-            <div id="chat-window" class="hidden flex-col w-80 sm:w-96 h-[500px] max-h-[80vh] bg-white rounded-2xl shadow-2xl border border-slate-100 mt-4 overflow-hidden origin-bottom-right transition-all absolute bottom-16 right-0">
+            <div id="chat-window" class="hidden flex-col w-80 sm:w-96 h-[500px] max-h-[80vh] bg-white rounded-2xl shadow-[0_20px_50px_-10px_rgba(0,0,0,0.3)] border border-slate-100/50 mt-4 overflow-hidden origin-bottom-right transition-all absolute bottom-20 right-0 z-40">
                 
                 <!-- Header -->
-                <div class="h-14 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-between px-4 text-white">
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-sm">AI</div>
-                        <span class="font-semibold text-sm">Trợ lý BanHangAI</span>
+                <div class="h-16 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-800 flex items-center justify-between px-4 text-white relative overflow-hidden">
+                    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                    <div class="flex items-center gap-3 relative z-10">
+                        <!-- Avatar Robot trong Header -->
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-inner relative">
+                            <img src="assets/images/logo-ai.png" alt="AI" class="w-full h-full object-cover">
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-black text-[15px] tracking-wide text-white">Trợ lý BanHangAI</span>
+                                <span class="relative flex h-2 w-2">
+                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                  <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                </span>
+                            </div>
+                            <div class="text-[10px] text-indigo-200 font-medium">Sẵn sàng hỗ trợ bạn 24/7</div>
+                        </div>
                     </div>
-                    <button id="btn-close-chat" class="text-white/80 hover:text-white transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <button id="btn-close-chat" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors relative z-10 backdrop-blur-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
 
                 <!-- Lịch sử Chat -->
-                <div id="chat-history" class="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 text-sm">
+                <div id="chat-history" class="flex-1 overflow-y-auto p-5 space-y-5 bg-[#f8faff] text-sm">
                     <!-- Lời chào mặc định -->
-                    <div class="flex gap-2">
-                        <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 font-bold text-xs mt-1">AI</div>
-                        <div class="bg-white px-3 py-2 rounded-2xl rounded-tl-sm border border-slate-100 shadow-sm text-slate-700">
+                    <div class="flex gap-3">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden shadow-sm mt-0.5">
+                            <img src="assets/images/logo-ai.png" alt="AI" class="w-full h-full object-cover">
+                        </div>
+                        <div class="bg-white px-4 py-2.5 rounded-2xl rounded-tl-sm border border-slate-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] text-slate-700 leading-relaxed font-medium">
                             Chào bạn! Tôi là Trợ lý AI của cửa hàng. Bạn cần tìm sản phẩm gì ạ?
                         </div>
                     </div>
@@ -104,14 +126,16 @@ export default class ChatModule {
     appendAIBubble() {
         const history = this.container.querySelector('#chat-history');
         const wrapper = document.createElement('div');
-        wrapper.className = 'flex gap-2';
+        wrapper.className = 'flex gap-3';
         wrapper.innerHTML = `
-            <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 font-bold text-xs mt-1">AI</div>
-            <div class="ai-content bg-white px-3 py-2 rounded-2xl rounded-tl-sm border border-slate-100 shadow-sm text-slate-700 min-h-[36px] flex items-center max-w-[85%]">
-                <span class="typing-dots flex gap-1">
-                    <span class="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce"></span>
-                    <span class="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
-                    <span class="w-1.5 h-1.5 bg-slate-300 rounded-full animate-bounce" style="animation-delay: 0.4s"></span>
+            <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden shadow-sm mt-0.5">
+                <img src="assets/images/logo-ai.png" alt="AI" class="w-full h-full object-cover">
+            </div>
+            <div class="ai-content bg-white px-4 py-2.5 rounded-2xl rounded-tl-sm border border-slate-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] text-slate-700 leading-relaxed font-medium min-h-[36px] max-w-[85%]">
+                <span class="typing-dots flex gap-1 items-center mt-1.5 mb-1.5 px-1">
+                    <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce"></span>
+                    <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
+                    <span class="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></span>
                 </span>
             </div>
         `;

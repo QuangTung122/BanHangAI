@@ -36,6 +36,12 @@ export const getTransactions = async (req, res) => {
         query += ` ORDER BY t.created_at DESC`;
         
         const transactions = await db.query(query, params);
+        // Append Z to created_at to ensure correct parsing in the frontend
+        transactions.forEach(t => {
+            if (t.created_at && !t.created_at.includes('Z')) {
+                t.created_at += 'Z';
+            }
+        });
         res.json({ success: true, data: transactions });
     } catch (error) {
         console.error(error);
@@ -77,12 +83,12 @@ export const getSummary = async (req, res) => {
         // 3. Get All-Time Cash Breakdown per User (counters)
         let breakdownQuery = `
             SELECT 
-                u.id, u.full_name, u.username, u.role,
+                u.id, u.full_name, u.username, u.role, t.user_id,
                 SUM(CASE WHEN t.type = 'income' THEN t.amount ELSE 0 END) - SUM(CASE WHEN t.type = 'expense' THEN t.amount ELSE 0 END) as cash_balance
             FROM transactions t
-            JOIN users u ON t.user_id = u.id
+            LEFT JOIN users u ON t.user_id = u.id
             WHERE t.payment_method = 'cash'
-            GROUP BY u.id HAVING cash_balance <> 0 ORDER BY cash_balance DESC
+            GROUP BY t.user_id HAVING cash_balance <> 0 ORDER BY cash_balance DESC
         `;
         const breakdownResult = await db.query(breakdownQuery, []);
 
@@ -95,9 +101,9 @@ export const getSummary = async (req, res) => {
                 safeCash += row.cash_balance;
             } else {
                 counters.push({
-                    user_id: row.id,
-                    name: row.full_name || row.username,
-                    username: row.username,
+                    user_id: row.user_id || row.id,
+                    name: row.full_name || row.username || 'Nhân viên vô danh',
+                    username: row.username || 'unknown',
                     amount: row.cash_balance
                 });
             }

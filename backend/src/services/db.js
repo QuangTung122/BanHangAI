@@ -8,11 +8,29 @@ const __dirname = path.dirname(__filename);
 // Path to the database file (backend/database/ecom_ai.db)
 const dbPath = path.resolve(__dirname, '../../database/ecom_ai.db');
 
+import fs from 'fs';
+
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Error connecting to SQLite:', err.message);
   } else {
     console.log('Connected to the SQLite database.');
+    // Tự động khởi tạo database nếu file db trống (khi mang sang máy khác)
+    db.get("SELECT count(*) AS count FROM sqlite_master WHERE type='table' AND name='users'", (err, row) => {
+        if (!err && row && row.count === 0) {
+            console.log("Database trống. Đang tự động tạo các bảng từ init.sql...");
+            const initSqlPath = path.resolve(__dirname, '../../database/init.sql');
+            if (fs.existsSync(initSqlPath)) {
+                const initSql = fs.readFileSync(initSqlPath, 'utf8');
+                db.exec(initSql, (err) => {
+                    if (err) console.error("Lỗi khi khởi tạo Database:", err);
+                    else console.log("Khởi tạo Database thành công! Các bảng đã sẵn sàng.");
+                });
+            } else {
+                console.warn("Không tìm thấy file init.sql để khởi tạo data.");
+            }
+        }
+    });
   }
 });
 

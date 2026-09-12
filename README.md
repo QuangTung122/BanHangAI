@@ -1,86 +1,64 @@
-# Dự án BanHangAI - Hệ Thống Quản Lý Bán Hàng Ứng Dụng AI
+# Hệ Thống Quản Lý Bán Hàng Tích Hợp Trí Tuệ Nhân Tạo (E-Com AI) 🤖📦
 
-Chào mừng đến với dự án **BanHangAI**, một hệ thống phần mềm bán hàng đa nền tảng được phát triển với kiến trúc MVC (Model-View-Controller) cho phía Frontend và kiến trúc phân tầng (Layered Architecture) trên nền tảng Node.js/Express.js cho phía Backend.
+Một giải pháp phần mềm quản trị bán hàng toàn diện, áp dụng sức mạnh của **Trí tuệ nhân tạo (Generative AI)** để tự động hóa việc tư vấn khách hàng và phân tích dữ liệu kinh doanh. Hệ thống được thiết kế theo hướng bảo mật dữ liệu tuyệt đối nhờ tích hợp local LLM.
 
-Hệ thống được thiết kế hướng tới khả năng bảo trì, mở rộng và đặc biệt có sự tích hợp các tính năng phân tích dữ liệu bán hàng.
+## 🌟 Tính năng nổi bật
 
-## 🌟 Tính năng chính
+### Chức năng Quản lý (Lõi hệ thống)
+* **Phân quyền linh hoạt:** Hỗ trợ 4 vai trò (Admin, Owner, Staff, Customer).
+* **Màn hình Bán hàng (POS):** Tìm kiếm siêu tốc, hỗ trợ phân loại. Chức năng lập hóa đơn thanh toán trả thẳng hoặc **Trả góp** (tính toán chi phí tự động).
+* **Quản lý Tồn kho:** Tự động trừ tồn kho khi thanh toán thành công.
+* **Dashboard Thống kê:** Báo cáo doanh thu, sản phẩm bán chạy, cảnh báo sản phẩm sắp hết hàng qua biểu đồ trực quan.
 
-Hệ thống hỗ trợ nhiều vai trò người dùng khác nhau với các chức năng tương ứng:
-
-- **Nhân viên (Staff):** Xử lý bán hàng tại quầy (POS), quản lý sản phẩm, theo dõi lịch sử đơn hàng, hỗ trợ tính năng bán trả góp và điểm danh.
-- **Quản lý / Chủ cửa hàng (Owner):** Theo dõi Dashboard tổng quan, quản lý nhân viên, quản lý sản phẩm, và xem báo cáo dòng tiền (Cashflow).
-- **Quản trị viên hệ thống (Admin):** Cấu hình hệ thống (System) và quản lý toàn bộ người dùng (User).
-
-## 🏗 Cấu trúc hệ thống
-
-Dự án được cấu trúc theo dạng Monorepo, bao gồm:
-
-- **`backend/`**: Mã nguồn Node.js/Express phục vụ API và các tác vụ background.
-- **`frontend/`**: Mã nguồn giao diện người dùng sử dụng Vanilla JavaScript, hoạt động độc lập và gọi dữ liệu qua API.
-
-Chi tiết hơn về kiến trúc thư mục, vui lòng xem tại tài liệu [Codebase Map](./codebasemap.md).
+### Điểm nhấn Trí tuệ Nhân tạo (AI)
+* **Trợ lý Ảo (Chatbot Tư vấn):** Khách hàng/Nhân viên có thể chat bằng ngôn ngữ tự nhiên. AI nắm được kho hàng thực tế để đưa ra gợi ý sản phẩm phù hợp.
+* **AI Insight (Phân tích Kinh doanh):** Chủ cửa hàng chỉ cần bấm 1 nút, AI sẽ tự động đọc số liệu biểu đồ doanh thu và đưa ra nhận xét chiến lược nhập/bán hàng thông minh.
+* **Bảo mật dữ liệu tuyệt đối:** Sử dụng **Ollama** chạy mô hình cục bộ (`qwen2.5-coder` / `llama3`), không gửi dữ liệu khách hàng ra các dịch vụ API bên ngoài (như OpenAI).
 
 ---
 
-## 💻 1. Frontend (Giao diện người dùng)
+## 🛠 Công nghệ sử dụng (Tech Stack)
 
-Kiến trúc Frontend áp dụng triệt để mô hình **Vanilla JS MVC**, đảm bảo phân tách rõ ràng giữa phần Dữ liệu (Model), Giao diện (View) và Điều hướng/Logic (Controller).
-
-- **`src/core/`**: Chứa các lớp tiện ích cơ sở như `ApiClient` (xử lý gọi API), `EventEmitter` (quản lý sự kiện) và `Formatters` (định dạng dữ liệu).
-- **`src/models/`**: Xử lý logic nội bộ ở frontend, quản lý trạng thái của các thực thể như `Order`, `Product`, `Cart`, `User`, v.v.
-- **`src/views/`**: Chuyên tạo HTML (bằng Template Literals) và lắng nghe các sự kiện DOM. Được chia làm các components, layouts và pages (màn hình) tương ứng cho các vai trò (VD: `StaffPOSView.js`, `OwnerDashboardView.js`).
-- **`src/controllers/`**: Là trung tâm điều phối, nhận sự kiện từ View, gọi Model hoặc Service để lấy/cập nhật dữ liệu, sau đó yêu cầu View render lại.
-- **`src/services/`**: Các file định nghĩa các hàm tương tác với Backend API tương ứng.
+* **Frontend:** Single Page Application (SPA), Vanilla JavaScript, HTML5, CSS3, **Tailwind CSS**. Tự động định tuyến (Hash Router) không cần reload trang.
+* **Backend:** Node.js, Express.js.
+* **Database:** SQLite3 (gọn nhẹ, không cần cài đặt SQL Server phức tạp).
+* **AI Engine:** Ollama (tích hợp qua Local API).
 
 ---
 
-## ⚙️ 2. Backend (Máy chủ API)
+## 🚀 Hướng dẫn Cài đặt & Chạy dự án
 
-Backend của hệ thống được xây dựng trên **Node.js** và **Express**, sử dụng cơ sở dữ liệu **SQLite**.
+### Yêu cầu tiên quyết
+1. Cài đặt **Node.js** (v18 trở lên).
+2. Cài đặt **Ollama** (từ [ollama.com](https://ollama.com)) và tải model bằng lệnh: `ollama run qwen2.5-coder:1.5b`.
 
-- **`src/routes/`**: Nơi định nghĩa các endpoint của API, phân luồng yêu cầu từ client tới đúng Controller (VD: `productRoutes.js`, `orderRoutes.js`).
-- **`src/controllers/`**: Nhận yêu cầu từ Route, xử lý logic (xác thực, gọi cơ sở dữ liệu, v.v.), và trả về kết quả (thường ở định dạng JSON).
-- **`src/middlewares/`**: Xử lý các logic trung gian như kiểm tra quyền truy cập (`authMiddleware.js`), xác thực dữ liệu đầu vào.
-- **`database/`**: Chứa file cơ sở dữ liệu SQLite (`ecom_ai.db`) và các file khởi tạo, migration.
-
----
-
-## 🚀 Hướng dẫn chạy dự án
-
-### Yêu cầu cài đặt
-
-- **Node.js** (Phiên bản LTS được khuyến nghị)
-- Trình duyệt web hiện đại (Chrome, Firefox, Edge, Safari...)
-
-### Cài đặt và Chạy Backend
-
-1. Mở terminal và di chuyển vào thư mục `backend`:
+### Các bước khởi chạy
+1. **Clone mã nguồn:**
+   ```bash
+   git clone <repo_url>
+   cd BanHangAI
+   ```
+2. **Cài đặt thư viện:**
    ```bash
    cd backend
-   ```
-2. Cài đặt các gói thư viện (dependencies):
-   ```bash
    npm install
    ```
-3. Khởi động server (Mặc định chạy ở cổng 3000):
+3. **Khởi tạo Cơ sở dữ liệu (tùy chọn nếu file ecom_ai.db chưa có):**
    ```bash
-   node server.js
+   sqlite3 database/ecom_ai.db < database/init.sql
    ```
-
-### Chạy Frontend
-
-1. Frontend sử dụng hoàn toàn Vanilla JS nên không cần Node.js để build.
-2. Tuy nhiên, để tránh lỗi CORS và các chính sách bảo mật của trình duyệt, bạn nên dùng một live server (VD: Live Server extension trên VS Code hoặc tiện ích `serve` của npm).
-3. Mở từ thư mục gốc `frontend` bằng server:
+4. **Khởi động Server:**
    ```bash
-   cd frontend
-   npx serve .
+   npm start
+   # Server sẽ chạy tại http://localhost:5000
    ```
-4. Truy cập theo địa chỉ server cung cấp (Thường là `http://localhost:5000` hoặc một cổng khác).
 
 ---
 
-## 📄 Tài liệu tham khảo thêm
+## 🔑 Tài khoản Demo (Dữ liệu mẫu)
 
-- [codebasemap.md](./codebasemap.md): Bản đồ phân bổ thư mục và file chuẩn của dự án.
+Hệ thống đã có sẵn dữ liệu test (sản phẩm, cấu hình AI). Bạn có thể đăng nhập bằng các tài khoản sau (Mật khẩu mặc định: `123456`):
+* **Quản trị viên (Admin):** `admin`
+* **Chủ cửa hàng (Owner):** `owner` (để trải nghiệm Dashboard & AI Insight)
+* **Nhân viên bán hàng (Staff):** `staff` (để trải nghiệm POS & Trả góp)
+* **Khách hàng (Customer):** `customer1`

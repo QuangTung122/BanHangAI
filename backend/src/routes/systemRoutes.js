@@ -11,5 +11,6 @@ router.get('/config', requireAuth, systemController.getConfigs);
 router.put('/config', requireAuth, requireRole(['admin']), systemController.updateConfigs);
 router.get('/backup', requireAuth, requireRole(['admin']), systemController.backupDatabase);
 router.post('/reset-data', requireAuth, requireRole(['admin']), systemController.resetData);
+router.post('/check-ollama', requireAuth, requireRole(['admin']), systemController.checkOllama);
 
 export default router;

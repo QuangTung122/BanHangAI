@@ -25,12 +25,10 @@ class SystemService {
     // API check Ollama models
     async checkOllama(host) {
         try {
-            // Cần xóa dấu / ở cuối host nếu có
-            const baseUrl = host.replace(/\/$/, '');
-            const response = await fetch(`${baseUrl}/api/tags`);
-            if (!response.ok) throw new Error('Không thể kết nối');
-            const data = await response.json();
-            return { success: true, models: data.models || [] };
+            const { data } = await ApiClient.post('/system/check-ollama', { host });
+            if (!data) throw new Error('Mất kết nối với máy chủ Backend');
+            if (!data.success) throw new Error(data.message || 'Lỗi kiểm tra Ollama');
+            return data;
         } catch (error) {
             return { success: false, message: error.message };
         }

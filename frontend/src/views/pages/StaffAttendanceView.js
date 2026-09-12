@@ -7,7 +7,7 @@ export default class StaffAttendanceView {
         let html = `
             <div class="h-full flex flex-col gap-6">
                 <!-- Vùng Chấm công nhanh -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-8 flex flex-col items-center justify-center shrink-0">
+                <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 border border-slate-100 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 p-8 flex flex-col items-center justify-center shrink-0">
                     <h2 class="text-2xl font-bold text-slate-800 mb-2">Bảng chấm công điện tử</h2>
                     <p class="text-slate-500 mb-8" id="real-time-clock">Đang tải giờ hệ thống...</p>
                     
@@ -27,7 +27,7 @@ export default class StaffAttendanceView {
                 </div>
 
                 <!-- Lịch sử chấm công -->
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col">
+                <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 border border-slate-100 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 overflow-hidden flex-1 flex flex-col">
                     <div class="p-5 border-b border-slate-100 bg-slate-50">
                         <h2 class="text-lg font-bold text-slate-800">Lịch sử chấm công của tôi</h2>
                         <p class="text-xs text-slate-500 mt-1">Lưu ý: Mức lương tạm tính chỉ mang tính tham khảo (25k/h).</p>
@@ -59,7 +59,12 @@ export default class StaffAttendanceView {
 
     renderRows(records) {
         if (!records || records.length === 0) {
-            return `<tr><td colspan="5" class="p-8 text-center text-slate-500 font-medium">Bạn chưa có lịch sử chấm công nào.</td></tr>`;
+            return `<tr><td colspan="5" class="p-12 text-center">
+            <div class="flex flex-col items-center justify-center">
+                <img src="assets/images/logo-system.png" class="w-32 h-32 mb-4 drop-shadow-md">
+                <span class="text-slate-500 font-medium">Bạn chưa có lịch sử chấm công nào.</span>
+            </div>
+        </td></tr>`;
         }
         
         return records.map(r => {
@@ -70,7 +75,7 @@ export default class StaffAttendanceView {
             const salaryFmt = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalSalary);
             
             return `
-                <tr class="hover:bg-slate-50 transition-colors">
+                <tr class="hover:bg-slate-50/80 transition-colors/80 transition-colors">
                     <td class="p-4 font-bold text-slate-700">
                         ${r.date}
                         ${r.is_working ? `<span class="ml-2 px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-bold rounded animate-pulse">Đang trong ca</span>` : ''}
@@ -100,3 +105,4 @@ export default class StaffAttendanceView {
         }, 1000);
     }
 }
+

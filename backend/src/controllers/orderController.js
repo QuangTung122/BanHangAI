@@ -5,6 +5,10 @@ export const createOrder = async (req, res) => {
         const { items, total_amount, payment_type, payment_method = 'cash', customer_name, customer_phone, customer_cccd, installment_term, monthly_fee } = req.body;
         const user_id = req.user.id; 
 
+        if (!items || items.length === 0) {
+            return res.status(400).json({ success: false, message: 'Giỏ hàng đang trống' });
+        }
+
         // Tạo order
         const result = await db.run(
             `INSERT INTO orders (user_id, total_amount, customer_name, customer_phone, payment_type, payment_method, customer_cccd, installment_term, monthly_fee)
@@ -106,9 +110,13 @@ export const getOrders = async (req, res) => {
             }
             
             // Generate invoice code cho response
-            const date = new Date(order.created_at);
+            // Thêm 'Z' để Node.js parse đúng múi giờ UTC từ SQLite
+            const dateStr = order.created_at.includes('Z') ? order.created_at : order.created_at + 'Z';
+            const date = new Date(dateStr);
             const yymmdd = date.toISOString().slice(2, 10).replace(/-/g, '');
             order.invoice_code = `INV-${yymmdd}-${String(order.id).padStart(4, '0')}`;
+            // Cập nhật lại created_at thành chuẩn ISO có Z để frontend hiển thị đúng giờ local
+            order.created_at = date.toISOString();
         }
 
         res.json({ success: true, data: orders });

@@ -13,6 +13,7 @@ export default class OwnerDashboardController {
             if (res.status === 200 && res.data.success) {
                 this.dashboardData = res.data.data;
                 this.view.render(this.dashboardData);
+                this.initChart();
                 this.bindEvents();
             } else {
                 this.view.renderError('Không thể tải dữ liệu thống kê.');
@@ -23,7 +24,79 @@ export default class OwnerDashboardController {
         }
     }
 
+    initChart() {
+        const ctx = document.getElementById('revenueChart');
+        if (!ctx) return;
+        
+        const chartData = this.dashboardData.revenue_chart || [];
+        const labels = chartData.map(d => d.date);
+        const data = chartData.map(d => d.revenue);
+
+        if (this.chart) {
+            this.chart.destroy();
+        }
+
+        this.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Doanh thu (VND)',
+                    data: data,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+
     bindEvents() {
+        const btnFilter = document.getElementById('btn-filter-chart');
+        if (btnFilter) {
+            btnFilter.addEventListener('click', async () => {
+                const start = document.getElementById('chart-start-date').value;
+                const end = document.getElementById('chart-end-date').value;
+                if (!start || !end) {
+                    alert('Vui lòng chọn từ ngày và đến ngày');
+                    return;
+                }
+                
+                try {
+                    btnFilter.disabled = true;
+                    btnFilter.textContent = '...';
+                    const { default: ApiClient } = await import('../core/ApiClient.js');
+                    const res = await ApiClient.get(`/dashboard?start_date=${start}&end_date=${end}`);
+                    
+                    if (res.data && res.data.success) {
+                        this.dashboardData = res.data.data;
+                        this.initChart();
+                        
+                        // Cập nhật lại list sản phẩm nếu có thể (view render lại)
+                        // This might be tricky if we don't re-render the whole view, 
+                        // but updating just the chart is enough for the chart filter.
+                    }
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    btnFilter.disabled = false;
+                    btnFilter.textContent = 'Lọc';
+                }
+            });
+        }
+
         const btnAi = document.getElementById('btn-ai-insight');
         if (btnAi) {
             btnAi.addEventListener('click', async () => {

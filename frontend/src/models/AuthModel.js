@@ -2,7 +2,11 @@ import AuthService from '../services/AuthService.js';
 
 export default class AuthModel {
     constructor() {
-        this.user = JSON.parse(localStorage.getItem('user')) || null;
+        try {
+            this.user = JSON.parse(localStorage.getItem('user')) || null;
+        } catch (e) {
+            this.user = null;
+        }
         this.token = localStorage.getItem('token') || null;
     }
 

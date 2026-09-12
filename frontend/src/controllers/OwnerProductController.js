@@ -7,6 +7,8 @@ export default class OwnerProductController {
         this.products = [];
         this.categories = [];
         this.currentFilter = 'all';
+        this.searchQuery = '';
+        this.searchCategory = '';
         
         this.loadData();
     }
@@ -15,7 +17,7 @@ export default class OwnerProductController {
         try {
             const [catRes, prodRes] = await Promise.all([
                 ProductService.getCategories(),
-                ProductService.getProducts()
+                ProductService.getProducts(this.searchCategory, this.searchQuery)
             ]);
             
             if (catRes.status === 200 && catRes.data.success) {
@@ -50,6 +52,7 @@ export default class OwnerProductController {
         this.view.bindAIGenerate(this.handleAIGenerate.bind(this));
         this.view.bindGenerateSKU(this.handleGenerateSKU.bind(this));
         this.view.bindFilterTabs(this.handleFilterChange.bind(this));
+        this.view.bindSearch(this.handleSearch.bind(this));
 
         // Edit & Delete
         this.view.container.querySelectorAll('.btn-edit').forEach(btn => {
@@ -73,6 +76,14 @@ export default class OwnerProductController {
                 }
             });
         });
+    }
+
+    handleSearch(keyword, category) {
+        if (this.searchQuery !== keyword || this.searchCategory !== category) {
+            this.searchQuery = keyword;
+            this.searchCategory = category;
+            this.loadData();
+        }
     }
 
     handleFilterChange(filter) {

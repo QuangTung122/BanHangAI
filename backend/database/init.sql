@@ -125,6 +125,6 @@ INSERT INTO system_configs (key, value) VALUES
 ('ollama_host', 'http://localhost:11434'),
 ('ai_model', 'qwen2.5-coder:1.5b'),
 ('ai_max_tokens', '4096'),
-('ai_system_prompt', 'B?n là tr? lý AI chuyên nghi?p c?a c?a hàng bán l?...'),
+('ai_system_prompt', 'B?n lï¿½ tr? lï¿½ AI chuyï¿½n nghi?p c?a c?a hï¿½ng bï¿½n l?...'),
 ('ai_temperature', '0.7'),
 ('bgm_url', 'https://files.catbox.moe/pmroy.mp3');

@@ -8,7 +8,7 @@ export default class OwnerProductView {
         const fmt = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
 
         let rows = products.map((p, idx) => `
-            <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0">
+            <tr class="hover:bg-slate-50/80 transition-colors/80 transition-colors border-b border-slate-100 last:border-0">
                 <td class="p-4 text-xs font-bold text-slate-400">#${idx + 1}</td>
                 <td class="p-4">
                     <div class="flex items-center gap-3">
@@ -38,27 +38,45 @@ export default class OwnerProductView {
         `).join('');
 
         if (products.length === 0) {
-            rows = `<tr><td colspan="7" class="p-8 text-center text-slate-500 italic">Chưa có sản phẩm nào.</td></tr>`;
+            rows = `<tr><td colspan="7" class="p-12 text-center">
+            <div class="flex flex-col items-center justify-center">
+                <img src="assets/images/logo-system.png" class="w-32 h-32 mb-4 drop-shadow-md">
+                <span class="text-slate-500 font-medium">Chưa có sản phẩm nào.</span>
+            </div>
+        </td></tr>`;
         }
 
         let html = `
             <div class="h-full flex flex-col gap-6 relative">
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col z-0">
+                <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 border border-slate-100 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 overflow-hidden flex-1 flex flex-col z-0">
                     <div class="p-5 border-b border-slate-100 flex items-center justify-between">
                         <div>
                             <h2 class="text-lg font-bold text-slate-800">Quản lý Kho hàng & Sản phẩm</h2>
                             <p class="text-xs text-slate-500 mt-1">Hệ thống cập nhật real-time mọi giao dịch từ POS bán hàng.</p>
                         </div>
-                        <button id="btn-add-product" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                        <button id="btn-add-product" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-400 hover:to-blue-400 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] shadow-sm hover:shadow-[0_4px_12px_rgba(79,70,229,0.25)] transition-all duration-200 text-white text-sm font-bold rounded-lg shadow-sm transition-colors flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                             Thêm sản phẩm mới
                         </button>
                     </div>
                     
-                    <div class="px-5 py-3 border-b border-slate-100 flex gap-4 bg-slate-50/50">
-                        <button class="filter-tab px-4 py-2 text-sm font-bold rounded-lg transition-colors ${currentFilter === 'all' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:bg-slate-100'}" data-filter="all">Tất cả</button>
-                        <button class="filter-tab px-4 py-2 text-sm font-bold rounded-lg transition-colors ${currentFilter === 'abundant' ? 'bg-emerald-100 text-emerald-700' : 'text-slate-500 hover:bg-slate-100'}" data-filter="abundant">Hàng dồi dào</button>
-                        <button class="filter-tab px-4 py-2 text-sm font-bold rounded-lg transition-colors ${currentFilter === 'low' ? 'bg-rose-100 text-rose-700' : 'text-slate-500 hover:bg-slate-100'}" data-filter="low">Hàng sắp hết</button>
+                    <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between gap-4 bg-slate-50 flex-wrap">
+                        <div class="flex items-center gap-3">
+                            <div class="relative">
+                                <input type="text" id="search-product" class="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all w-64 bg-white" placeholder="Tìm kiếm sản phẩm...">
+                                <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            </div>
+                            <select id="filter-category" class="px-4 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all min-w-[150px] bg-white">
+                                <option value="">Tất cả danh mục</option>
+                                ${categories.map(c => `<option value="${c.slug}">${c.name}</option>`).join('')}
+                            </select>
+                            <button id="btn-search" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-bold rounded-lg transition-colors">Lọc</button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="filter-tab px-4 py-2 text-sm font-bold rounded-lg transition-colors ${currentFilter === 'all' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-500 hover:bg-slate-100'}" data-filter="all">Tất cả</button>
+                            <button class="filter-tab px-4 py-2 text-sm font-bold rounded-lg transition-colors ${currentFilter === 'abundant' ? 'bg-emerald-100 text-emerald-700' : 'text-slate-500 hover:bg-slate-100'}" data-filter="abundant">Hàng dồi dào</button>
+                            <button class="filter-tab px-4 py-2 text-sm font-bold rounded-lg transition-colors ${currentFilter === 'low' ? 'bg-rose-100 text-rose-700' : 'text-slate-500 hover:bg-slate-100'}" data-filter="low">Hàng sắp hết</button>
+                        </div>
                     </div>
                     
                     <div class="flex-1 overflow-auto">
@@ -84,7 +102,7 @@ export default class OwnerProductView {
             
             <!-- Modal Thêm/Sửa Sản Phẩm -->
             <div id="modal-product" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-all duration-300">
-                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col transform scale-95 transition-transform duration-300">
+                <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 border border-slate-100 w-full max-w-4xl max-h-[90vh] flex flex-col transform scale-95 transition-transform duration-300">
                     <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
@@ -103,12 +121,12 @@ export default class OwnerProductView {
                         </div>
                     </div>
                     
-                    <div class="p-6 overflow-y-auto flex-1 bg-slate-50/50">
+                    <div class="p-6 overflow-y-auto flex-1 bg-slate-50">
                         <form id="form-product" class="space-y-6">
                             <input type="hidden" id="prod-id">
                             
                             <!-- 1. Thông tin chung -->
-                            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm">
                                 <h4 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
                                     <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs">1</span>
                                     Thông tin chung
@@ -117,30 +135,30 @@ export default class OwnerProductView {
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-1">Mã SP (SKU / Barcode) *</label>
                                         <div class="flex gap-2">
-                                            <input type="text" id="prod-sku" required class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Mã tự động hoặc quét mã vạch">
+                                            <input type="text" id="prod-sku" required class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Mã tự động hoặc quét mã vạch">
                                             <button type="button" id="btn-generate-sku" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition-colors whitespace-nowrap">Tạo mã</button>
                                         </div>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-1">Tên sản phẩm *</label>
-                                        <input type="text" id="prod-name" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Ví dụ: iPhone 15 Pro Max...">
+                                        <input type="text" id="prod-name" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Ví dụ: iPhone 15 Pro Max...">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-1">Danh mục *</label>
-                                        <select id="prod-category" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none">
+                                        <select id="prod-category" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none">
                                             <option value="">-- Chọn danh mục --</option>
                                             ${this.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
                                         </select>
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-1">Đơn vị tính</label>
-                                        <input type="text" id="prod-unit" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Cái, Chiếc, Hộp...">
+                                        <input type="text" id="prod-unit" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Cái, Chiếc, Hộp...">
                                     </div>
                                 </div>
                             </div>
 
                             <!-- 2. Giá & Hình ảnh -->
-                            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm">
                                 <h4 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
                                     <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs">2</span>
                                     Giá & Hình ảnh
@@ -148,29 +166,29 @@ export default class OwnerProductView {
                                 <div class="grid grid-cols-3 gap-5 mb-4">
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-1">Giá nhập</label>
-                                        <input type="number" id="prod-import-price" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" value="0">
+                                        <input type="number" id="prod-import-price" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none" value="0">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-1">Giá bán *</label>
-                                        <input type="number" id="prod-price" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 font-bold text-indigo-600 focus:ring-1 focus:ring-indigo-500 outline-none" value="0">
+                                        <input type="number" id="prod-price" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all font-bold text-indigo-600 focus:ring-1 focus:ring-indigo-500 outline-none" value="0">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-1">Giảm giá (%)</label>
-                                        <input type="number" id="prod-discount" min="0" max="100" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" value="0">
+                                        <input type="number" id="prod-discount" min="0" max="100" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none" value="0">
                                     </div>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-slate-500 mb-1">Link Ảnh (URL)</label>
-                                    <input type="url" id="prod-image" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="https://...">
+                                    <input type="url" id="prod-image" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="https://...">
                                 </div>
                                 <div class="mt-4">
                                     <label class="block text-xs font-bold text-slate-500 mb-1">Các thẻ đặc trưng (Tags)</label>
-                                    <input type="text" id="prod-tags" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Ví dụ: Titan Tự Nhiên, 256GB (cách nhau bởi dấu phẩy)">
+                                    <input type="text" id="prod-tags" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Ví dụ: Titan Tự Nhiên, 256GB (cách nhau bởi dấu phẩy)">
                                 </div>
                             </div>
 
                             <!-- 3. Tồn kho & Quản lý -->
-                            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm">
                                 <h4 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
                                     <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs">3</span>
                                     Tồn kho & Quản lý
@@ -178,15 +196,15 @@ export default class OwnerProductView {
                                 <div class="grid grid-cols-3 gap-5">
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-1">Số lượng kho *</label>
-                                        <input type="number" id="prod-stock" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" value="0">
+                                        <input type="number" id="prod-stock" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none" value="0">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-1">Mức cảnh báo hết</label>
-                                        <input type="number" id="prod-low-stock" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" value="5">
+                                        <input type="number" id="prod-low-stock" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none" value="5">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-1">Trạng thái bán</label>
-                                        <select id="prod-status" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none">
+                                        <select id="prod-status" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none">
                                             <option value="1">Đang kinh doanh</option>
                                             <option value="0">Ngừng kinh doanh</option>
                                         </select>
@@ -195,20 +213,20 @@ export default class OwnerProductView {
                             </div>
 
                             <!-- 4. Mô tả & AI -->
-                            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-sm">
                                 <div class="flex items-center justify-between mb-4">
                                     <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
                                         <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs">4</span>
                                         Mô tả & Dữ liệu cho AI
                                     </h4>
                                 </div>
-                                <textarea id="prod-desc" rows="3" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none resize-none" placeholder="Mô tả sản phẩm, công dụng, đối tượng... (Giúp AI tư vấn tốt hơn)"></textarea>
+                                <textarea id="prod-desc" rows="3" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none resize-none" placeholder="Mô tả sản phẩm, công dụng, đối tượng... (Giúp AI tư vấn tốt hơn)"></textarea>
                             </div>
                         </form>
                     </div>
                     
                     <div class="px-6 py-4 border-t border-slate-100 bg-white rounded-b-2xl flex justify-end gap-3 shrink-0">
-                        <button type="button" id="btn-cancel-modal" class="px-6 py-2.5 bg-white border border-slate-300 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50 transition-colors">Hủy</button>
+                        <button type="button" id="btn-cancel-modal" class="px-6 py-2.5 bg-white border border-slate-300 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-50/80 transition-colors">Hủy</button>
                         <button type="submit" form="form-product" class="px-6 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-lg shadow-sm hover:bg-indigo-700 transition-colors">Lưu Sản Phẩm</button>
                     </div>
                 </div>
@@ -250,6 +268,28 @@ export default class OwnerProductView {
                 handler(filter);
             });
         });
+    }
+
+    bindSearch(handler) {
+        const btnSearch = document.getElementById('btn-search');
+        const inputSearch = document.getElementById('search-product');
+        const selectCategory = document.getElementById('filter-category');
+        
+        const triggerSearch = () => {
+            const keyword = inputSearch ? inputSearch.value.trim() : '';
+            const category = selectCategory ? selectCategory.value : '';
+            handler(keyword, category);
+        };
+
+        if (btnSearch) {
+            btnSearch.addEventListener('click', triggerSearch);
+        }
+        
+        if (inputSearch) {
+            inputSearch.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') triggerSearch();
+            });
+        }
     }
 
     setSKU(sku) {
@@ -338,8 +378,8 @@ export default class OwnerProductView {
         document.getElementById('prod-image').value = product.image_url || '';
         document.getElementById('prod-tags').value = product.tags || '';
         document.getElementById('prod-stock').value = product.stock_quantity || 0;
-        document.getElementById('prod-low-stock').value = product.low_stock_threshold || 5;
-        document.getElementById('prod-status').value = product.is_active !== undefined ? product.is_active : 1;
+            document.getElementById('prod-low-stock').value = product.low_stock_threshold || 5;
+            document.getElementById('prod-status').value = product.is_active !== undefined ? product.is_active : 1;
         document.getElementById('prod-desc').value = product.description || '';
     }
 
@@ -366,3 +406,4 @@ export default class OwnerProductView {
         if (ta) ta.value = text;
     }
 }
+

@@ -5,15 +5,15 @@ export default class StaffInstallmentView {
 
     render(orders) {
         let html = `
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+            <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 border border-slate-100 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full">
                 <!-- Header -->
-                <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+                <div class="p-5 border-b border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
                     <div>
                         <h2 class="text-lg font-bold text-slate-800">Quản lý hồ sơ trả góp</h2>
                         <p class="text-sm text-slate-500 mt-1">Theo dõi và thu cước khách hàng trả góp</p>
                     </div>
                     <div class="flex items-center gap-3 w-full sm:w-auto">
-                        <select id="filter-status" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 transition-colors">
+                        <select id="filter-status" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all transition-colors">
                             <option value="all">Tất cả hồ sơ</option>
                             <option value="active">Đang trả góp</option>
                             <option value="overdue">Trễ hạn</option>
@@ -21,7 +21,7 @@ export default class StaffInstallmentView {
                         </select>
                         <div class="relative max-w-xs w-full">
                             <svg class="w-5 h-5 absolute left-3 top-2.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                            <input type="text" id="search-installment" placeholder="Tìm tên, SĐT, CCCD..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors">
+                            <input type="text" id="search-installment" placeholder="Tìm tên, SĐT, CCCD..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:bg-white transition-colors">
                         </div>
                     </div>
                 </div>
@@ -30,7 +30,7 @@ export default class StaffInstallmentView {
                 <div class="flex-1 overflow-auto">
                     <table class="w-full text-left border-collapse min-w-[1000px]">
                         <thead>
-                            <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                            <tr class="bg-slate-50 border-b border-slate-200 shadow-sm text-xs uppercase tracking-wider text-slate-500 font-semibold">
                                 <th class="p-4">Khách Hàng</th>
                                 <th class="p-4">Mã Hóa Đơn</th>
                                 <th class="p-4">Kỳ Hạn / Dư Nợ</th>
@@ -49,14 +49,14 @@ export default class StaffInstallmentView {
 
             <!-- Modal Thu Cước -->
             <div id="payment-modal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
-                <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300" id="payment-modal-content">
+                <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 border border-slate-100 w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300" id="payment-modal-content">
                     <!-- Nạp nội dung bằng JS -->
                 </div>
             </div>
 
             <!-- Modal Lịch sử -->
             <div id="history-modal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
-                <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform duration-300" id="history-modal-content">
+                <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 border border-slate-100 w-full max-w-lg overflow-hidden transform scale-95 transition-transform duration-300" id="history-modal-content">
                     <!-- Nạp nội dung bằng JS -->
                 </div>
             </div>
@@ -69,7 +69,12 @@ export default class StaffInstallmentView {
 
     renderRows(orders) {
         if (!orders || orders.length === 0) {
-            return `<tr><td colspan="6" class="p-8 text-center text-slate-500 font-medium">Không có hồ sơ trả góp nào.</td></tr>`;
+            return `<tr><td colspan="6" class="p-12 text-center">
+            <div class="flex flex-col items-center justify-center">
+                <img src="assets/images/logo-system.png" class="w-32 h-32 mb-4 drop-shadow-md">
+                <span class="text-slate-500 font-medium">Không có hồ sơ trả góp nào.</span>
+            </div>
+        </td></tr>`;
         }
         
         const now = new Date();
@@ -90,13 +95,13 @@ export default class StaffInstallmentView {
             if (isCompleted) {
                 statusBadge = `<span class="px-2 py-1 bg-green-50 text-green-700 rounded text-xs font-bold border border-green-200">Tất toán</span>`;
             } else if (isOverdue) {
-                statusBadge = `<span class="px-2 py-1 bg-red-50 text-red-700 rounded text-xs font-bold border border-red-200">Trễ hạn</span>`;
+                statusBadge = `<span class="px-2 py-1 bg-rose-50 text-rose-700 rounded text-xs font-bold border border-rose-200">Trễ hạn</span>`;
             } else {
                 statusBadge = `<span class="px-2 py-1 bg-amber-50 text-amber-700 rounded text-xs font-bold border border-amber-200">Đang trả</span>`;
             }
             
             const progressWidth = (o.paid_months / o.installment_term) * 100;
-            const trClass = isOverdue && !isCompleted ? 'bg-red-50/30 hover:bg-red-50/60' : 'hover:bg-slate-50/80';
+            const trClass = isOverdue && !isCompleted ? 'bg-rose-50/30 hover:bg-rose-50/60' : 'hover:bg-slate-50/80';
             
             return `
                 <tr class="${trClass} transition-colors">
@@ -112,8 +117,8 @@ export default class StaffInstallmentView {
                         <div class="text-xs text-slate-500">Dư nợ: <strong class="${isCompleted ? 'text-green-600' : 'text-rose-600'}">${this.formatMoney(remainingDebt > 0 ? remainingDebt : 0)}</strong></div>
                     </td>
                     <td class="p-4">
-                        <div class="font-bold ${isOverdue ? 'text-red-600' : 'text-slate-700'}">${dueDateStr}</div>
-                        ${isOverdue && !isCompleted ? '<div class="text-xs text-red-500 font-medium">Cần thu ngay!</div>' : ''}
+                        <div class="font-bold ${isOverdue ? 'text-rose-600' : 'text-slate-700'}">${dueDateStr}</div>
+                        ${isOverdue && !isCompleted ? '<div class="text-xs text-rose-500 font-medium">Cần thu ngay!</div>' : ''}
                     </td>
                     <td class="p-4 text-slate-700 font-semibold">
                         ${o.cashier_name || '--'}
@@ -124,7 +129,7 @@ export default class StaffInstallmentView {
                             ${statusBadge}
                         </div>
                         <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full ${isCompleted ? 'bg-green-500' : (isOverdue ? 'bg-red-500' : 'bg-amber-500')}" style="width: ${progressWidth}%"></div>
+                            <div class="h-full ${isCompleted ? 'bg-green-500' : (isOverdue ? 'bg-rose-500' : 'bg-amber-500')}" style="width: ${progressWidth}%"></div>
                         </div>
                     </td>
                     <td class="p-4 text-center space-x-1">
@@ -145,7 +150,7 @@ export default class StaffInstallmentView {
         const remainingDebt = remainingMonths * order.monthly_fee;
         
         return `
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h3 class="text-lg font-bold text-slate-800">Thu cước trả góp</h3>
                 <button id="btn-close-payment-modal" class="p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 rounded-lg transition-colors">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -168,23 +173,23 @@ export default class StaffInstallmentView {
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-amber-100 transition-colors" id="btn-pay-one" data-id="${order.id}">
+                    <div class="bg-amber-50 p-4 rounded-lg border border-amber-200 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-amber-100 transition-colors" id="btn-pay-one" data-id="${order.id}">
                         <p class="text-amber-800 text-xs font-medium mb-1">Thu 1 kỳ (${order.paid_months + 1}/${order.installment_term})</p>
                         <p class="text-xl font-black text-rose-600">${this.formatMoney(order.monthly_fee)}</p>
                     </div>
                     
-                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-emerald-100 transition-colors" id="btn-pay-all" data-id="${order.id}">
+                    <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-200 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-emerald-100 transition-colors" id="btn-pay-all" data-id="${order.id}">
                         <p class="text-emerald-800 text-xs font-medium mb-1">Tất toán (${remainingMonths} kỳ)</p>
                         <p class="text-xl font-black text-emerald-600">${this.formatMoney(remainingDebt)}</p>
                     </div>
                 </div>
                 
                 <div class="space-y-2 text-sm text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-100">
-                    <div class="flex justify-between py-1 border-b border-slate-200/60">
+                    <div class="flex justify-between py-1 border-b border-slate-200 shadow-sm/60">
                         <span>Khách hàng:</span>
                         <strong class="text-slate-800">${order.customer_name}</strong>
                     </div>
-                    <div class="flex justify-between py-1 border-b border-slate-200/60">
+                    <div class="flex justify-between py-1 border-b border-slate-200 shadow-sm/60">
                         <span>Số điện thoại:</span>
                         <strong class="text-slate-800">${order.customer_phone}</strong>
                     </div>
@@ -217,7 +222,7 @@ export default class StaffInstallmentView {
         }
 
         return `
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <h3 class="text-lg font-bold text-slate-800">Lịch sử thu cước - ${order.invoice_code}</h3>
                 <button id="btn-close-history-modal" class="p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 rounded-lg transition-colors">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -359,3 +364,4 @@ export default class StaffInstallmentView {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     }
 }
+

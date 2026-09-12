@@ -5,16 +5,16 @@ export default class StaffOrderHistoryView {
 
     render(orders) {
         let html = `
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+            <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 border border-slate-100 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full">
                 <!-- Header -->
-                <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+                <div class="p-5 border-b border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
                     <div>
                         <h2 class="text-lg font-bold text-slate-800">Lịch sử hóa đơn bán lẻ</h2>
                         <p class="text-sm text-slate-500 mt-1">Quản lý và tra cứu các đơn hàng trả thẳng</p>
                     </div>
                     <div class="relative max-w-sm w-full">
                         <svg class="w-5 h-5 absolute left-3 top-2.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                        <input type="text" id="search-order" placeholder="Tìm theo Mã hóa đơn hoặc SĐT..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-colors">
+                        <input type="text" id="search-order" placeholder="Tìm theo Mã hóa đơn hoặc SĐT..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:bg-white transition-colors">
                     </div>
                 </div>
 
@@ -22,7 +22,7 @@ export default class StaffOrderHistoryView {
                 <div class="flex-1 overflow-auto">
                     <table class="w-full text-left border-collapse min-w-[800px]">
                         <thead>
-                            <tr class="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                            <tr class="bg-slate-50 border-b border-slate-200 shadow-sm text-xs uppercase tracking-wider text-slate-500 font-semibold">
                                 <th class="p-4">Mã Hóa Đơn</th>
                                 <th class="p-4">Ngày Mua</th>
                                 <th class="p-4">Khách Hàng</th>
@@ -41,7 +41,7 @@ export default class StaffOrderHistoryView {
 
             <!-- Modal Chi tiết Hóa đơn -->
             <div id="invoice-modal" class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300">
-                <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="invoice-modal-content">
+                <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 border border-slate-100 w-full max-w-2xl overflow-hidden transform scale-95 transition-transform duration-300" id="invoice-modal-content">
                     <!-- Nạp nội dung bằng JS -->
                 </div>
             </div>
@@ -55,7 +55,12 @@ export default class StaffOrderHistoryView {
 
     renderRows(orders) {
         if (!orders || orders.length === 0) {
-            return `<tr><td colspan="7" class="p-8 text-center text-slate-500 font-medium">Không có dữ liệu hóa đơn nào.</td></tr>`;
+            return `<tr><td colspan="7" class="p-12 text-center">
+            <div class="flex flex-col items-center justify-center">
+                <img src="assets/images/logo-system.png" class="w-32 h-32 mb-4 drop-shadow-md">
+                <span class="text-slate-500 font-medium">Không có dữ liệu hóa đơn nào.</span>
+            </div>
+        </td></tr>`;
         }
         
         return orders.map(o => {
@@ -63,7 +68,7 @@ export default class StaffOrderHistoryView {
             const total = this.formatMoney(o.total_amount);
             
             return `
-                <tr class="hover:bg-slate-50/80 transition-colors">
+                <tr class="hover:bg-slate-50/80 transition-colors/80 transition-colors">
                     <td class="p-4 font-bold text-indigo-600">${o.invoice_code}</td>
                     <td class="p-4 text-slate-500">${dateStr}</td>
                     <td class="p-4 font-medium">${o.customer_name || 'Khách lẻ'}</td>
@@ -92,7 +97,7 @@ export default class StaffOrderHistoryView {
         `).join('');
 
         return `
-            <div class="p-6 border-b border-slate-100 flex justify-between items-start bg-slate-50/50">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-start bg-slate-50">
                 <div>
                     <h3 class="text-xl font-bold text-slate-800">Chi tiết Hóa đơn ${order.invoice_code}</h3>
                     <p class="text-sm text-slate-500 mt-1">Ngày mua: ${dateStr}</p>
@@ -118,7 +123,7 @@ export default class StaffOrderHistoryView {
 
                 <div class="border border-slate-200 rounded-lg overflow-hidden">
                     <table class="w-full text-sm text-left">
-                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200 shadow-sm">
                             <tr>
                                 <th class="px-4 py-3">Sản phẩm</th>
                                 <th class="px-4 py-3 text-center">SL</th>
@@ -140,7 +145,7 @@ export default class StaffOrderHistoryView {
             </div>
 
             <div class="p-6 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                <button id="btn-reprint" class="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 shadow-sm transition-all flex items-center gap-2">
+                <button id="btn-reprint" class="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 font-semibold rounded-lg hover:bg-slate-50 shadow-sm transition-all flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                     In lại hóa đơn
                 </button>
@@ -182,3 +187,4 @@ export default class StaffOrderHistoryView {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     }
 }
+

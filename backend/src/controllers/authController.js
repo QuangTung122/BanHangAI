@@ -51,6 +51,10 @@ export const login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Sai tên đăng nhập hoặc mật khẩu', data: null });
     }
 
+    if (user.is_active === 0) {
+      return res.status(403).json({ success: false, message: 'tài khoản đã bị khóa liên hệ admin để được xử lý', data: null });
+    }
+
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
@@ -63,6 +67,9 @@ export const login = async (req, res) => {
       JWT_SECRET,
       { expiresIn: '24h' }
     );
+
+    // Save token to DB to restrict concurrent logins
+    await run('UPDATE users SET current_token = ? WHERE id = ?', [token, user.id]);
 
     res.json({
       success: true,

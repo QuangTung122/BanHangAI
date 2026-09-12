@@ -36,7 +36,8 @@ export default class AdminSystemController {
 
                 if (res.success) {
                     this.view.setOllamaStatus(true, `✅ Kết nối thành công! Tải được ${res.models.length} mô hình.`);
-                    this.view.updateModelDropdown(res.models, this.model.configs.ai_model);
+                    const currentModel = this.model.configs.ollama_model || (!this.model.configs.ai_model?.startsWith('gemini') ? this.model.configs.ai_model : '');
+                    this.view.updateModelDropdown(res.models, currentModel);
                 } else {
                     this.view.setOllamaStatus(false, `❌ ${res.message}`);
                 }
@@ -86,8 +87,10 @@ export default class AdminSystemController {
         if (btnSave) {
             btnSave.addEventListener('click', async () => {
                 const newConfigs = {
+                    ai_provider: container.querySelector('#cfg-ai-provider').value,
+                    gemini_model: container.querySelector('#cfg-gemini-model').value,
                     ollama_host: container.querySelector('#cfg-ollama-host').value,
-                    ai_model: container.querySelector('#cfg-ai-model').value,
+                    ollama_model: container.querySelector('#cfg-ollama-model').value,
                     ai_max_tokens: container.querySelector('#cfg-ai-tokens').value,
                     ai_system_prompt: container.querySelector('#cfg-ai-prompt').value,
                     ai_temperature: container.querySelector('#cfg-ai-temp').value,
@@ -97,12 +100,41 @@ export default class AdminSystemController {
                 const res = await this.model.saveConfigs(newConfigs);
                 if (res && res.success) {
                     alert('Lưu cấu hình hệ thống thành công!');
-                    // Có thể phát event để update nhạc nền ở Layout
                     window.dispatchEvent(new CustomEvent('bgm-updated', { detail: newConfigs.bgm_url }));
                 } else {
                     alert('Có lỗi xảy ra khi lưu cấu hình');
                 }
             });
+        }
+        
+        // 4. Thay đổi Provider (UI Toggle)
+        const providerSelect = container.querySelector('#cfg-ai-provider');
+        const geminiSection = container.querySelector('#gemini-config-section');
+        const ollamaSection = container.querySelector('#ollama-config-section');
+        
+        if (providerSelect) {
+            const updateProviderView = () => {
+                if (providerSelect.value === 'gemini') {
+                    geminiSection.style.opacity = '1';
+                    geminiSection.style.pointerEvents = 'auto';
+                    geminiSection.style.filter = 'none';
+                    
+                    ollamaSection.style.opacity = '0.4';
+                    ollamaSection.style.pointerEvents = 'none';
+                    ollamaSection.style.filter = 'grayscale(100%)';
+                } else {
+                    ollamaSection.style.opacity = '1';
+                    ollamaSection.style.pointerEvents = 'auto';
+                    ollamaSection.style.filter = 'none';
+                    
+                    geminiSection.style.opacity = '0.4';
+                    geminiSection.style.pointerEvents = 'none';
+                    geminiSection.style.filter = 'grayscale(100%)';
+                }
+            };
+            
+            providerSelect.addEventListener('change', updateProviderView);
+            updateProviderView();
         }
     }
 

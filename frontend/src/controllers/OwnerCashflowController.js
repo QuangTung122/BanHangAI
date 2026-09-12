@@ -130,6 +130,38 @@ export default class OwnerCashflowController {
             }
         });
         
+        // Mở modal Chi tiết tiền mặt
+        container.addEventListener('click', (e) => {
+            const btnCashBreakdown = e.target.closest('#cash-breakdown-trigger');
+            if (btnCashBreakdown) {
+                const modal = document.getElementById('modal-cash-breakdown');
+                if (modal) {
+                    const inner = modal.querySelector('div');
+                    modal.classList.remove('hidden');
+                    setTimeout(() => {
+                        modal.classList.remove('opacity-0');
+                        inner.classList.remove('scale-95');
+                    }, 10);
+                }
+            }
+        });
+
+        // Đóng modal Chi tiết tiền mặt
+        container.addEventListener('click', (e) => {
+            const btnClose = e.target.closest('#btn-close-cash-breakdown');
+            if (btnClose || e.target.id === 'modal-cash-breakdown') {
+                const modal = document.getElementById('modal-cash-breakdown');
+                if (modal) {
+                    const inner = modal.querySelector('div');
+                    modal.classList.add('opacity-0');
+                    inner.classList.add('scale-95');
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                    }, 300);
+                }
+            }
+        });
+
         // Đóng modal Thu / Chi
         container.addEventListener('click', (e) => {
             const btnClose = e.target.closest('#btn-close-modal') || e.target.closest('#btn-cancel-tx');
@@ -145,17 +177,89 @@ export default class OwnerCashflowController {
             }
         });
 
-        // Xem chi tiết Hóa đơn (Popup)
-        container.addEventListener('click', (e) => {
+        // Xem chi tiết Hóa đơn / Phiếu (Popup)
+        container.addEventListener('click', async (e) => {
             const btnInvoice = e.target.closest('.btn-view-invoice');
             if (btnInvoice) {
                 const id = btnInvoice.dataset.id;
+                
+                // Tìm transaction tương ứng
+                const tx = this.transactions.find(t => t.invoice_id === id || (id.startsWith('PT-') || id.startsWith('PC-')) && id.endsWith(String(t.id).padStart(4, '0')));
+                if (!tx) return;
+
                 const modal = document.getElementById('modal-invoice-detail');
                 const title = document.getElementById('detail-invoice-id');
-                if (modal && title) {
+                const contentContainer = modal.querySelector('.p-5.bg-slate-50');
+
+                if (modal && title && contentContainer) {
                     title.textContent = id;
-                    modal.classList.remove('hidden');
-                    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+                    const fmt = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+                    const dateFmt = new Date(tx.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute:'2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+
+                    if (id.startsWith('INV')) {
+                        // Render UI tải dữ liệu
+                        contentContainer.innerHTML = `<div class="text-center py-4"><span class="text-slate-500 text-sm font-medium">Đang tải chi tiết hóa đơn...</span></div>`;
+                        modal.classList.remove('hidden');
+                        setTimeout(() => modal.classList.remove('opacity-0'), 10);
+                        
+                        try {
+                            const OrderService = (await import('../services/OrderService.js')).default;
+                            const orderSvc = new OrderService();
+                            const res = await orderSvc.getOrders();
+                            const orders = res.data?.data || [];
+                            const order = orders.find(o => o.invoice_code === id);
+                            
+                            if (order) {
+                                this.activeOrder = order; // Lưu tạm để in lại
+                                contentContainer.innerHTML = `
+                                    <div class="flex justify-between text-sm mb-2"><span class="text-slate-500">Khách hàng:</span><span class="font-bold text-slate-800">${order.customer_name || 'Khách Lẻ'}</span></div>
+                                    <div class="flex justify-between text-sm mb-2"><span class="text-slate-500">Người bán:</span><span class="font-medium text-slate-800">@${order.cashier_name}</span></div>
+                                    <div class="flex justify-between text-sm mb-4"><span class="text-slate-500">Thời gian:</span><span class="font-medium text-slate-800">${new Date(order.created_at).toLocaleString('vi-VN')}</span></div>
+                                    <div class="border-t border-slate-200 pt-3 border-dashed">
+                                        ${order.items.map(item => `
+                                            <div class="flex justify-between text-sm mb-1">
+                                                <span class="text-slate-700">${item.product_name} <span class="text-xs text-slate-400">x${item.quantity}</span></span>
+                                                <span class="text-slate-800 font-medium">${fmt.format(item.unit_price * item.quantity)}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                    <div class="border-t border-slate-200 pt-3 mt-3 border-dashed flex justify-between items-center">
+                                        <span class="font-bold text-slate-700">TỔNG CỘNG:</span>
+                                        <span class="font-black text-indigo-600 text-lg">${fmt.format(order.total_amount)}</span>
+                                    </div>
+                                    <div class="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+                                        <button id="btn-reprint-cashflow" class="px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-lg text-sm font-bold transition-colors">
+                                            In lại Hóa Đơn
+                                        </button>
+                                    </div>
+                                `;
+                            } else {
+                                contentContainer.innerHTML = `<div class="text-center py-4 text-rose-500 text-sm font-bold">Không tìm thấy chi tiết hóa đơn. (Đơn hàng quá cũ)</div>`;
+                            }
+                        } catch (err) {
+                            contentContainer.innerHTML = `<div class="text-center py-4 text-rose-500 text-sm font-bold">Lỗi khi tải dữ liệu</div>`;
+                        }
+                    } else {
+                        // Phiếu Thu / Chi thủ công
+                        contentContainer.innerHTML = `
+                            <div class="flex justify-between text-sm mb-2"><span class="text-slate-500">Loại phiếu:</span><span class="font-bold ${tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}">${tx.type === 'income' ? 'PHIẾU THU' : 'PHIẾU CHI'}</span></div>
+                            <div class="flex justify-between text-sm mb-2"><span class="text-slate-500">Người lập:</span><span class="font-medium text-slate-800">@${tx.username}</span></div>
+                            <div class="flex justify-between text-sm mb-4"><span class="text-slate-500">Thời gian:</span><span class="font-medium text-slate-800">${dateFmt}</span></div>
+                            <div class="border-t border-slate-200 pt-3 border-dashed">
+                                <div class="text-sm mb-2 flex justify-between"><span class="text-slate-500">Danh mục:</span> <span class="font-bold text-slate-700">${tx.category}</span></div>
+                                <div class="text-sm mb-2 flex flex-col gap-1">
+                                    <span class="text-slate-500">Diễn giải:</span> 
+                                    <span class="text-slate-800 bg-white p-2 border border-slate-100 rounded">${tx.description || 'Không có mô tả'}</span>
+                                </div>
+                            </div>
+                            <div class="border-t border-slate-200 pt-3 mt-3 border-dashed flex justify-between items-center">
+                                <span class="font-bold text-slate-700">SỐ TIỀN:</span>
+                                <span class="font-black ${tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'} text-lg">${fmt.format(tx.amount)}</span>
+                            </div>
+                        `;
+                        modal.classList.remove('hidden');
+                        setTimeout(() => modal.classList.remove('opacity-0'), 10);
+                    }
                 }
             }
             
@@ -165,6 +269,14 @@ export default class OwnerCashflowController {
                 const modal = document.getElementById('modal-invoice-detail');
                 modal.classList.add('opacity-0');
                 setTimeout(() => modal.classList.add('hidden'), 300);
+            }
+
+            // In lại hóa đơn
+            const btnReprint = e.target.closest('#btn-reprint-cashflow');
+            if (btnReprint) {
+                if (this.activeOrder) {
+                    this.printReceipt(this.activeOrder);
+                }
             }
         });
         
@@ -191,6 +303,13 @@ export default class OwnerCashflowController {
                 const fmt = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
                 document.getElementById('collect-max-label').textContent = fmt.format(max);
                 
+                // Đóng modal chi tiết tiền mặt nếu đang mở
+                const cashBreakdownModal = document.getElementById('modal-cash-breakdown');
+                if (cashBreakdownModal && !cashBreakdownModal.classList.contains('hidden')) {
+                    cashBreakdownModal.classList.add('hidden');
+                    cashBreakdownModal.classList.add('opacity-0');
+                }
+
                 const modal = document.getElementById('modal-collect-cash');
                 const inner = modal.querySelector('div');
                 modal.classList.remove('hidden');
@@ -277,6 +396,125 @@ export default class OwnerCashflowController {
                 }
             }
         });
+    }
+
+    printReceipt(order) {
+        const iframe = document.getElementById('print-frame');
+        if (!iframe) return;
+        
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        
+        const dateStr = new Date(order.created_at).toLocaleString('vi-VN');
+        
+        let instHtml = '';
+        if (order.customer_name || order.customer_phone) {
+            const cName = order.customer_name || 'Khách lẻ';
+            const cPhone = order.customer_phone || '';
+            instHtml = `
+                <div style="margin-top: 10px; font-size: 12px;">
+                    <p style="margin: 2px 0;">Khách hàng: ${cName} ${cPhone ? '- ' + cPhone : ''}</p>
+                    <p style="margin: 2px 0;">Thu ngân: ${order.cashier_name || ''}</p>
+                </div>
+            `;
+        } else if (order.cashier_name) {
+            instHtml = `
+                <div style="margin-top: 10px; font-size: 12px;">
+                    <p style="margin: 2px 0;">Thu ngân: ${order.cashier_name}</p>
+                </div>
+            `;
+        }
+
+        let itemsHtml = '';
+        order.items.forEach(item => {
+            itemsHtml += `
+                <tr>
+                    <td style="padding: 4px 0;">${item.product_name}</td>
+                    <td style="text-align: center;">${item.quantity}</td>
+                    <td style="text-align: right;">${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.unit_price * item.quantity)}</td>
+                </tr>
+            `;
+        });
+
+        let qrHtml = '';
+        if (order.payment_method === 'transfer' || order.payment_method === 'Chuyển khoản ngân hàng') {
+            const bankId = 'MB'; // Demo bank
+            const accNo = '0123456789';
+            const accName = 'ECOM AI SYSTEM';
+            const qrUrl = `https://img.vietqr.io/image/${bankId}-${accNo}-compact.png?amount=${Math.round(order.total_amount)}&addInfo=${encodeURIComponent(order.invoice_code)}&accountName=${encodeURIComponent(accName)}`;
+            qrHtml = `
+                <div style="text-align: center; margin: 15px 0; border: 1px dashed #000; padding: 10px;">
+                    <p style="margin: 0 0 5px 0; font-weight: bold;">Quét mã QR để thanh toán</p>
+                    <img src="${qrUrl}" style="width: 200px; height: 200px;" />
+                    <p style="margin: 5px 0 0 0; font-size: 12px;">Nội dung: ${order.invoice_code}</p>
+                    <p style="margin: 0; font-weight: bold; font-size: 14px;">Số tiền: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.total_amount)}</p>
+                </div>
+            `;
+        }
+
+        doc.write(`
+            <html>
+            <head>
+                <style>
+                    body { font-family: 'Courier New', Courier, monospace; color: #000; width: 300px; margin: 0 auto; padding: 10px; }
+                    .center { text-align: center; }
+                    h2 { margin: 5px 0; font-size: 16px; }
+                    p { margin: 3px 0; font-size: 12px; }
+                    table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+                    th { border-bottom: 1px dashed #000; padding-bottom: 5px; text-align: left; }
+                    th:nth-child(2) { text-align: center; }
+                    th:nth-child(3) { text-align: right; }
+                </style>
+            </head>
+            <body>
+                <div class="center">
+                    <h2>CỬA HÀNG E-COM AI</h2>
+                    <p>Địa chỉ: 123 AI Street, Tech City</p>
+                    <p>Hotline: 1900 1000</p>
+                    <h2 style="margin-top: 15px;">HÓA ĐƠN BÁN HÀNG</h2>
+                    <p>Mã HĐ: ${order.invoice_code}</p>
+                    <p>Ngày: ${dateStr}</p>
+                </div>
+                
+                ${instHtml}
+
+                <table>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th>SL</th>
+                        <th>Thành tiền</th>
+                    </tr>
+                    ${itemsHtml}
+                </table>
+
+                <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 5px;">
+                    <table style="width: 100%; font-size: 14px;">
+                        <tr>
+                            <td><strong>TỔNG CỘNG:</strong></td>
+                            <td style="text-align: right;"><strong>${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.total_amount)}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+
+                ${qrHtml}
+
+                <div class="center" style="margin-top: 20px;">
+                    <p>(Bản sao - In lại)</p>
+                    <p>Cảm ơn quý khách đã mua sắm!</p>
+                </div>
+                
+                <script>
+                    window.onload = function() {
+                        setTimeout(function() {
+                            window.focus();
+                            window.print();
+                        }, 500);
+                    };
+                </script>
+            </body>
+            </html>
+        `);
+        doc.close();
     }
 
     destroy() {

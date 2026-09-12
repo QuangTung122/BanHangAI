@@ -119,20 +119,24 @@
 ## 5. Quy chuẩn Tổ chức Thư mục & Tạo File (Folder & File Conventions)
 
 ### 5.1. Quy chuẩn chung
-*   **Ngôn ngữ đặt tên:** Sử dụng 100% Tiếng Anh cho tên thư mục và tên file code để đảm bảo tính chuyên nghiệp và đồng bộ. (Ngoại trừ các file tài liệu Markdown).
-*   **Không sử dụng dấu cách:** Tuyệt đối không dùng khoảng trắng (space) hoặc ký tự đặc biệt (tiếng Việt có dấu) trong tên file/thư mục. Dùng dấu gạch ngang `-` (kebab-case) hoặc viết liền camelCase/PascalCase tùy quy định.
+
+* **Ngôn ngữ đặt tên:** Sử dụng 100% Tiếng Anh cho tên thư mục và tên file code để đảm bảo tính chuyên nghiệp và đồng bộ. (Ngoại trừ các file tài liệu Markdown).
+* **Không sử dụng dấu cách:** Tuyệt đối không dùng khoảng trắng (space) hoặc ký tự đặc biệt (tiếng Việt có dấu) trong tên file/thư mục. Dùng dấu gạch ngang `-` (kebab-case) hoặc viết liền camelCase/PascalCase tùy quy định.
 
 ### 5.2. Frontend (Vanilla JS MVC)
-*   **Thư mục:** Đặt tên chữ thường, số nhiều (plural) nếu chứa nhiều đối tượng cùng loại (vd: `models`, `views`, `controllers`, `services`, `components`).
-*   **File MVC (`models/`, `views/`, `controllers/`, `services/`):** 
-    *   Tên file: Sử dụng `PascalCase` (viết hoa chữ cái đầu) cho các file Class, Component, Service hoặc Model (ví dụ: `AuthModel.js`, `StaffController.js`, `ProductService.js`, `ProductCard.js`).
-    *   Quy tắc 1 file - 1 trách nhiệm: Mỗi file `.js` chỉ chứa logic của đúng 1 Entity hoặc 1 UI Component.
-*   **File cấu hình / Helper (`core/`, `environments/`):** Sử dụng chữ thường hoặc `camelCase` (ví dụ: `env.dev.js`, `helpers.js`, `apiClient.js`).
-*   **File Asset (`assets/`):** Chữ thường, phân tách bằng dấu gạch ngang `kebab-case` (ví dụ: `bg-login.png`, `main-style.css`).
+
+* **Thư mục:** Đặt tên chữ thường, số nhiều (plural) nếu chứa nhiều đối tượng cùng loại (vd: `models`, `views`, `controllers`, `services`, `components`).
+* **File MVC (`models/`, `views/`, `controllers/`, `services/`):**
+  * Tên file: Sử dụng `PascalCase` (viết hoa chữ cái đầu) cho các file Class, Component, Service hoặc Model (ví dụ: `AuthModel.js`, `StaffController.js`, `ProductService.js`, `ProductCard.js`).
+  * Quy tắc 1 file - 1 trách nhiệm: Mỗi file `.js` chỉ chứa logic của đúng 1 Entity hoặc 1 UI Component.
+* **File cấu hình / Helper (`core/`, `environments/`):** Sử dụng chữ thường hoặc `camelCase` (ví dụ: `env.dev.js`, `helpers.js`, `apiClient.js`).
+* **File Asset (`assets/`):** Chữ thường, phân tách bằng dấu gạch ngang `kebab-case` (ví dụ: `bg-login.png`, `main-style.css`).
 
 ### 5.3. Backend (Node.js/Express)
-*   **Tên file chính:** Các file chạy script hoặc cấu hình ở root backend dùng chữ thường (ví dụ: `server.js`, `package.json`, `migration.cjs`).
-*   **Thư mục mã nguồn (`src/`):** 
-    *   Chia rõ thành các thư mục con: `routes`, `controllers`, `middlewares`, `services`.
-    *   **Tên file MVC:** Bắt buộc dùng `camelCase` và có hậu tố rõ ràng tương ứng (ví dụ: `userRoutes.js`, `orderController.js`, `authMiddleware.js`).
-*   **Cơ sở dữ liệu (`database/`):** Chữ thường, dùng dấu gạch dưới `snake_case` (ví dụ: `ecom_ai.db`, `init.sql`).
+
+* **Tên file chính:** Các file cấu hình và điểm neo ở root backend dùng chữ thường (ví dụ: `server.js`, `package.json`).
+* **Thư mục mã nguồn (`src/`):**
+  * Chia rõ thành các thư mục con: `routes`, `controllers`, `middlewares`, `services`.
+  * **Tên file MVC:** Bắt buộc dùng `camelCase` và có hậu tố rõ ràng tương ứng (ví dụ: `userRoutes.js`, `orderController.js`, `authMiddleware.js`).
+* **Cơ sở dữ liệu (`database/`):** Chữ thường, dùng dấu gạch dưới `snake_case` (ví dụ: `ecom_ai.db`, `init.sql`). File script thao tác DB (migration, seed) phải đặt trong `database/scripts/`.
+* **Kiểm thử (`tests/`):** Chứa các file kiểm thử, tên file thường bắt đầu bằng `test_` (ví dụ: `test_db.js`).

@@ -42,8 +42,23 @@ export const getCategories = async (req, res) => {
 export const createProduct = async (req, res) => {
     try {
         const { sku, name, category_id, unit, import_price, price, discount_percent, image_url, stock_quantity, low_stock_threshold, description, is_active, tags } = req.body;
-        // slug could be generated from name
-        const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+        
+        let baseSlug = name.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+            .replace(/[^a-z0-9 -]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-');
+            
+        if (!baseSlug || baseSlug === '-') baseSlug = 'product';
+        let slug = baseSlug;
+        let counter = 1;
+        while (true) {
+            const existing = await db.get('SELECT id FROM products WHERE slug = ?', [slug]);
+            if (!existing) break;
+            slug = `${baseSlug}-${counter}`;
+            counter++;
+        }
         
         await db.run(
             `INSERT INTO products (sku, name, slug, category_id, unit, import_price, price, discount_percent, image_url, stock_quantity, low_stock_threshold, description, is_active, tags)
@@ -52,8 +67,8 @@ export const createProduct = async (req, res) => {
         );
         res.status(201).json({ success: true, message: 'Thêm sản phẩm thành công' });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: 'Lỗi khi tạo sản phẩm' });
+        console.error('Lỗi khi tạo sản phẩm:', error);
+        res.status(500).json({ success: false, message: 'Lỗi khi tạo sản phẩm: ' + error.message });
     }
 };
 
@@ -61,7 +76,23 @@ export const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
         const { sku, name, category_id, unit, import_price, price, discount_percent, image_url, stock_quantity, low_stock_threshold, description, is_active, tags } = req.body;
-        const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+        
+        let baseSlug = name.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+            .replace(/[^a-z0-9 -]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-');
+            
+        if (!baseSlug || baseSlug === '-') baseSlug = 'product';
+        let slug = baseSlug;
+        let counter = 1;
+        while (true) {
+            const existing = await db.get('SELECT id FROM products WHERE slug = ? AND id != ?', [slug, id]);
+            if (!existing) break;
+            slug = `${baseSlug}-${counter}`;
+            counter++;
+        }
 
         await db.run(
             `UPDATE products SET sku=?, name=?, slug=?, category_id=?, unit=?, import_price=?, price=?, discount_percent=?, image_url=?, stock_quantity=?, low_stock_threshold=?, description=?, is_active=?, tags=? WHERE id=?`,
@@ -69,8 +100,8 @@ export const updateProduct = async (req, res) => {
         );
         res.status(200).json({ success: true, message: 'Cập nhật sản phẩm thành công' });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: 'Lỗi khi cập nhật sản phẩm' });
+        console.error('Lỗi khi cập nhật sản phẩm:', error);
+        res.status(500).json({ success: false, message: 'Lỗi khi cập nhật sản phẩm: ' + error.message });
     }
 };
 

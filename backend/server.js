@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import os from 'os';
 import cors from 'cors';

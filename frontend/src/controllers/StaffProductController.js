@@ -53,9 +53,9 @@ export default class StaffProductController {
 
             // Lọc theo Stock
             if (this.currentStock === 'in_stock') {
-                filtered = filtered.filter(p => p.stock_quantity >= 5);
+                filtered = filtered.filter(p => p.stock_quantity > (p.low_stock_threshold || 5));
             } else if (this.currentStock === 'low_stock') {
-                filtered = filtered.filter(p => p.stock_quantity > 0 && p.stock_quantity < 5);
+                filtered = filtered.filter(p => p.stock_quantity > 0 && p.stock_quantity <= (p.low_stock_threshold || 5));
             } else if (this.currentStock === 'out_of_stock') {
                 filtered = filtered.filter(p => p.stock_quantity === 0);
             }

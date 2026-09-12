@@ -17,9 +17,15 @@ export const getUsers = async (req, res) => {
 // Cập nhật lương theo giờ
 export const updateWage = async (req, res) => {
     const { id } = req.params;
-    const { hourly_wage } = req.body;
+    let { hourly_wage } = req.body;
+    
+    hourly_wage = Number(hourly_wage);
+    if (isNaN(hourly_wage) || hourly_wage < 0) {
+        return res.status(400).json({ success: false, message: 'Mức lương không hợp lệ' });
+    }
+
     try {
-        await db.run('UPDATE users SET hourly_wage = ? WHERE id = ?', [hourly_wage || 0, id]);
+        await db.run('UPDATE users SET hourly_wage = ? WHERE id = ?', [hourly_wage, id]);
         res.status(200).json({ success: true, message: 'Cập nhật mức lương thành công' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Lỗi máy chủ' });

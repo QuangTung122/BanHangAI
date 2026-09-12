@@ -1,5 +1,5 @@
-import AuthModel from '../models/AuthModel.js';
-import AuthView from '../views/pages/AuthView.js';
+import AuthModel from '../models/AuthModel.js?v=209';
+import AuthView from '../views/pages/AuthView.js?v=210';
 
 export default class AuthController {
     constructor() {
@@ -10,13 +10,6 @@ export default class AuthController {
     }
 
     init() {
-        // Lắng nghe nút Đăng nhập / Đăng ký trên Navbar
-        const btnLogin = document.getElementById('btn-nav-login');
-        const btnRegister = document.getElementById('btn-nav-register');
-        
-        if (btnLogin) btnLogin.addEventListener('click', (e) => { e.preventDefault(); this.open('login'); });
-        if (btnRegister) btnRegister.addEventListener('click', (e) => { e.preventDefault(); this.open('register'); });
-
         // Khởi tạo Views
         this.view.renderView();
         this.view.bindToggleMode(this.handleToggleMode.bind(this));
@@ -63,8 +56,8 @@ export default class AuthController {
                 setTimeout(() => {
                     this.view.setMode('login');
                     this.view.showAlert('Vui lòng đăng nhập bằng tài khoản vừa tạo', true);
-                    document.getElementById('auth-username').value = data.username;
-                    document.getElementById('auth-password').value = '';
+                    this.view.container.querySelector('#auth-username').value = data.username;
+                    this.view.container.querySelector('#auth-password').value = '';
                 }, 1500);
             }
         } else {

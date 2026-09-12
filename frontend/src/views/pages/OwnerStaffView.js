@@ -6,7 +6,7 @@ export default class OwnerStaffView {
 
     render(records, users, currentMonth) {
         let html = `
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+            <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 border border-slate-100 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full">
                 <!-- Toolbar & Tabs -->
                 <div class="p-5 border-b border-slate-100 bg-slate-50 flex flex-col gap-4">
                     <div class="flex items-center justify-between">
@@ -22,7 +22,7 @@ export default class OwnerStaffView {
                     </div>
                     
                     <!-- Tab Headers -->
-                    <div class="flex gap-4 border-b border-slate-200">
+                    <div class="flex gap-4 border-b border-slate-200 shadow-sm">
                         <button data-tab="tab-staff-list" class="tab-btn px-4 py-2 font-bold text-sm border-b-2 transition-colors ${this.activeTab === 'tab-staff-list' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}">
                             Hồ sơ & Mức lương
                         </button>
@@ -76,14 +76,19 @@ export default class OwnerStaffView {
     }
 
     renderUsers(users) {
-        if (!users || users.length === 0) return `<tr><td colspan="5" class="p-8 text-center text-slate-500 font-medium">Chưa có nhân viên.</td></tr>`;
+        if (!users || users.length === 0) return `<tr><td colspan="5" class="p-12 text-center">
+            <div class="flex flex-col items-center justify-center">
+                <img src="assets/images/logo-system.png" class="w-32 h-32 mb-4 drop-shadow-md">
+                <span class="text-slate-500 font-medium">Chưa có nhân viên.</span>
+            </div>
+        </td></tr>`;
         
         return users.map(u => {
             const roleBadge = u.role === 'owner' ? 'bg-purple-100 text-purple-700' 
-                            : (u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700');
+                            : (u.role === 'admin' ? 'bg-rose-100 text-rose-700' : 'bg-indigo-100 text-indigo-700');
             
             return `
-                <tr class="hover:bg-slate-50 transition-colors" data-id="${u.id}">
+                <tr class="hover:bg-slate-50/80 transition-colors/80 transition-colors" data-id="${u.id}">
                     <td class="p-4">
                         <div class="font-bold text-slate-800">${u.full_name || u.username}</div>
                         <div class="text-[10px] text-slate-500">@${u.username}</div>
@@ -96,7 +101,7 @@ export default class OwnerStaffView {
                     </td>
                     <td class="p-4 text-center">
                         <div class="flex items-center justify-center gap-2">
-                            <input type="number" value="${u.hourly_wage || 0}" class="input-wage w-28 px-3 py-1.5 border border-slate-300 rounded text-right font-bold text-slate-700 focus:outline-none focus:border-indigo-500">
+                            <input type="number" value="${u.hourly_wage || 0}" class="input-wage w-28 px-3 py-1.5 border border-slate-300 rounded text-right font-bold text-slate-700 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all">
                             <span class="text-xs text-slate-500 font-medium">đ/h</span>
                         </div>
                     </td>
@@ -112,7 +117,12 @@ export default class OwnerStaffView {
 
     renderAttendance(records) {
         if (!records || records.length === 0) {
-            return `<tr><td colspan="6" class="p-8 text-center text-slate-500 font-medium">Chưa có dữ liệu chấm công tháng này.</td></tr>`;
+            return `<tr><td colspan="6" class="p-12 text-center">
+            <div class="flex flex-col items-center justify-center">
+                <img src="assets/images/logo-system.png" class="w-32 h-32 mb-4 drop-shadow-md">
+                <span class="text-slate-500 font-medium">Chưa có dữ liệu chấm công tháng này.</span>
+            </div>
+        </td></tr>`;
         }
         
         return records.map(r => {
@@ -123,7 +133,7 @@ export default class OwnerStaffView {
             const salaryFmt = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalSalary);
             
             return `
-                <tr class="hover:bg-slate-50 transition-colors">
+                <tr class="hover:bg-slate-50/80 transition-colors/80 transition-colors">
                     <td class="p-4">
                         <div class="font-bold text-slate-800">${r.full_name || r.username}</div>
                         <div class="text-[10px] text-slate-500 uppercase">Mức lương: ${new Intl.NumberFormat('vi-VN').format(wage)}đ/h</div>
@@ -149,7 +159,7 @@ export default class OwnerStaffView {
         
         if (this.activeTab === 'tab-attendance') {
             toolbar.innerHTML = `
-                <select id="filter-month" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:border-indigo-500">
+                <select id="filter-month" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all">
                     <!-- Sẽ đc populate -->
                 </select>
                 <button id="btn-export-excel" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg shadow-sm transition-colors flex items-center gap-2">
@@ -183,3 +193,4 @@ export default class OwnerStaffView {
         }
     }
 }
+

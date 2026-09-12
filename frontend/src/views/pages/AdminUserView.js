@@ -5,32 +5,34 @@ export default class AdminUserView {
 
     render(users) {
         let html = `
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
+            <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col h-full">
                 <!-- Header -->
-                <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
-                    <div>
-                        <h2 class="text-xl font-bold text-slate-800">Quản lý Tài khoản Hệ thống</h2>
-                        <p class="text-sm text-slate-500 mt-1">Quản lý và cấp quyền truy cập cho nhân sự hệ thống.</p>
+                <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0 relative overflow-hidden">
+                    <div class="flex items-center gap-4">
+                        <img src="assets/images/logo-system.png" alt="Team" class="w-14 h-14 object-contain drop-shadow-md hidden sm:block">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800">Quản lý Tài khoản Hệ thống</h2>
+                            <p class="text-sm text-slate-500 mt-1">Quản lý và cấp quyền truy cập cho nhân sự hệ thống.</p>
+                        </div>
                     </div>
-                    <button id="btn-add-user" class="px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm">
+                    <button id="btn-add-user" class="px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-400 hover:to-blue-400 text-white text-sm font-medium rounded-lg hover:-translate-y-0.5 transition-all flex items-center gap-2 shadow-sm shadow-indigo-500/30">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         Thêm tài khoản mới
                     </button>
                 </div>
                 
                 <!-- Toolbar -->
-                <div class="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-wrap gap-4 items-center justify-between shrink-0">
+                <div class="p-4 bg-slate-50 border-b border-slate-100 flex flex-wrap gap-4 items-center justify-between shrink-0">
                     <div class="relative w-full max-w-sm">
                         <svg class="w-4 h-4 absolute left-3 top-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                        <input type="text" id="search-input" placeholder="Tìm tên đăng nhập, họ tên, email..." class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                        <input type="text" id="search-input" placeholder="Tìm tên đăng nhập, họ tên, email..." class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500">
                     </div>
                     <div class="flex items-center gap-3">
-                        <select id="role-filter" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:border-indigo-500 cursor-pointer">
+                        <select id="role-filter" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all cursor-pointer">
                             <option value="">Tất cả vai trò</option>
                             <option value="admin">Admin</option>
                             <option value="owner">Chủ cửa hàng</option>
                             <option value="staff">Nhân viên bán hàng</option>
-                            
                         </select>
                     </div>
                 </div>
@@ -39,7 +41,7 @@ export default class AdminUserView {
                 <div class="flex-1 overflow-auto">
                     <table class="w-full text-left border-collapse min-w-[1000px]">
                         <thead>
-                            <tr class="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
+                            <tr class="bg-[#f8faff] text-indigo-900 text-xs font-black uppercase tracking-wider border-b-2 border-indigo-100/50">
                                 <th class="p-4 font-medium">ID</th>
                                 <th class="p-4 font-medium">Tên đăng nhập</th>
                                 <th class="p-4 font-medium">Họ và tên</th>
@@ -69,20 +71,25 @@ export default class AdminUserView {
 
     renderTableRows(users) {
         if (!users || users.length === 0) {
-            return `<tr><td colspan="9" class="p-8 text-center text-slate-400">Không có dữ liệu tài khoản</td></tr>`;
+            return `<tr><td colspan="9" class="p-12 text-center">
+            <div class="flex flex-col items-center justify-center">
+                <img src="assets/images/logo-system.png" class="w-32 h-32 mb-4 drop-shadow-md">
+                <span class="text-slate-500 font-medium">Không có dữ liệu tài khoản</span>
+            </div>
+        </td></tr>`;
         }
 
         const roleLabels = {
             'admin': '<span class="px-2.5 py-1 bg-rose-50 text-rose-600 rounded-full text-xs font-bold">Admin</span>',
             'owner': '<span class="px-2.5 py-1 bg-slate-100 text-slate-800 rounded-full text-xs font-bold">Chủ cửa hàng</span>',
-            'staff': '<span class="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold">Nhân viên bán hàng</span>',
+            'staff': '<span class="px-2.5 py-1 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 border border-indigo-100/50 hover:bg-indigo-100 rounded-full text-xs font-bold">Nhân viên bán hàng</span>',
             'customer': '<span class="px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full text-xs font-bold">Khách hàng</span>'
         };
 
         return users.map((u, index) => {
             const date = new Date(u.created_at).toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric' });
             return `
-                <tr class="hover:bg-slate-50/50 transition-colors group">
+                <tr class="hover:bg-slate-50/80 transition-colors/80 transition-colors group">
                     <td class="p-4 text-slate-500 font-medium">#${u.id}</td>
                     <td class="p-4 font-bold text-slate-800">${u.username}</td>
                     <td class="p-4 text-slate-600">${u.full_name || '-'}</td>
@@ -97,11 +104,10 @@ export default class AdminUserView {
                     </td>
                     <td class="p-4 text-slate-500 text-xs">${date}</td>
                     <td class="p-4 text-center">
-                        <select class="quick-role-select text-xs font-medium border border-slate-200 rounded p-1 outline-none focus:border-indigo-500 cursor-pointer text-slate-700 bg-slate-50 hover:bg-white" data-id="${u.id}">
+                        <select class="quick-role-select text-xs font-medium border border-slate-200 rounded p-1 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all cursor-pointer text-slate-700 bg-slate-50 hover:bg-white" data-id="${u.id}">
                             <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
                             <option value="owner" ${u.role === 'owner' ? 'selected' : ''}>Chủ cửa hàng</option>
                             <option value="staff" ${u.role === 'staff' ? 'selected' : ''}>Nhân viên</option>
-                            
                         </select>
                     </td>
                     <td class="p-4 text-center">
@@ -122,32 +128,32 @@ export default class AdminUserView {
     renderAddModal() {
         const modal = document.getElementById('add-user-modal');
         modal.innerHTML = `
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform scale-95 opacity-0 transition-all duration-300" id="add-modal-content">
+            <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 border border-slate-100 w-full max-w-md transform scale-95 opacity-0 transition-all duration-300" id="add-modal-content">
                 <div class="flex items-center justify-between p-5 border-b border-slate-100">
                     <h3 class="text-lg font-bold text-slate-800">Thêm tài khoản mới</h3>
                     <button id="btn-close-modal" class="text-slate-400 hover:text-slate-600"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
                 <form id="add-user-form" class="p-5 space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Tên đăng nhập <span class="text-red-500">*</span></label>
-                        <input type="text" id="add-username" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Tên đăng nhập <span class="text-rose-500">*</span></label>
+                        <input type="text" id="add-username" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Mật khẩu <span class="text-red-500">*</span></label>
-                        <input type="password" id="add-password" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Mật khẩu <span class="text-rose-500">*</span></label>
+                        <input type="password" id="add-password" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Họ và tên</label>
-                        <input type="text" id="add-fullname" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                        <input type="text" id="add-fullname" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                            <input type="email" id="add-email" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            <input type="email" id="add-email" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Vai trò</label>
-                            <select id="add-role" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                            <select id="add-role" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500">
                                 <option value="staff">Nhân viên</option>
                                 <option value="owner">Chủ cửa hàng</option>
                                 <option value="admin">Admin</option>
@@ -183,3 +189,4 @@ export default class AdminUserView {
         if (tbody) tbody.innerHTML = this.renderTableRows(users);
     }
 }
+

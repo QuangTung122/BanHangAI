@@ -324,11 +324,14 @@ export default class StaffPOSController {
         // Items HTML
         let itemsHtml = '';
         this.cartModel.items.forEach(item => {
+            const unitPrice = item.product.discount_percent 
+                ? item.product.price * (1 - item.product.discount_percent / 100) 
+                : item.product.price;
             itemsHtml += `
                 <tr>
                     <td style="padding: 4px 0;">${item.product.name}</td>
                     <td style="text-align: center;">${item.quantity}</td>
-                    <td style="text-align: right;">${this.view.formatMoney(item.product.price * item.quantity)}</td>
+                    <td style="text-align: right;">${this.view.formatMoney(unitPrice * item.quantity)}</td>
                 </tr>
             `;
         });
