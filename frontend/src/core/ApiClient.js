@@ -43,6 +43,32 @@ export default class ApiClient {
         });
     }
 
+    static postFormData(endpoint, formData) {
+        const token = localStorage.getItem('token');
+        const headers = {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        };
+        // Remove Content-Type header so browser sets it automatically with the boundary
+
+        return fetch(`${this.baseUrl}${endpoint}`, {
+            method: 'POST',
+            headers,
+            body: formData
+        }).then(async (response) => {
+            const data = await response.json();
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                alert('Tài khoản của bạn đã được đăng nhập ở thiết bị khác, hoặc phiên đăng nhập đã hết hạn. Hệ thống sẽ tự động đăng xuất.');
+                window.location.reload();
+            }
+            return { status: response.status, data };
+        }).catch((error) => {
+            console.error('API Error:', error);
+            return { status: 500, data: { success: false, message: 'Lỗi kết nối máy chủ' } };
+        });
+    }
+
     static get(endpoint) {
         return this.request(endpoint, { method: 'GET' });
     }

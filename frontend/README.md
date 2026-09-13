@@ -13,17 +13,17 @@
 ## 📁 Cấu Trúc Thư Mục
 
 - `index.html`: Tệp entry point chính của toàn bộ giao diện frontend.
-- `src/`: Chứa mã nguồn JavaScript, tuân thủ mô hình thiết kế (MVC/Services).
-  - `app.js`: Tệp khởi tạo ứng dụng chính.
-  - `controllers/`: Chứa logic điều khiển cho các trang (Dashboard, POS, Products, v.v.).
-  - `core/`: Các module cốt lõi (Router, Utils,...).
-  - `models/`: Chứa các định nghĩa dữ liệu nếu có.
-  - `services/`: Các dịch vụ giao tiếp với Backend API (Auth API, AI API, Product API,...).
-  - `views/`: Chứa các file render giao diện (HTML templates trong JS).
+- `src/`: Chứa mã nguồn JavaScript, tuân thủ nghiêm ngặt mô hình thiết kế (MVC Vanilla JS).
+  - `core/`: Chứa các module cốt lõi dùng chung toàn app (`ApiClient.js`, `EventEmitter.js`, `Formatters.js`).
+  - `services/`: Lớp Giao tiếp Mạng, gọi fetch/axios tới API Backend. Trả về raw data (VD: `AuthService.js`, `ProductService.js`).
+  - `models/`: Quản lý Trạng thái & Logic Nghiệp vụ nội bộ. Không gọi API trực tiếp và không đụng vào DOM.
+  - `views/`: Chuyên tạo HTML (Template Literals) & lắng nghe DOM Events, báo cáo về cho Controllers. Gồm các thư mục con: `components/`, `layouts/`, `pages/`.
+  - `controllers/`: Nhạc trưởng điều phối: Bắt sự kiện từ View, gọi Model/Service, và ra lệnh View cập nhật (VD: `OwnerCashflowController.js`, `StaffPOSController.js`).
+  - `app.js`: Tệp khởi tạo ứng dụng chính (Entry point & Router).
 - `assets/`: Chứa các tài nguyên tĩnh.
-  - `css/`: File stylesheet bổ sung (nếu có).
-  - `images/`: Hình ảnh, logo, favicon.
-  - `js/`: Các thư viện bên ngoài (nếu không dùng CDN).
+  - `css/`: File stylesheet bổ sung (ghi đè Tailwind nếu cần).
+  - `images/`: Hình ảnh, logo, banner, favicon.
+  - `js/`: Các thư viện bên ngoài (third-party scripts).
 
 ## ⚙️ Hướng Dẫn Cài Đặt và Chạy
 

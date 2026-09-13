@@ -241,6 +241,17 @@ export default class OwnerCashflowController {
                         }
                     } else {
                         // Phiếu Thu / Chi thủ công
+                        let attachmentHtml = '';
+                        if (tx.attachment_url) {
+                            // Check if image
+                            const ext = tx.attachment_url.split('.').pop().toLowerCase();
+                            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
+                                attachmentHtml = `<div class="mt-3"><span class="text-slate-500 text-sm">Chứng từ đính kèm:</span><br><a href="${tx.attachment_url}" target="_blank"><img src="${tx.attachment_url}" class="max-w-full h-auto mt-2 rounded border border-slate-200 max-h-48 object-contain"></a></div>`;
+                            } else {
+                                attachmentHtml = `<div class="mt-3"><span class="text-slate-500 text-sm">Chứng từ đính kèm:</span> <a href="${tx.attachment_url}" target="_blank" class="text-indigo-600 font-bold underline text-sm ml-2">Tải xuống / Xem file</a></div>`;
+                            }
+                        }
+
                         contentContainer.innerHTML = `
                             <div class="flex justify-between text-sm mb-2"><span class="text-slate-500">Loại phiếu:</span><span class="font-bold ${tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}">${tx.type === 'income' ? 'PHIẾU THU' : 'PHIẾU CHI'}</span></div>
                             <div class="flex justify-between text-sm mb-2"><span class="text-slate-500">Người lập:</span><span class="font-medium text-slate-800">@${tx.username}</span></div>
@@ -256,6 +267,7 @@ export default class OwnerCashflowController {
                                 <span class="font-bold text-slate-700">SỐ TIỀN:</span>
                                 <span class="font-black ${tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'} text-lg">${fmt.format(tx.amount)}</span>
                             </div>
+                            ${attachmentHtml}
                         `;
                         modal.classList.remove('hidden');
                         setTimeout(() => modal.classList.remove('opacity-0'), 10);
@@ -348,18 +360,24 @@ export default class OwnerCashflowController {
             if (e.target.id === 'form-transaction') {
                 e.preventDefault();
                 const formData = new FormData(e.target);
-                const data = {
-                    type: formData.get('type'),
-                    payment_method: document.getElementById('tx-payment-method').value || 'cash',
-                    amount: parseFloat(document.getElementById('tx-amount').value),
-                    category: document.getElementById('tx-category').value,
-                    description: document.getElementById('tx-description').value,
-                    source: 'manual', // since it's created via UI popup manually
-                    invoice_id: null
-                };
+                
+                // Add extra fields not directly from standard form inputs
+                formData.set('payment_method', document.getElementById('tx-payment-method').value || 'cash');
+                formData.set('amount', parseFloat(document.getElementById('tx-amount').value));
+                formData.set('category', document.getElementById('tx-category').value);
+                formData.set('description', document.getElementById('tx-description').value);
+                formData.set('source', 'manual');
+                // invoice_id is null by default, omit it
+                
+                // Add file attachment if selected
+                const fileInput = document.getElementById('tx-attachment');
+                if (fileInput && fileInput.files.length > 0) {
+                    formData.set('attachment', fileInput.files[0]);
+                }
+
                 
                 try {
-                    const res = await this.transactionService.createTransaction(data);
+                    const res = await this.transactionService.createTransaction(formData);
                     if (res.data && res.data.success) {
                         alert('✅ ' + res.data.message);
                         document.getElementById('btn-close-modal').click();

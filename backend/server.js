@@ -42,6 +42,10 @@ app.use('/api/notifications', notificationRoutes);
 const frontendPath = path.join(__dirname, '../frontend');
 app.use(express.static(frontendPath));
 
+// Phục vụ thư mục uploads (Static files)
+const uploadsPath = path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(uploadsPath));
+
 // Hỗ trợ SPA: Mọi đường dẫn không phải API sẽ được trỏ về index.html
 app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {

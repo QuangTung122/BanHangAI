@@ -265,10 +265,11 @@ export default class OwnerCashflowView {
                             <!-- Upload Chứng từ gốc -->
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-1">Đính kèm chứng từ (Tùy chọn)</label>
-                                <div class="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center hover:bg-slate-50 cursor-pointer transition-colors">
+                                <label class="border-2 border-dashed border-slate-200 rounded-lg p-4 text-center hover:bg-slate-50 cursor-pointer transition-colors block">
+                                    <input type="file" id="tx-attachment" accept="image/*,.pdf,.doc,.docx" class="hidden" onchange="document.getElementById('file-name').textContent = this.files[0] ? this.files[0].name : 'Click để tải lên ảnh bill, hóa đơn đỏ...'">
                                     <svg class="w-6 h-6 text-slate-400 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                                    <span class="text-sm text-slate-500 font-medium">Click để tải lên ảnh bill, hóa đơn đỏ...</span>
-                                </div>
+                                    <span id="file-name" class="text-sm text-slate-500 font-medium">Click để tải lên ảnh bill, hóa đơn đỏ...</span>
+                                </label>
                             </div>
                             
                             <div class="pt-4 mt-6 border-t border-slate-100 flex justify-end gap-3">
@@ -397,15 +398,16 @@ export default class OwnerCashflowView {
             // SOURCE (Auto from Invoice vs Manual)
             const isAuto = t.source === 'auto' || t.invoice_id;
             const txCode = isIncome ? `PT-${String(t.id).padStart(4, '0')}` : `PC-${String(t.id).padStart(4, '0')}`;
+            const attachmentIcon = t.attachment_url ? ` <svg class="w-4 h-4 inline text-indigo-500 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" title="Có chứng từ đính kèm"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>` : '';
             const sourceBadge = isAuto 
                 ? `<span class="inline-flex items-center gap-1 text-indigo-600 font-bold text-xs cursor-pointer hover:underline btn-view-invoice" data-id="${t.invoice_id}">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     ${t.invoice_id || txCode}
-                   </span>`
-                : `<span class="text-slate-600 font-bold text-xs flex items-center gap-1 cursor-pointer hover:underline btn-view-invoice" data-id="${txCode}">
+                   </span>${attachmentIcon}`
+                : `<span class="text-slate-600 font-bold text-xs inline-flex items-center gap-1 cursor-pointer hover:underline btn-view-invoice" data-id="${txCode}">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                     ${txCode}
-                   </span>`;
+                   </span>${attachmentIcon}`;
 
             // PAYMENT METHOD
             const methodBadge = t.payment_method === 'transfer'

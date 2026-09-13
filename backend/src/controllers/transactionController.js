@@ -133,6 +133,12 @@ export const createTransaction = async (req, res) => {
     const { type, amount, category, description, payment_method = 'cash', source = 'manual', invoice_id = null } = req.body;
     const user_id = req.user.id;
     
+    // Nếu có file upload, tạo đường dẫn (URL) cho file đó
+    let attachment_url = null;
+    if (req.file) {
+        attachment_url = `/uploads/${req.file.filename}`;
+    }
+    
     if (!type || !amount || !category) {
         return res.status(400).json({ success: false, message: 'Vui lòng điền đủ thông tin' });
     }
@@ -143,8 +149,8 @@ export const createTransaction = async (req, res) => {
 
     try {
         await db.run(
-            `INSERT INTO transactions (type, amount, category, description, user_id, payment_method, source, invoice_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [type, amount, category, description || '', user_id, payment_method, source, invoice_id]
+            `INSERT INTO transactions (type, amount, category, description, user_id, payment_method, source, invoice_id, attachment_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [type, amount, category, description || '', user_id, payment_method, source, invoice_id, attachment_url]
         );
         res.status(201).json({ success: true, message: 'Tạo phiếu thành công' });
     } catch (error) {

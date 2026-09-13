@@ -19,6 +19,9 @@ class TransactionService {
     }
 
     async createTransaction(data) {
+        if (data instanceof FormData) {
+            return await ApiClient.postFormData('/transactions', data);
+        }
         return await ApiClient.post('/transactions', data);
     }
 
