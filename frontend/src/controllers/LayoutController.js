@@ -254,11 +254,18 @@ export default class LayoutController {
         const newBtnPlay = btnPlay.cloneNode(true);
         btnPlay.parentNode.replaceChild(newBtnPlay, btnPlay);
         
-        newBtnPlay.addEventListener('click', () => {
+        newBtnPlay.addEventListener('click', async () => {
             if (audio.paused) {
-                audio.play();
-                newBtnPlay.querySelector('#icon-play').classList.add('hidden');
-                newBtnPlay.querySelector('#icon-pause').classList.remove('hidden');
+                try {
+                    await audio.play();
+                    newBtnPlay.querySelector('#icon-play').classList.add('hidden');
+                    newBtnPlay.querySelector('#icon-pause').classList.remove('hidden');
+                } catch (err) {
+                    console.error('Lỗi phát nhạc:', err);
+                    if (window.showToast) {
+                        window.showToast('Không thể phát nhạc nền. Vui lòng kiểm tra lại đường dẫn nhạc.', 'error');
+                    }
+                }
             } else {
                 audio.pause();
                 newBtnPlay.querySelector('#icon-pause').classList.add('hidden');
@@ -267,7 +274,7 @@ export default class LayoutController {
         });
 
         // Update progress
-        audio.addEventListener('timeupdate', () => {
+        audio.ontimeupdate = () => {
             const current = audio.currentTime;
             const mins = Math.floor(current / 60);
             const secs = Math.floor(current % 60).toString().padStart(2, '0');
@@ -277,7 +284,19 @@ export default class LayoutController {
                 const percent = (current / audio.duration) * 100;
                 progressBar.style.width = `${percent}%`;
             }
-        });
+        };
+
+        // Seek (Tua nhạc)
+        const progressContainer = document.getElementById('music-progress-container');
+        if (progressContainer) {
+            progressContainer.onclick = (e) => {
+                if (!audio.duration) return;
+                const rect = progressContainer.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const percent = clickX / rect.width;
+                audio.currentTime = percent * audio.duration;
+            };
+        }
     }
 
     loadDefaultPage(role) {

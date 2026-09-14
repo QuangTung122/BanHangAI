@@ -127,4 +127,4 @@ INSERT INTO system_configs (key, value) VALUES
 ('ai_max_tokens', '4096'),
 ('ai_system_prompt', 'B?n l� tr? l� AI chuy�n nghi?p c?a c?a h�ng b�n l?...'),
 ('ai_temperature', '0.7'),
-('bgm_url', 'https://files.catbox.moe/pmroy.mp3');
+('bgm_url', 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3');
