@@ -1,6 +1,7 @@
 import * as db from '../services/db.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { logAction } from './auditController.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +30,7 @@ export const updateConfigs = async (req, res) => {
                 [key, value]
             );
         }
+        await logAction(req.user.id, 'SYSTEM', 'Cập nhật cấu hình hệ thống', configs);
         res.status(200).json({ success: true, message: 'Đã lưu cấu hình hệ thống' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Lỗi khi lưu cấu hình' });
@@ -70,6 +72,7 @@ export const resetData = async (req, res) => {
 
         await db.run('COMMIT');
 
+        await logAction(req.user.id, 'SYSTEM', 'Dọn dẹp (Reset) toàn bộ dữ liệu');
         res.status(200).json({ success: true, message: 'Đã dọn sạch dữ liệu thành công!' });
     } catch (error) {
         await db.run('ROLLBACK');

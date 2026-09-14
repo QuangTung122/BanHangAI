@@ -4,7 +4,7 @@ import * as chatController from '../controllers/chatController.js';
 
 const router = express.Router();
 
-// Tạm thời cho phép public hoặc requireAuth. Tốt nhất cứ dùng requireAuth để bảo mật.
-router.post('/stream', chatController.streamChat);
+// Bảo mật endpoint: Bắt buộc đăng nhập để xác định role
+router.post('/stream', requireAuth, chatController.streamChat);
 
 export default router;

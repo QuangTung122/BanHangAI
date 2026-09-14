@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { logAction } from './auditController.js';
 import { get, run } from '../services/db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_banhangai';
@@ -48,16 +49,19 @@ export const login = async (req, res) => {
     // Find user
     const user = await get('SELECT * FROM users WHERE username = ?', [username]);
     if (!user) {
+      await logAction(null, 'AUTH', 'Đăng nhập thất bại: Sai tên đăng nhập', { username });
       return res.status(401).json({ success: false, message: 'Sai tên đăng nhập hoặc mật khẩu', data: null });
     }
 
     if (user.is_active === 0) {
+      await logAction(user.id, 'AUTH', 'Đăng nhập thất bại: Tài khoản bị khóa', { username });
       return res.status(403).json({ success: false, message: 'tài khoản đã bị khóa liên hệ admin để được xử lý', data: null });
     }
 
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
+      await logAction(user.id, 'AUTH', 'Đăng nhập thất bại: Sai mật khẩu', { username });
       return res.status(401).json({ success: false, message: 'Sai tên đăng nhập hoặc mật khẩu', data: null });
     }
 
@@ -71,7 +75,9 @@ export const login = async (req, res) => {
     // Save token to DB to restrict concurrent logins
     await run('UPDATE users SET current_token = ? WHERE id = ?', [token, user.id]);
 
-    res.json({
+    await logAction(user.id, 'AUTH', 'Đăng nhập thành công', { username });
+
+    res.status(200).json({
       success: true,
       message: 'Đăng nhập thành công',
       data: {

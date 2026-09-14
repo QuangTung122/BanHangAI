@@ -14,6 +14,7 @@ import transactionRoutes from './src/routes/transactionRoutes.js';
 import dashboardRoutes from './src/routes/dashboardRoutes.js';
 import chatRoutes from './src/routes/chatRoutes.js';
 import notificationRoutes from './src/routes/notificationRoutes.js';
+import auditRoutes from './src/routes/auditRoutes.js';
 import { getAiConfig } from './src/services/aiService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -37,6 +38,7 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/audit-logs', auditRoutes);
 
 // Phục vụ giao diện Frontend (Static files)
 const frontendPath = path.join(__dirname, '../frontend');

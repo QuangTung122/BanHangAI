@@ -5,7 +5,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
  * Lấy cấu hình hệ thống (Ollama host và model)
  */
 export async function getAiConfig() {
-    const rows = await db.query("SELECT key, value FROM system_configs WHERE key IN ('ollama_host', 'ai_model', 'ai_provider', 'gemini_model', 'ollama_model')");
+    const rows = await db.query("SELECT key, value FROM system_configs WHERE key IN ('ollama_host', 'ai_model', 'ai_provider', 'gemini_model', 'ollama_model', 'ai_max_tokens')");
     const config = {
         provider: 'ollama', // gemini hoặc ollama
         host: 'http://localhost:11434',
@@ -33,6 +33,11 @@ export async function getAiConfig() {
     // Xóa dấu '/' ở cuối host nếu có
     config.host = config.host.replace(/\/$/, '');
     config.host = config.host.replace('://localhost', '://127.0.0.1');
+
+    // Lấy max_tokens
+    const maxTokensRow = rows.find(r => r.key === 'ai_max_tokens');
+    config.max_tokens = maxTokensRow ? parseInt(maxTokensRow.value) : 8192;
+
     return config;
 }
 
@@ -54,7 +59,12 @@ export async function* generateChatStream(messages) {
             parts: [{ text: m.content }]
         }));
 
-        const modelConfig = { model: config.model };
+        const modelConfig = { 
+            model: config.model,
+            generationConfig: {
+                maxOutputTokens: config.max_tokens
+            }
+        };
         if (systemMessage) {
             modelConfig.systemInstruction = systemMessage.content;
         }
@@ -77,7 +87,11 @@ export async function* generateChatStream(messages) {
         const requestBody = {
             model: config.model,
             messages: messages,
-            stream: true
+            stream: true,
+            options: {
+                num_predict: config.max_tokens,
+                num_ctx: 8192
+            }
         };
 
         const response = await fetch(`${config.host}/api/chat`, {
