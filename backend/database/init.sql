@@ -8,7 +8,7 @@ CREATE TABLE users (
     full_name TEXT,
     email TEXT UNIQUE,
     phone TEXT,
-    role TEXT DEFAULT 'customer' CHECK(role IN ('admin', 'owner', 'staff', 'customer')),
+    role TEXT DEFAULT 'staff' CHECK(role IN ('admin', 'owner', 'staff')),
     is_active BOOLEAN DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -92,8 +92,7 @@ CREATE INDEX idx_order_items_product ON order_items(product_id);
 -- 3. Seed Data
 -- Users (Mật khẩu mẫu đã được băm)
 INSERT INTO users (username, password_hash, full_name, email, phone, role) VALUES 
-('admin', '$2b$12$e/K9...hashed', 'Quản trị viên', 'admin@store.com', '0123456789', 'admin'),
-('customer1', '$2b$12$e/K9...hashed', 'Khách hàng 1', 'cust1@gmail.com', '0987654321', 'customer');
+('admin', '$2b$12$e/K9...hashed', 'Quản trị viên', 'admin@store.com', '0123456789', 'admin');
 
 -- Categories
 INSERT INTO categories (name, slug, description, is_active) VALUES 
