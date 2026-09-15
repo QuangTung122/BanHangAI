@@ -89,6 +89,33 @@ CREATE INDEX idx_chat_sessions_user ON chat_sessions(user_id);
 CREATE INDEX idx_order_items_order ON order_items(order_id);
 CREATE INDEX idx_order_items_product ON order_items(product_id);
 
+CREATE TABLE messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id INTEGER,
+    receiver_id INTEGER,
+    content TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(receiver_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    title VARCHAR(255),
+    message TEXT,
+    type VARCHAR(50),
+    related_id INTEGER,
+    is_read BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_messages_sender ON messages(sender_id);
+CREATE INDEX idx_messages_receiver ON messages(receiver_id);
+CREATE INDEX idx_notifications_user ON notifications(user_id);
+
 -- 3. Seed Data
 -- Users (Mật khẩu mẫu đã được băm)
 INSERT INTO users (username, password_hash, full_name, email, phone, role) VALUES 

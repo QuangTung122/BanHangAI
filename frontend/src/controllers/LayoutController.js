@@ -21,6 +21,12 @@ export default class LayoutController {
         // Khởi tạo Chat Module (Hiển thị cục chat ở góc dưới)
         this.chatController = new ChatController();
 
+        // Khởi tạo Internal Team Chat (Góc phải dưới, cạnh nút chuông/chat)
+        import('./InternalChatController.js').then(module => {
+            const InternalChatController = module.default;
+            this.internalChatController = new InternalChatController();
+        }).catch(err => console.error("Không thể tải Internal Chat", err));
+
         // Gắn sự kiện đăng xuất
         this.view.bindLogout(() => {
             this.authModel.logout();

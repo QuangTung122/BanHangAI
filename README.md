@@ -1,19 +1,20 @@
 # Hệ Thống Quản Lý Bán Hàng Tích Hợp Trí Tuệ Nhân Tạo (E-Com AI) 🤖📦
 
-Một giải pháp phần mềm quản trị bán hàng toàn diện, áp dụng sức mạnh của **Trí tuệ nhân tạo (Generative AI)** để tự động hóa việc tư vấn khách hàng và phân tích dữ liệu kinh doanh. Hệ thống được thiết kế theo hướng bảo mật dữ liệu tuyệt đối nhờ tích hợp local LLM.
+Một giải pháp phần mềm quản trị bán hàng toàn diện, áp dụng sức mạnh của **Trí tuệ nhân tạo (Generative AI)** để tự động hóa việc tư vấn khách hàng, phân tích dữ liệu kinh doanh và nâng cao hiệu suất làm việc nhóm. Hệ thống được thiết kế theo hướng bảo mật dữ liệu tuyệt đối nhờ tích hợp local LLM.
 
 ## 🌟 Tính năng nổi bật
 
 ### Chức năng Quản lý (Lõi hệ thống)
-* **Phân quyền linh hoạt:** Hỗ trợ 4 vai trò (Admin, Owner, Staff, Customer).
+* **Phân quyền linh hoạt:** Hỗ trợ nhiều vai trò (Admin, Owner, Staff, Customer).
 * **Màn hình Bán hàng (POS):** Tìm kiếm siêu tốc, hỗ trợ phân loại. Chức năng lập hóa đơn thanh toán trả thẳng hoặc **Trả góp** (tính toán chi phí tự động).
 * **Quản lý Tồn kho:** Tự động trừ tồn kho khi thanh toán thành công.
 * **Dashboard Thống kê:** Báo cáo doanh thu, sản phẩm bán chạy, cảnh báo sản phẩm sắp hết hàng qua biểu đồ trực quan.
+* **Chat Nội Bộ (Team Chat):** Hỗ trợ liên lạc theo thời gian thực giữa các nhân viên, chủ cửa hàng và quản trị viên ngay trên hệ thống.
 
 ### Điểm nhấn Trí tuệ Nhân tạo (AI)
 * **Trợ lý Ảo (Chatbot Tư vấn):** Khách hàng/Nhân viên có thể chat bằng ngôn ngữ tự nhiên. AI nắm được kho hàng thực tế để đưa ra gợi ý sản phẩm phù hợp.
 * **AI Insight (Phân tích Kinh doanh):** Chủ cửa hàng chỉ cần bấm 1 nút, AI sẽ tự động đọc số liệu biểu đồ doanh thu và đưa ra nhận xét chiến lược nhập/bán hàng thông minh.
-* **Bảo mật dữ liệu tuyệt đối:** Sử dụng **Ollama** chạy mô hình cục bộ (`qwen2.5-coder` / `llama3`), không gửi dữ liệu khách hàng ra các dịch vụ API bên ngoài (như OpenAI).
+* **Bảo mật dữ liệu tuyệt đối:** Sử dụng **Ollama** chạy mô hình cục bộ (`qwen2.5-coder` / `llama3`), không gửi dữ liệu khách hàng ra các dịch vụ API bên ngoài.
 
 ---
 
@@ -38,12 +39,12 @@ Một giải pháp phần mềm quản trị bán hàng toàn diện, áp dụng
    git clone <repo_url>
    cd BanHangAI
    ```
-2. **Cài đặt thư viện:**
+2. **Cài đặt thư viện Backend:**
    ```bash
    cd backend
    npm install
    ```
-3. **Khởi tạo Cơ sở dữ liệu (tùy chọn nếu file ecom_ai.db chưa có):**
+3. **Khởi tạo Cơ sở dữ liệu (nếu cần):**
    ```bash
    sqlite3 database/ecom_ai.db < database/init.sql
    ```
@@ -57,8 +58,8 @@ Một giải pháp phần mềm quản trị bán hàng toàn diện, áp dụng
 
 ## 🔑 Tài khoản Demo (Dữ liệu mẫu)
 
-Hệ thống đã có sẵn dữ liệu test (sản phẩm, cấu hình AI). Bạn có thể đăng nhập bằng các tài khoản sau (Mật khẩu mặc định: `123456`):
+Hệ thống đã có sẵn dữ liệu test (sản phẩm, cấu hình AI, nhân sự). Bạn có thể đăng nhập bằng các tài khoản sau (Mật khẩu mặc định: `123456`):
 * **Quản trị viên (Admin):** `admin`
 * **Chủ cửa hàng (Owner):** `owner` (để trải nghiệm Dashboard & AI Insight)
-* **Nhân viên bán hàng (Staff):** `staff` (để trải nghiệm POS & Trả góp)
+* **Nhân viên bán hàng (Staff):** `staff` (để trải nghiệm POS, Trả góp & Chat Nội Bộ)
 * **Khách hàng (Customer):** `customer1`

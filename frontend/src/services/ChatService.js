@@ -62,4 +62,20 @@ export default class ChatService {
             onError(error.message);
         }
     }
+
+    // --- INTERNAL CHAT API ---
+    static async getChatUsers() {
+        const ApiClient = (await import('../core/ApiClient.js')).default;
+        return ApiClient.get('/chat/users');
+    }
+
+    static async getChatHistory(partnerId) {
+        const ApiClient = (await import('../core/ApiClient.js')).default;
+        return ApiClient.get(`/chat/history/${partnerId}`);
+    }
+
+    static async sendMessage(receiverId, content) {
+        const ApiClient = (await import('../core/ApiClient.js')).default;
+        return ApiClient.post('/chat/message', { receiverId, content });
+    }
 }

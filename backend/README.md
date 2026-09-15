@@ -1,6 +1,6 @@
 # BanHangAI - Backend API
 
-Đây là hệ thống Backend cho dự án **BanHangAI**, cung cấp các API RESTful để quản lý doanh nghiệp và tích hợp Trợ lý AI. Backend được phát triển dựa trên môi trường Node.js.
+Đây là hệ thống Backend cho dự án **BanHangAI**, cung cấp các API RESTful để quản lý doanh nghiệp và tích hợp Trợ lý AI cũng như hệ thống giao tiếp nội bộ. Backend được phát triển dựa trên môi trường Node.js.
 
 ## 🛠 Công Nghệ Sử Dụng
 
@@ -14,14 +14,14 @@
 
 ## 📁 Cấu Trúc Thư Mục (Kiến trúc phân tầng)
 
-- `server.js`: ĐIỂM VÀO CHÍNH (Bootstrap). Khởi chạy Express app, phục vụ file tĩnh và đăng ký các Routes. Tuyệt đối không chứa logic xử lý API trực tiếp.
+- `server.js`: ĐIỂM VÀO CHÍNH (Bootstrap). Khởi chạy Express app, phục vụ file tĩnh và đăng ký các Routes.
 - `package.json`: Quản lý các dependencies và scripts.
-- `database/`: Chứa file cơ sở dữ liệu SQLite (`ecom_ai.db`), script khởi tạo (`init.sql`) và thư mục `scripts/` (migration, seed data).
-- `uploads/`: Chứa các tệp đính kèm người dùng tải lên (ví dụ: chứng từ, bill).
+- `database/`: Chứa file cơ sở dữ liệu SQLite (`ecom_ai.db`), script khởi tạo (`init.sql`).
+- `uploads/`: Chứa các tệp đính kèm người dùng tải lên.
 - `src/`: Thư mục mã nguồn chính, phân chia theo chuẩn MVC/Layered.
   - `routes/`: Định nghĩa các API endpoints và ánh xạ (map) tới các controllers.
   - `middlewares/`: Chứa các hàm middleware kiểm tra, bảo vệ (auth, phân quyền role, error handler).
-  - `controllers/`: Nơi chứa logic xử lý request/response chính yếu cho từng nghiệp vụ (order, transaction, user...).
+  - `controllers/`: Nơi chứa logic xử lý request/response chính yếu cho từng nghiệp vụ (order, transaction, user, chat...).
   - `services/`: Xử lý logic nghiệp vụ lõi hoặc giao tiếp bên ngoài (VD: AI Service, DB Service).
 - `environments/`: Cấu hình cho các môi trường khác nhau.
 - `tests/`: Chứa các bài test (kiểm thử) cho hệ thống (Unit test, API test).
@@ -40,8 +40,7 @@ npm install
 
 ### 3. Cấu Hình Biến Môi Trường
 
-Tạo file `.env` ở thư mục gốc của `backend` (cùng cấp với `server.js`):
-
+Tạo file `.env` ở thư mục gốc của `backend`:
 ```env
 PORT=5000
 JWT_SECRET=your_jwt_secret_key_here
@@ -68,8 +67,7 @@ Mặc định server sẽ khởi chạy tại: `http://localhost:5000`
 - **`/api/products`**: Quản lý kho hàng, sản phẩm.
 - **`/api/orders`**: Quản lý đơn hàng.
 - **`/api/transactions`**: Quản lý sổ quỹ, thu chi.
-- **`/api/attendance`**: Chấm công.
-- **`/api/dashboard`**: Dữ liệu thống kê.
-- **`/api/chat`**: Tương tác với Trợ lý AI.
-- **`/api/system` / `/api/notifications`**: Quản lý hệ thống và thông báo.
-
+- **`/api/attendance`**: Chấm công nhân viên.
+- **`/api/dashboard`**: Dữ liệu thống kê doanh thu.
+- **`/api/chat`**: Giao tiếp với Trợ lý AI và tính năng Chat nội bộ (Team Chat) giữa các nhân viên.
+- **`/api/system` / `/api/notifications`**: Quản lý hệ thống và thông báo theo thời gian thực.

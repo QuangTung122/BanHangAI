@@ -103,3 +103,93 @@ ${productContext}
         }
     }
 };
+
+// --- CHAT NỘI BỘ (INTERNAL CHAT) ---
+
+// Lấy danh sách người dùng để chat (Tùy theo role)
+export const getChatUsers = async (req, res) => {
+    try {
+        const role = req.user.role;
+        const userId = req.user.id;
+        let sql = '';
+        let params = [];
+
+        if (role === 'staff') {
+            // Staff chỉ lấy Owner và Admin
+            sql = 'SELECT id, username, full_name, role FROM users WHERE role IN ("owner", "admin") AND is_active = 1';
+        } else {
+            // Owner và Admin có thể lấy tất cả trừ bản thân
+            sql = 'SELECT id, username, full_name, role FROM users WHERE id != ? AND is_active = 1';
+            params = [userId];
+        }
+
+        const users = await db.query(sql, params);
+        res.status(200).json({ success: true, data: users });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+    }
+};
+
+// Lấy lịch sử chat với 1 người dùng khác
+export const getChatHistory = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { partnerId } = req.params;
+
+        const sql = `
+            SELECT * FROM messages 
+            WHERE (sender_id = ? AND receiver_id = ?) 
+               OR (sender_id = ? AND receiver_id = ?)
+            ORDER BY created_at ASC
+            LIMIT 100
+        `;
+        const messages = await db.query(sql, [userId, partnerId, partnerId, userId]);
+
+        // Đánh dấu là đã đọc nếu mình là người nhận
+        await db.run('UPDATE messages SET is_read = 1 WHERE receiver_id = ? AND sender_id = ? AND is_read = 0', [userId, partnerId]);
+
+        res.status(200).json({ success: true, data: messages });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+    }
+};
+
+// Gửi tin nhắn
+export const sendMessage = async (req, res) => {
+    try {
+        const senderId = req.user.id;
+        const { receiverId, content } = req.body;
+
+        if (!receiverId || !content) {
+            return res.status(400).json({ success: false, message: 'Thiếu thông tin' });
+        }
+
+        // TODO: Phân quyền Staff chỉ gửi được cho Admin/Owner
+        if (req.user.role === 'staff') {
+            const receiver = await db.get('SELECT role FROM users WHERE id = ?', [receiverId]);
+            if (!receiver || receiver.role === 'staff') {
+                return res.status(403).json({ success: false, message: 'Không được phép gửi tin nhắn cho người này' });
+            }
+        }
+
+        const sql = `INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)`;
+        const result = await db.run(sql, [senderId, receiverId, content]);
+
+        // Tạo luôn một thông báo cho người nhận (Optional)
+        const notificationSql = `INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)`;
+        await db.run(notificationSql, [
+            receiverId, 
+            'Tin nhắn mới', 
+            `Bạn có tin nhắn mới từ ${req.user.username}`, 
+            'chat'
+        ]);
+
+        res.status(201).json({ 
+            success: true, 
+            data: { id: result.lastID, sender_id: senderId, receiver_id: receiverId, content, is_read: 0 } 
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
+    }
+};
