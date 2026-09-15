@@ -38,9 +38,8 @@ export default class AdminSystemView {
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2">Mô hình Gemini</label>
                             <select id="cfg-gemini-model" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all cursor-pointer">
-                                <option value="gemini-3.7-flash" ${configs.gemini_model === 'gemini-3.7-flash' || configs.ai_model === 'gemini-3.7-flash' ? 'selected' : ''}>gemini-3.7-flash (Nhanh, Rẻ)</option>
-                                <option value="gemini-3.7-pro" ${configs.gemini_model === 'gemini-3.7-pro' || configs.ai_model === 'gemini-3.7-pro' ? 'selected' : ''}>gemini-3.7-pro (Thông minh nhất)</option>
-                                <option value="gemini-3.7-flash-8b" ${configs.gemini_model === 'gemini-3.7-flash-8b' || configs.ai_model === 'gemini-3.7-flash-8b' ? 'selected' : ''}>gemini-3.7-flash-8b (Cơ bản)</option>
+                                <option value="gemini-3.6-flash" ${configs.gemini_model === 'gemini-3.6-flash' || configs.ai_model === 'gemini-3.6-flash' ? 'selected' : ''}>gemini-3.6-flash (Ổn định nhất - Khuyên dùng)</option>
+                                <option value="gemini-flash-latest" ${configs.gemini_model === 'gemini-flash-latest' || configs.ai_model === 'gemini-flash-latest' ? 'selected' : ''}>gemini-flash-latest (Tự động cập nhật)</option>
                             </select>
                         </div>
                         <div>

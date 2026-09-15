@@ -341,6 +341,11 @@ export default class LayoutController {
                 const AdminSystemController = module.default;
                 this.childController = new AdminSystemController();
             }).catch(err => console.error(err));
+        } else if (menuId === 'menu-admin-audit') {
+            import('./AdminAuditController.js').then(module => {
+                const AdminAuditController = module.default;
+                this.childController = new AdminAuditController();
+            }).catch(err => console.error(err));
         } else if (menuId === 'menu-staff-pos') {
             import('./StaffPOSController.js').then(module => {
                 const StaffPOSController = module.default;

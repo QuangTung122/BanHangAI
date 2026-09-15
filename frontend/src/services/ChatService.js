@@ -1,7 +1,7 @@
 export default class ChatService {
     static async streamChat(message, history, onChunk, onDone, onError) {
         try {
-            const token = localStorage.getItem('ecom_token');
+            const token = localStorage.getItem('token');
             const headers = {
                 'Content-Type': 'application/json'
             };
@@ -14,7 +14,12 @@ export default class ChatService {
             });
 
             if (!response.ok) {
-                throw new Error('Không thể kết nối đến máy chủ AI');
+                let errorMsg = 'Không thể kết nối đến máy chủ AI';
+                try {
+                    const errorData = await response.json();
+                    if (errorData.message) errorMsg = errorData.message;
+                } catch(e) {}
+                throw new Error(errorMsg);
             }
 
             const reader = response.body.getReader();
