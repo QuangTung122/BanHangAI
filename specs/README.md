@@ -1,21 +1,9 @@
-# Specs (Đặc tả hệ thống)
+# Specs (Tài Liệu Đặc Tả Hệ Thống)
 
-Thư mục này là trái tim tài liệu kỹ thuật của dự án **BanHangAI**, chứa các tài liệu đặc tả (Specifications) chi tiết về toàn bộ hệ thống. Các tài liệu ở đây là nền tảng để phát triển Frontend, Backend và kiểm thử phần mềm.
+Thư mục này chứa "Bản thiết kế tòa nhà" BanHangAI. Đây là bộ hồ sơ đồ sộ được viết cực kỳ chi tiết (mức độ Code-level) dành cho lập trình viên và QA.
 
-## 📁 Cấu trúc thư mục
-
-- **`requirements/`**: Đặc tả yêu cầu hệ thống.
-  - Phân tích nghiệp vụ, định nghĩa các tác nhân (Actors: Admin, Owner, Staff, Customer).
-  - Chi tiết Use Cases và User Stories.
-- **`design/`**: Đặc tả thiết kế hệ thống.
-  - **Kiến trúc (Architecture):** System Architecture, API Specs.
-  - **Cơ sở dữ liệu (Database):** Lược đồ thực thể - liên kết (ERD), Data Dictionary.
-  - **AI Integration:** Các luồng tích hợp Trợ lý AI, Prompt Engineering cho AI Insight, cơ chế Chat Streaming.
-  - **UI/UX:** Wireframes, sơ đồ luồng điều hướng giao diện.
-  - **Modules:** Đặc tả nghiệp vụ lõi (POS, Trả góp, Dòng tiền, Kho hàng, Chat nội bộ).
-- **`testing/`**: Kịch bản kiểm thử (Test Scenarios) và ca kiểm thử (Test Cases) cho toàn bộ hệ thống, đảm bảo chất lượng phần mềm (QA).
-- `dieu_khoan_su_dung.md`: Tài liệu quy định về pháp lý, quyền hạn và trách nhiệm khi sử dụng hệ thống.
-
-## 📝 Quy chuẩn cập nhật
-
-Khi có bất kỳ thay đổi lớn nào về mặt tính năng (ví dụ: bổ sung cột vào cơ sở dữ liệu, thêm một RESTful route mới), các tài liệu trong thư mục `specs/` bắt buộc phải được cập nhật đồng bộ **trước khi** hoặc **cùng lúc** với việc viết code.
+## 📂 Các giai đoạn tài liệu (SDLC)
+- **`requirements/`**: Giai đoạn phân tích (Business Analysis). Chứa User Stories (chia theo Epic), Sơ đồ luồng nghiệp vụ UML (Mermaid), Từ điển dữ liệu (Database Dictionary) với 10 bảng DB thực tế, và Các yêu cầu Phi chức năng.
+- **`design/`**: Giai đoạn thiết kế. Chứa bản vẽ giao diện (Wireframe ASCII), và Sơ đồ kiến trúc thực thể (System ERD).
+- **`development/`**: Giai đoạn đánh giá code. File tài liệu ánh xạ chính xác những dòng code, Controller, Model đang tồn tại thật trong thư mục `backend` và `frontend`. Chứa cả đặc tả API Swagger.
+- **`testing/`**: Báo cáo kiểm thử tự động. Quét code thực tế để chấm điểm PASS/FAIL cho từng tính năng. Có kèm lời nhận xét đánh giá từ AI QA.

@@ -1,73 +1,19 @@
-# BanHangAI - Backend API
+# Backend - BanHangAI API
 
-Đây là hệ thống Backend cho dự án **BanHangAI**, cung cấp các API RESTful để quản lý doanh nghiệp và tích hợp Trợ lý AI cũng như hệ thống giao tiếp nội bộ. Backend được phát triển dựa trên môi trường Node.js.
+Đây là trái tim của hệ thống BanHangAI, cung cấp các RESTful API phục vụ Frontend và giao tiếp với nền tảng Trí tuệ Nhân tạo (LLM).
 
-## 🛠 Công Nghệ Sử Dụng
+## 🛠 Tech Stack
+- **Runtime:** Node.js
+- **Database:** SQLite (Mặc định) / MySQL
+- **Bảo mật:** JWT (JSON Web Token), bcrypt (Mã hóa mật khẩu).
+- **AI Integration:** OpenAI API SDK / Google Generative AI SDK.
 
-- **Node.js** & **Express.js**: Xây dựng web server và xử lý các route RESTful API.
-- **Cơ sở dữ liệu (Database)**: SQLite (`sqlite3`) - Cơ sở dữ liệu nhẹ, quản lý tập trung tại `database/ecom_ai.db`.
-- **Bảo mật**: `bcrypt` (Mã hóa mật khẩu) và `jsonwebtoken` (Xác thực JWT Auth). Xử lý phân quyền qua Middleware.
-- **Upload File**: Xử lý multipart/form-data thông qua `multer` (Lưu file tại thư mục `uploads/`).
-- **Tích hợp AI**: Hỗ trợ gọi API Gemini hoặc Local LLM (Ollama) để xử lý tính năng Trợ lý thông minh.
-- **CORS**: Hỗ trợ gọi API từ Frontend (Cross-Origin Resource Sharing).
-- **Môi trường**: Quản lý biến môi trường qua `dotenv`.
+## 📂 Cấu trúc
+- **`src/routes/`**: Định nghĩa các Endpoint giao tiếp với ngoài.
+- **`src/controllers/`**: Xử lý logic nghiệp vụ, gọi Transaction tới Database.
+- **`src/services/`**: Chứa logic gọi API AI (Tạo System Prompt, Inject context) và các logic phức tạp.
+- **`src/middlewares/`**: `authMiddleware.js` (chặn request không có JWT), phân quyền Admin/Owner/Staff.
 
-## 📁 Cấu Trúc Thư Mục (Kiến trúc phân tầng)
-
-- `server.js`: ĐIỂM VÀO CHÍNH (Bootstrap). Khởi chạy Express app, phục vụ file tĩnh và đăng ký các Routes.
-- `package.json`: Quản lý các dependencies và scripts.
-- `database/`: Chứa file cơ sở dữ liệu SQLite (`ecom_ai.db`), script khởi tạo (`init.sql`).
-- `uploads/`: Chứa các tệp đính kèm người dùng tải lên.
-- `src/`: Thư mục mã nguồn chính, phân chia theo chuẩn MVC/Layered.
-  - `routes/`: Định nghĩa các API endpoints và ánh xạ (map) tới các controllers.
-  - `middlewares/`: Chứa các hàm middleware kiểm tra, bảo vệ (auth, phân quyền role, error handler).
-  - `controllers/`: Nơi chứa logic xử lý request/response chính yếu cho từng nghiệp vụ (order, transaction, user, chat...).
-  - `services/`: Xử lý logic nghiệp vụ lõi hoặc giao tiếp bên ngoài (VD: AI Service, DB Service).
-- `environments/`: Cấu hình cho các môi trường khác nhau.
-- `tests/`: Chứa các bài test (kiểm thử) cho hệ thống (Unit test, API test).
-
-## ⚙️ Hướng Dẫn Cài Đặt và Khởi Chạy
-
-### 1. Yêu Cầu Hệ Thống
-- Node.js (Phiên bản khuyến nghị: v18+ hoặc v20+)
-
-### 2. Cài Đặt Dependencies
-
-Di chuyển vào thư mục `backend` và chạy lệnh sau:
-```bash
-npm install
-```
-
-### 3. Cấu Hình Biến Môi Trường
-
-Tạo file `.env` ở thư mục gốc của `backend`:
-```env
-PORT=5000
-JWT_SECRET=your_jwt_secret_key_here
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-### 4. Khởi Chạy Server
-
-- **Chạy môi trường phát triển (tự động reload khi code thay đổi):**
-  ```bash
-  npm run dev
-  ```
-- **Chạy môi trường sản phẩm (Production mode):**
-  ```bash
-  npm start
-  ```
-
-Mặc định server sẽ khởi chạy tại: `http://localhost:5000`
-
-## 📡 Danh Sách Các Module API Chính
-
-- **`/api/auth`**: Đăng nhập, đăng ký, xác thực.
-- **`/api/users`**: Quản lý người dùng, nhân viên.
-- **`/api/products`**: Quản lý kho hàng, sản phẩm.
-- **`/api/orders`**: Quản lý đơn hàng.
-- **`/api/transactions`**: Quản lý sổ quỹ, thu chi.
-- **`/api/attendance`**: Chấm công nhân viên.
-- **`/api/dashboard`**: Dữ liệu thống kê doanh thu.
-- **`/api/chat`**: Giao tiếp với Trợ lý AI và tính năng Chat nội bộ (Team Chat) giữa các nhân viên.
-- **`/api/system` / `/api/notifications`**: Quản lý hệ thống và thông báo theo thời gian thực.
+## 🔒 Quy tắc Code
+- **Không bao giờ** commit file `.env` chứa khóa bí mật lên Git.
+- **Transaction:** Mọi giao dịch thay đổi dòng tiền (Cashflow) và Tồn kho (Stock) phải sử dụng DB Transaction (BEGIN -> COMMIT / ROLLBACK) để chống đua lệnh (Race Condition).

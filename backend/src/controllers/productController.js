@@ -41,7 +41,7 @@ export const getCategories = async (req, res) => {
 
 export const createProduct = async (req, res) => {
     try {
-        const { sku, name, category_id, unit, import_price, price, discount_percent, image_url, stock_quantity, low_stock_threshold, description, is_active, tags } = req.body;
+        const { sku, name, category_id, unit, import_price, price, discount_percent, image_url, stock_quantity, low_stock_threshold, description, is_active, tags, warranty_months } = req.body;
         
         let baseSlug = name.toLowerCase()
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -61,9 +61,9 @@ export const createProduct = async (req, res) => {
         }
         
         await db.run(
-            `INSERT INTO products (sku, name, slug, category_id, unit, import_price, price, discount_percent, image_url, stock_quantity, low_stock_threshold, description, is_active, tags)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [sku, name, slug, category_id, unit, import_price, price, discount_percent, image_url, stock_quantity, low_stock_threshold, description, is_active !== undefined ? is_active : 1, tags || '']
+            `INSERT INTO products (sku, name, slug, category_id, unit, import_price, price, discount_percent, image_url, stock_quantity, low_stock_threshold, description, is_active, tags, warranty_months)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [sku, name, slug, category_id, unit, import_price, price, discount_percent, image_url, stock_quantity, low_stock_threshold, description, is_active !== undefined ? is_active : 1, tags || '', warranty_months || 0]
         );
         res.status(201).json({ success: true, message: 'Thêm sản phẩm thành công' });
     } catch (error) {
@@ -75,7 +75,7 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const { sku, name, category_id, unit, import_price, price, discount_percent, image_url, stock_quantity, low_stock_threshold, description, is_active, tags } = req.body;
+        const { sku, name, category_id, unit, import_price, price, discount_percent, image_url, stock_quantity, low_stock_threshold, description, is_active, tags, warranty_months } = req.body;
         
         let baseSlug = name.toLowerCase()
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -95,8 +95,8 @@ export const updateProduct = async (req, res) => {
         }
 
         await db.run(
-            `UPDATE products SET sku=?, name=?, slug=?, category_id=?, unit=?, import_price=?, price=?, discount_percent=?, image_url=?, stock_quantity=?, low_stock_threshold=?, description=?, is_active=?, tags=? WHERE id=?`,
-            [sku, name, slug, category_id, unit, import_price, price, discount_percent, image_url, stock_quantity, low_stock_threshold, description, is_active, tags || '', id]
+            `UPDATE products SET sku=?, name=?, slug=?, category_id=?, unit=?, import_price=?, price=?, discount_percent=?, image_url=?, stock_quantity=?, low_stock_threshold=?, description=?, is_active=?, tags=?, warranty_months=? WHERE id=?`,
+            [sku, name, slug, category_id, unit, import_price, price, discount_percent, image_url, stock_quantity, low_stock_threshold, description, is_active, tags || '', warranty_months || 0, id]
         );
         res.status(200).json({ success: true, message: 'Cập nhật sản phẩm thành công' });
     } catch (error) {

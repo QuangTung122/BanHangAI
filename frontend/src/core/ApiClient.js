@@ -1,6 +1,6 @@
 export default class ApiClient {
-   static baseUrl = '/api';
-   // static baseUrl = 'http://localhost:5000/api'; 
+   //static baseUrl = '/api';
+   static baseUrl = 'http://localhost:5000/api'; 
 
     static async request(endpoint, options = {}) {
         const url = `${this.baseUrl}${endpoint}`;

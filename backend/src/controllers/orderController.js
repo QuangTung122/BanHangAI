@@ -93,7 +93,7 @@ export const getOrders = async (req, res) => {
         // Lấy items và payments cho mỗi order
         for (let order of orders) {
             order.items = await db.query(`
-                SELECT oi.*, p.name as product_name 
+                SELECT oi.*, p.name as product_name, p.warranty_months
                 FROM order_items oi 
                 LEFT JOIN products p ON oi.product_id = p.id 
                 WHERE oi.order_id = ?

@@ -10,6 +10,8 @@ CREATE TABLE users (
     phone TEXT,
     role TEXT DEFAULT 'staff' CHECK(role IN ('admin', 'owner', 'staff')),
     is_active BOOLEAN DEFAULT 1,
+    hourly_wage REAL DEFAULT 25000,
+    current_token TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -37,6 +39,13 @@ CREATE TABLE products (
     stock_quantity INTEGER NOT NULL DEFAULT 0,
     image_url TEXT,
     is_active BOOLEAN DEFAULT 1,
+    sku TEXT, 
+    unit TEXT, 
+    import_price INTEGER, 
+    discount_percent INTEGER DEFAULT 0, 
+    low_stock_threshold INTEGER DEFAULT 5, 
+    tags TEXT,
+    warranty_months INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE SET NULL
 );
@@ -49,6 +58,11 @@ CREATE TABLE orders (
     customer_phone TEXT,
     shipping_address TEXT,
     status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled')),
+    payment_type TEXT DEFAULT 'full',
+    customer_cccd TEXT,
+    installment_term INTEGER,
+    monthly_fee INTEGER,
+    payment_method TEXT DEFAULT 'cash',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
 );
@@ -144,7 +158,45 @@ CREATE TABLE audit_logs (
     action_type TEXT NOT NULL,
     action_desc TEXT NOT NULL,
     details TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE installment_payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id INTEGER NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    cashier_id INTEGER,
+    payment_method TEXT DEFAULT 'cash',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(order_id) REFERENCES orders(id),
+    FOREIGN KEY(cashier_id) REFERENCES users(id)
+);
+
+CREATE TABLE attendance (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    date TEXT NOT NULL,
+    check_in_time TEXT NOT NULL,
+    check_out_time TEXT,
+    total_hours REAL DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
+    amount REAL NOT NULL,
+    category TEXT NOT NULL,
+    description TEXT,
+    reference_id INTEGER,
+    user_id INTEGER NOT NULL,
+    payment_method TEXT DEFAULT 'cash',
+    source TEXT DEFAULT 'manual',
+    invoice_id TEXT,
+    attachment_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE chat_sessions (

@@ -193,7 +193,7 @@ export default class OwnerProductView {
                                     <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs">3</span>
                                     Tồn kho & Quản lý
                                 </h4>
-                                <div class="grid grid-cols-3 gap-5">
+                                <div class="grid grid-cols-4 gap-5">
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-1">Số lượng kho *</label>
                                         <input type="number" id="prod-stock" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none" value="0">
@@ -201,6 +201,10 @@ export default class OwnerProductView {
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-1">Mức cảnh báo hết</label>
                                         <input type="number" id="prod-low-stock" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none" value="5">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-500 mb-1">Bảo hành (tháng)</label>
+                                        <input type="number" id="prod-warranty" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-inner transition-all focus:ring-1 focus:ring-indigo-500 outline-none" value="0" min="0">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold text-slate-500 mb-1">Trạng thái bán</label>
@@ -314,6 +318,7 @@ export default class OwnerProductView {
                     tags: document.getElementById('prod-tags').value,
                     stock_quantity: parseInt(document.getElementById('prod-stock').value || 0),
                     low_stock_threshold: parseInt(document.getElementById('prod-low-stock').value || 5),
+                    warranty_months: parseInt(document.getElementById('prod-warranty').value || 0),
                     is_active: parseInt(document.getElementById('prod-status').value || 1),
                     description: document.getElementById('prod-desc').value,
                 };
@@ -348,6 +353,7 @@ export default class OwnerProductView {
             document.getElementById('prod-tags').value = product.tags || '';
             document.getElementById('prod-stock').value = product.stock_quantity || 0;
             document.getElementById('prod-low-stock').value = product.low_stock_threshold || 5;
+            document.getElementById('prod-warranty').value = product.warranty_months || 0;
             document.getElementById('prod-status').value = product.is_active !== undefined ? product.is_active : 1;
             document.getElementById('prod-desc').value = product.description || '';
         } else {
@@ -355,6 +361,7 @@ export default class OwnerProductView {
             document.getElementById('prod-id').value = '';
             document.getElementById('prod-sku').value = 'SKU-' + Date.now().toString().slice(-6);
             document.getElementById('prod-tags').value = '';
+            document.getElementById('prod-warranty').value = '0';
         }
 
         this.modal.classList.remove('hidden');
@@ -378,8 +385,9 @@ export default class OwnerProductView {
         document.getElementById('prod-image').value = product.image_url || '';
         document.getElementById('prod-tags').value = product.tags || '';
         document.getElementById('prod-stock').value = product.stock_quantity || 0;
-            document.getElementById('prod-low-stock').value = product.low_stock_threshold || 5;
-            document.getElementById('prod-status').value = product.is_active !== undefined ? product.is_active : 1;
+        document.getElementById('prod-low-stock').value = product.low_stock_threshold || 5;
+        document.getElementById('prod-warranty').value = product.warranty_months || 0;
+        document.getElementById('prod-status').value = product.is_active !== undefined ? product.is_active : 1;
         document.getElementById('prod-desc').value = product.description || '';
     }
 

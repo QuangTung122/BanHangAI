@@ -65,6 +65,10 @@ export default class StaffPOSController {
             });
         }
 
+        // Phím tắt (Keyboard Shortcuts)
+        this.handleKeydown = this.handleKeydown.bind(this);
+        document.addEventListener('keydown', this.handleKeydown);
+
         // Sự kiện trên bảng Sản phẩm (Thêm vào giỏ)
         const productList = container.querySelector('#pos-product-list');
         if (productList) {
@@ -74,11 +78,19 @@ export default class StaffPOSController {
                     const productId = parseInt(btn.dataset.id);
                     const product = this.productModel.products.find(p => p.id === productId);
                     if (product) {
-                        const res = this.cartModel.addItem(product);
-                        if (res.success) {
-                            this.view.updateCart(this.cartModel.items, this.cartModel.getTotalPrice());
-                        } else {
-                            alert(res.message);
+                        const qtyStr = prompt(`Nhập số lượng cho ${product.name}:`, "1");
+                        if (qtyStr !== null) {
+                            const qty = parseInt(qtyStr, 10);
+                            if (isNaN(qty) || qty <= 0) {
+                                alert("Số lượng không hợp lệ!");
+                                return;
+                            }
+                            const res = this.cartModel.addItem(product, qty);
+                            if (res.success) {
+                                this.view.updateCart(this.cartModel.items, this.cartModel.getTotalPrice());
+                            } else {
+                                alert(res.message);
+                            }
                         }
                     }
                 }
@@ -407,7 +419,30 @@ export default class StaffPOSController {
         this.view.updateProductList(this.productModel.products);
     }
 
+    handleKeydown(e) {
+        // Chỉ bắt phím tắt khi không gõ trong các input khác (ngoại trừ ô tìm kiếm pos-search)
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+            if (e.target.id !== 'pos-search') return;
+        }
+        
+        if (e.key === 'F1') {
+            e.preventDefault();
+            this.handleCheckout();
+        } else if (e.key === 'F2') {
+            e.preventDefault();
+            const searchInput = this.view.container.querySelector('#pos-search');
+            if (searchInput) searchInput.focus();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            if (this.cartModel.items.length > 0 && confirm('Bạn có chắc muốn xóa sạch giỏ hàng?')) {
+                this.cartModel.clearCart();
+                this.view.updateCart(this.cartModel.items, this.cartModel.getTotalPrice());
+            }
+        }
+    }
+
     destroy() {
+        document.removeEventListener('keydown', this.handleKeydown);
         if (this.view.container) {
             this.view.container.innerHTML = '';
         }

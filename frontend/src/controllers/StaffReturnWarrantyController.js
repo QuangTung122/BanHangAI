@@ -97,6 +97,15 @@ export default class StaffReturnWarrantyController {
             if (submitBtn) {
                 const selectedItem = (this.selectedOrder?.items || []).find(i => Number(i.id) === Number(submitBtn.dataset.itemId || document.querySelector('.action-btn')?.dataset.itemId));
                 const reason = container.querySelector('#return-reason')?.value || 'Khách yêu cầu xử lý';
+                    let remainingDays = 0;
+                    if (selectedItem?.warranty_months) {
+                        const orderDate = new Date(this.selectedOrder.created_at);
+                        const expireDate = new Date(orderDate);
+                        expireDate.setMonth(expireDate.getMonth() + selectedItem.warranty_months);
+                        const diff = expireDate.getTime() - new Date().getTime();
+                        remainingDays = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+                    }
+
                 const payload = {
                     order_id: this.selectedOrder?.id,
                     customer_id: null,
@@ -114,7 +123,7 @@ export default class StaffReturnWarrantyController {
                         unit_price: selectedItem?.unit_price || 0,
                         condition_status: container.querySelector('#return-condition')?.value || 'new',
                         defect_type: this.currentTab === 'warranty' ? (container.querySelector('#warranty-type')?.value || 'repair') : null,
-                        warranty_remaining_days: 180,
+                        warranty_remaining_days: remainingDays,
                         refund_amount: 0,
                         exchange_to_product_id: container.querySelector('#return-exchange-product')?.value || null,
                         exchange_delta_amount: 0
@@ -122,6 +131,11 @@ export default class StaffReturnWarrantyController {
                 };
 
                 if (this.currentTab === 'warranty') {
+                    const warrantyMonths = selectedItem?.warranty_months || 0;
+                    const startDate = new Date(this.selectedOrder.created_at || Date.now());
+                    const endDate = new Date(startDate);
+                    endDate.setMonth(endDate.getMonth() + warrantyMonths);
+
                     const warranty = {
                         order_id: this.selectedOrder?.id,
                         order_item_id: selectedItem?.id,
@@ -130,9 +144,9 @@ export default class StaffReturnWarrantyController {
                         customer_name: this.selectedOrder?.customer_name,
                         customer_phone: this.selectedOrder?.customer_phone,
                         serial_number: 'SN-' + Date.now(),
-                        warranty_months: 12,
-                        warranty_start_date: new Date().toISOString(),
-                        warranty_end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+                        warranty_months: warrantyMonths,
+                        warranty_start_date: startDate.toISOString(),
+                        warranty_end_date: endDate.toISOString(),
                         claim_type: container.querySelector('#warranty-type')?.value || 'repair',
                         issue_description: reason,
                         issue_code: 'GENERAL',

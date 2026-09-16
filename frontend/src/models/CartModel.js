@@ -4,19 +4,19 @@ export default class CartModel {
         this.items = [];
     }
 
-    addItem(product) {
+    addItem(product, qty = 1) {
         const exist = this.items.find(item => item.product.id === product.id);
         if (exist) {
-            if (exist.quantity < product.stock_quantity) {
-                exist.quantity += 1;
+            if (exist.quantity + qty <= product.stock_quantity) {
+                exist.quantity += qty;
             } else {
                 return { success: false, message: 'Vượt quá số lượng tồn kho' };
             }
         } else {
-            if (product.stock_quantity > 0) {
-                this.items.push({ product, quantity: 1 });
+            if (product.stock_quantity >= qty) {
+                this.items.push({ product, quantity: qty });
             } else {
-                return { success: false, message: 'Sản phẩm đã hết hàng' };
+                return { success: false, message: 'Sản phẩm không đủ tồn kho' };
             }
         }
         return { success: true };

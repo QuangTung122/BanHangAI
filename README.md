@@ -1,65 +1,27 @@
-# Hệ Thống Quản Lý Bán Hàng Tích Hợp Trí Tuệ Nhân Tạo (E-Com AI) 🤖📦
+# BanHangAI - Hệ thống Quản lý Bán hàng Tích hợp AI
 
-Một giải pháp phần mềm quản trị bán hàng toàn diện, áp dụng sức mạnh của **Trí tuệ nhân tạo (Generative AI)** để tự động hóa việc tư vấn khách hàng, phân tích dữ liệu kinh doanh và nâng cao hiệu suất làm việc nhóm. Hệ thống được thiết kế theo hướng bảo mật dữ liệu tuyệt đối nhờ tích hợp local LLM.
+Chào mừng đến với dự án **BanHangAI**. Đây là một nền tảng phần mềm bán lẻ toàn diện, ứng dụng kiến trúc chuẩn MVC và tích hợp sức mạnh của Trí tuệ Nhân tạo (OpenAI/Gemini) trực tiếp vào luồng nghiệp vụ. Hệ thống được thiết kế tối ưu cho 3 vai trò: **Quản Trị Viên (Admin), Chủ Cửa Hàng (Owner), và Nhân Viên (Staff)**.
 
-## 🌟 Tính năng nổi bật
+## 🌟 Điểm nổi bật của BanHangAI
+- **Quản trị toàn diện (11 Modules):** Bao gồm POS Bán hàng, Trả góp, Bảo hành, Sổ quỹ, Chấm công, Chat nội bộ và Nhật ký hệ thống.
+- **Tích hợp Trợ lý AI (LLM):** 
+  - Chatbot tư vấn sản phẩm trực tiếp cho nhân viên dựa trên tồn kho thực tế (Context-aware).
+  - Trí tuệ nhân tạo tự động phân tích doanh thu và đưa ra Insight kinh doanh cho Chủ cửa hàng.
+- **Kiến trúc rõ ràng:** Phân tách Frontend (Vanilla JS MVC) và Backend (Node.js REST API).
+- **Tài liệu hoàn chỉnh:** Dự án này tự hào sở hữu một bộ đặc tả kỹ thuật (Specs) và phân tích nghiệp vụ (BA) chi tiết nhất, được hỗ trợ sinh ra bởi AI Agent.
 
-### Chức năng Quản lý (Lõi hệ thống)
-* **Phân quyền linh hoạt:** Hỗ trợ nhiều vai trò (Admin, Owner, Staff, Customer).
-* **Màn hình Bán hàng (POS):** Tìm kiếm siêu tốc, hỗ trợ phân loại. Chức năng lập hóa đơn thanh toán trả thẳng hoặc **Trả góp** (tính toán chi phí tự động).
-* **Quản lý Tồn kho:** Tự động trừ tồn kho khi thanh toán thành công.
-* **Dashboard Thống kê:** Báo cáo doanh thu, sản phẩm bán chạy, cảnh báo sản phẩm sắp hết hàng qua biểu đồ trực quan.
-* **Chat Nội Bộ (Team Chat):** Hỗ trợ liên lạc theo thời gian thực giữa các nhân viên, chủ cửa hàng và quản trị viên ngay trên hệ thống.
+## 📂 Cấu trúc thư mục cốt lõi
+Vui lòng tham khảo các file `README.md` nằm bên trong từng thư mục để hiểu rõ cách thức hoạt động của chúng:
+- 📁 **[backend/](./backend/README.md)**: Chứa mã nguồn Node.js API (Routes, Controllers, Services).
+- 📁 **[frontend/](./frontend/README.md)**: Chứa mã nguồn Giao diện MVC Vanilla JS.
+- 📁 **[docs/](./docs/README.md)**: Chứa Hướng dẫn sử dụng và Hướng dẫn triển khai DevOps.
+- 📁 **[specs/](./specs/README.md)**: Trung tâm đặc tả kỹ thuật (Requirements, Design, Development, Testing).
+- 📁 **[prompts/](./prompts/README.md)**: Nơi lưu trữ các câu lệnh Prompt xuất sắc dùng để điều khiển AI Agent tự động code và viết Specs.
+- 📁 **[scratch/](./scratch/README.md)**: Thư mục chứa script tạm thời của AI.
 
-### Điểm nhấn Trí tuệ Nhân tạo (AI)
-* **Trợ lý Ảo (Chatbot Tư vấn):** Khách hàng/Nhân viên có thể chat bằng ngôn ngữ tự nhiên. AI nắm được kho hàng thực tế để đưa ra gợi ý sản phẩm phù hợp.
-* **AI Insight (Phân tích Kinh doanh):** Chủ cửa hàng chỉ cần bấm 1 nút, AI sẽ tự động đọc số liệu biểu đồ doanh thu và đưa ra nhận xét chiến lược nhập/bán hàng thông minh.
-* **Bảo mật dữ liệu tuyệt đối:** Sử dụng **Ollama** chạy mô hình cục bộ (`qwen2.5-coder` / `llama3`), không gửi dữ liệu khách hàng ra các dịch vụ API bên ngoài.
+## 🚀 Khởi động nhanh (Quick Start)
+1. Đọc kỹ file `docs/operations/deployment-guide.md` để cấu hình biến môi trường `.env`.
+2. Khởi tạo Database: `cd backend && npm run db:init`.
+3. Chạy hệ thống qua Docker: `docker-compose up -d --build`.
 
----
-
-## 🛠 Công nghệ sử dụng (Tech Stack)
-
-* **Frontend:** Single Page Application (SPA), Vanilla JavaScript, HTML5, CSS3, **Tailwind CSS**. Tự động định tuyến (Hash Router) không cần reload trang.
-* **Backend:** Node.js, Express.js.
-* **Database:** SQLite3 (gọn nhẹ, không cần cài đặt SQL Server phức tạp).
-* **AI Engine:** Ollama (tích hợp qua Local API).
-
----
-
-## 🚀 Hướng dẫn Cài đặt & Chạy dự án
-
-### Yêu cầu tiên quyết
-1. Cài đặt **Node.js** (v18 trở lên).
-2. Cài đặt **Ollama** (từ [ollama.com](https://ollama.com)) và tải model bằng lệnh: `ollama run qwen2.5-coder:1.5b`.
-
-### Các bước khởi chạy
-1. **Clone mã nguồn:**
-   ```bash
-   git clone <repo_url>
-   cd BanHangAI
-   ```
-2. **Cài đặt thư viện Backend:**
-   ```bash
-   cd backend
-   npm install
-   ```
-3. **Khởi tạo Cơ sở dữ liệu (nếu cần):**
-   ```bash
-   sqlite3 database/ecom_ai.db < database/init.sql
-   ```
-4. **Khởi động Server:**
-   ```bash
-   npm start
-   # Server sẽ chạy tại http://localhost:5000
-   ```
-
----
-
-## 🔑 Tài khoản Demo (Dữ liệu mẫu)
-
-Hệ thống đã có sẵn dữ liệu test (sản phẩm, cấu hình AI, nhân sự). Bạn có thể đăng nhập bằng các tài khoản sau (Mật khẩu mặc định: `123456`):
-* **Quản trị viên (Admin):** `admin`
-* **Chủ cửa hàng (Owner):** `owner` (để trải nghiệm Dashboard & AI Insight)
-* **Nhân viên bán hàng (Staff):** `staff` (để trải nghiệm POS, Trả góp & Chat Nội Bộ)
-* **Khách hàng (Customer):** `customer1`
+*Lưu ý kỷ luật:* Mọi cấu trúc và thiết kế hệ thống phải bám sát tài liệu `codebasemap.md` và `ANTIGRAVITY.md`.
