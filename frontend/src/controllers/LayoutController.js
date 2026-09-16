@@ -367,6 +367,11 @@ export default class LayoutController {
                 const StaffInstallmentController = module.default;
                 this.childController = new StaffInstallmentController();
             }).catch(err => console.error(err));
+        } else if (menuId === 'menu-staff-return-warranty') {
+            import('./StaffReturnWarrantyController.js').then(module => {
+                const StaffReturnWarrantyController = module.default;
+                this.childController = new StaffReturnWarrantyController();
+            }).catch(err => console.error(err));
         } else if (menuId === 'menu-staff-inventory') {
             import('./StaffProductController.js').then(module => {
                 const StaffProductController = module.default;

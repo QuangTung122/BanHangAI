@@ -161,6 +161,7 @@ export default class LayoutView {
             menus.push({ id: 'menu-staff-inventory', icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', text: 'Tra cứu tồn kho' });
             menus.push({ id: 'menu-staff-orders', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01', text: 'Lịch sử hóa đơn' });
             menus.push({ id: 'menu-staff-installment', icon: 'M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z', text: 'Quản lý trả góp' });
+            menus.push({ id: 'menu-staff-return-warranty', icon: 'M8 7h12m-12 5h12M8 17h12M4 7h.01M4 12h.01M4 17h.01', text: 'Đổi trả & Bảo hành' });
             menus.push({ id: 'menu-staff-attendance', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', text: 'Chấm công của tôi' });
         }
 

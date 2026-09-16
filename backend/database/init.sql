@@ -63,6 +63,90 @@ CREATE TABLE order_items (
     FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
+CREATE TABLE returns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id INTEGER NOT NULL,
+    customer_id INTEGER,
+    customer_name TEXT,
+    customer_phone TEXT,
+    return_type TEXT NOT NULL CHECK(return_type IN ('exchange', 'refund', 'store_credit')),
+    reason TEXT,
+    requested_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    processed_at DATETIME,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected','completed','cancelled')),
+    approved_by INTEGER,
+    refund_amount REAL DEFAULT 0,
+    exchange_product_id INTEGER,
+    notes TEXT,
+    created_by INTEGER NOT NULL,
+    is_active INTEGER DEFAULT 1,
+    FOREIGN KEY(order_id) REFERENCES orders(id),
+    FOREIGN KEY(customer_id) REFERENCES users(id),
+    FOREIGN KEY(approved_by) REFERENCES users(id),
+    FOREIGN KEY(exchange_product_id) REFERENCES products(id),
+    FOREIGN KEY(created_by) REFERENCES users(id)
+);
+
+CREATE TABLE return_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    return_id INTEGER NOT NULL,
+    order_item_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    product_name TEXT,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    unit_price REAL NOT NULL,
+    condition_status TEXT NOT NULL CHECK(condition_status IN ('new','used','damaged','defective','wrong_item')),
+    defect_type TEXT,
+    warranty_remaining_days INTEGER DEFAULT 0,
+    refund_amount REAL DEFAULT 0,
+    exchange_to_product_id INTEGER,
+    exchange_delta_amount REAL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected','completed')),
+    FOREIGN KEY(return_id) REFERENCES returns(id),
+    FOREIGN KEY(order_item_id) REFERENCES order_items(id),
+    FOREIGN KEY(product_id) REFERENCES products(id),
+    FOREIGN KEY(exchange_to_product_id) REFERENCES products(id)
+);
+
+CREATE TABLE warranty_claims (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id INTEGER,
+    order_item_id INTEGER,
+    product_id INTEGER NOT NULL,
+    customer_id INTEGER,
+    customer_name TEXT,
+    customer_phone TEXT,
+    serial_number TEXT,
+    warranty_start_date DATETIME,
+    warranty_end_date DATETIME,
+    warranty_months INTEGER NOT NULL,
+    claim_type TEXT NOT NULL CHECK(claim_type IN ('repair','replace','refund','inspection')),
+    issue_description TEXT,
+    issue_code TEXT,
+    claimed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','in_review','approved','repairing','repaired','rejected','completed','cancelled')),
+    approved_by INTEGER,
+    created_by INTEGER NOT NULL,
+    notes TEXT,
+    resolution_notes TEXT,
+    is_active INTEGER DEFAULT 1,
+    FOREIGN KEY(order_id) REFERENCES orders(id),
+    FOREIGN KEY(order_item_id) REFERENCES order_items(id),
+    FOREIGN KEY(product_id) REFERENCES products(id),
+    FOREIGN KEY(customer_id) REFERENCES users(id),
+    FOREIGN KEY(approved_by) REFERENCES users(id),
+    FOREIGN KEY(created_by) REFERENCES users(id)
+);
+
+CREATE TABLE audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    action_type TEXT NOT NULL,
+    action_desc TEXT NOT NULL,
+    details TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE chat_sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
