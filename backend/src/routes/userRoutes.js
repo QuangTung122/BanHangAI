@@ -10,6 +10,7 @@ router.use(requireRole(['admin', 'owner']));
 
 router.get('/', userController.getUsers);
 router.post('/', userController.createUser);
+router.put('/:id', userController.updateUser);
 router.put('/:id/role', userController.changeRole);
 router.put('/:id/status', userController.toggleStatus);
 router.put('/:id/reset-password', userController.resetPassword);

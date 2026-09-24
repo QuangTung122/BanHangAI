@@ -9,7 +9,7 @@ export default class AuditModel {
     async fetchLogs(filters = {}) {
         try {
             const query = new URLSearchParams(filters).toString();
-            const res = await ApiClient.get(`/audit-logs?${query}`);
+            const res = await ApiClient.get(`/audit-logs?${query}`); 
             
             if (res.status === 200 && res.data.success) {
                 this.logs = res.data.data;

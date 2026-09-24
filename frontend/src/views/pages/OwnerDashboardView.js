@@ -8,208 +8,152 @@ export default class OwnerDashboardView {
         
         let html = `
             <div class="h-full flex flex-col gap-6 relative">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
+                <!-- 3 Thẻ Chỉ Số Quan Trọng -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 shrink-0">
                     <!-- Doanh thu -->
-                    <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 p-6 flex flex-col relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500">
-                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col relative overflow-hidden group hover:shadow-md transition-all">
+                        <div class="flex items-center gap-3 mb-2.5">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                             </div>
-                            <p class="text-sm font-semibold text-slate-500">Tổng doanh thu</p>
+                            <p class="text-sm font-bold text-slate-700">Tổng doanh thu tích lũy</p>
                         </div>
-                        <h3 class="text-2xl font-black text-slate-800 mb-4">${fmt.format(data.total_revenue || 0)}</h3>
-                        <div class="flex items-center gap-1.5 text-xs text-emerald-500 font-bold mb-4">
-                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                            +18.4% <span class="text-slate-400 font-medium ml-1">so với tuần trước</span>
-                        </div>
-                        <!-- Sparkline Mock -->
-                        <div class="absolute bottom-0 left-0 w-full h-12 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <svg viewBox="0 0 100 30" class="w-full h-full text-indigo-500" preserveAspectRatio="none"><path d="M0,25 C20,20 30,10 50,15 C70,20 80,5 100,2 L100,30 L0,30 Z" fill="url(#grad-indigo)" opacity="0.2"/><path d="M0,25 C20,20 30,10 50,15 C70,20 80,5 100,2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                        <h3 class="text-3xl font-black text-slate-900 mb-3 tracking-tight">${fmt.format(data.total_revenue || 0)}</h3>
+                        <div class="flex items-center gap-2 text-xs font-bold text-emerald-800">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200">
+                                <svg class="w-3 h-3 mr-1 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                                +18.4%
+                            </span>
+                            <span class="text-slate-600 font-semibold">so với tuần trước</span>
                         </div>
                     </div>
                     
                     <!-- Đơn hàng -->
-                    <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 p-6 flex flex-col relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
-                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col relative overflow-hidden group hover:shadow-md transition-all">
+                        <div class="flex items-center gap-3 mb-2.5">
+                            <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                             </div>
-                            <p class="text-sm font-semibold text-slate-500">Đơn hàng hoàn thành</p>
+                            <p class="text-sm font-bold text-slate-700">Đơn hàng hoàn thành</p>
                         </div>
-                        <h3 class="text-2xl font-black text-slate-800 mb-4">${data.completed_orders || 0} <span class="text-base font-bold text-slate-500">đơn</span></h3>
-                        <div class="flex items-center gap-1.5 text-xs text-emerald-500 font-bold mb-4">
-                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                            +25.0% <span class="text-slate-400 font-medium ml-1">so với tuần trước</span>
-                        </div>
-                        <div class="absolute bottom-0 left-0 w-full h-12 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <svg viewBox="0 0 100 30" class="w-full h-full text-blue-400" preserveAspectRatio="none"><path d="M0,20 C30,25 40,5 70,15 C85,20 95,5 100,10 L100,30 L0,30 Z" fill="url(#grad-blue)" opacity="0.2"/><path d="M0,20 C30,25 40,5 70,15 C85,20 95,5 100,10" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                        <h3 class="text-3xl font-black text-slate-900 mb-3 tracking-tight">${data.completed_orders || 0} <span class="text-sm font-bold text-slate-600">đơn</span></h3>
+                        <div class="flex items-center gap-2 text-xs font-bold text-emerald-800">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200">
+                                <svg class="w-3 h-3 mr-1 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                                +25.0%
+                            </span>
+                            <span class="text-slate-600 font-semibold">so với tuần trước</span>
                         </div>
                     </div>
                     
                     <!-- Sắp hết hàng -->
-                    <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 p-6 flex flex-col relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-orange-500">
-                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex flex-col relative overflow-hidden group hover:shadow-md transition-all">
+                        <div class="flex items-center gap-3 mb-2.5">
+                            <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                             </div>
-                            <p class="text-sm font-semibold text-slate-500">Sản phẩm sắp hết hàng</p>
+                            <p class="text-sm font-bold text-slate-700">Cảnh báo tồn kho thấp</p>
                         </div>
-                        <h3 class="text-2xl font-black text-slate-800 mb-4">${data.low_stock_products || 0} <span class="text-base font-bold text-slate-500">sản phẩm</span></h3>
-                        <div class="flex items-center gap-1.5 text-xs text-rose-500 font-bold mb-4">
-                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
-                            -50.0% <span class="text-slate-400 font-medium ml-1">so với tuần trước</span>
-                        </div>
-                        <div class="absolute bottom-0 left-0 w-full h-12 opacity-50 group-hover:opacity-100 transition-opacity">
-                            <svg viewBox="0 0 100 30" class="w-full h-full text-orange-400" preserveAspectRatio="none"><path d="M0,15 C20,10 30,25 50,15 C70,5 80,20 100,5 L100,30 L0,30 Z" fill="url(#grad-orange)" opacity="0.2"/><path d="M0,15 C20,10 30,25 50,15 C70,5 80,20 100,5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+                        <h3 class="text-3xl font-black ${Number(data.low_stock_products) > 0 ? 'text-rose-600' : 'text-slate-900'} mb-3 tracking-tight">
+                            ${data.low_stock_products || 0} <span class="text-sm font-bold text-slate-600">mặt hàng</span>
+                        </h3>
+                        <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md ${Number(data.low_stock_products) > 0 ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-slate-100 text-slate-700'} border">
+                                Ngưỡng tối thiểu: 5
+                            </span>
+                            <span class="text-slate-500 font-medium">Cần lên kế hoạch nhập hàng</span>
                         </div>
                     </div>
-
-
                 </div>
-
-                <!-- Định nghĩa Gradient dùng chung cho SVG -->
-                <svg width="0" height="0" class="hidden">
-                    <defs>
-                        <linearGradient id="grad-indigo" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="currentColor" stop-opacity="1" /><stop offset="100%" stop-color="currentColor" stop-opacity="0" /></linearGradient>
-                        <linearGradient id="grad-blue" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="currentColor" stop-opacity="1" /><stop offset="100%" stop-color="currentColor" stop-opacity="0" /></linearGradient>
-                        <linearGradient id="grad-orange" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="currentColor" stop-opacity="1" /><stop offset="100%" stop-color="currentColor" stop-opacity="0" /></linearGradient>
-                        <linearGradient id="grad-emerald" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="currentColor" stop-opacity="1" /><stop offset="100%" stop-color="currentColor" stop-opacity="0" /></linearGradient>
-                    </defs>
-                </svg>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
-                    <!-- Biểu đồ -->
-                    <div class="lg:col-span-2 bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <div class="w-6 h-6 rounded flex items-center justify-center bg-indigo-50 text-indigo-500">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
-                                </div>
-                                Biểu đồ doanh thu
+                    <!-- Biểu đồ Doanh thu -->
+                    <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                            <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                                Biểu đồ tăng trưởng doanh thu
                             </h3>
-                        <div class="flex items-center gap-2">
-                            <input type="date" id="chart-start-date" class="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 focus:outline-none focus:border-indigo-500">
-                            <span class="text-xs text-slate-400">-</span>
-                            <input type="date" id="chart-end-date" class="px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-600 focus:outline-none focus:border-indigo-500">
-                            <button id="btn-filter-chart" class="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-lg transition-colors">Lọc</button>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <input type="date" id="chart-start-date" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600">
+                                <span class="text-xs text-slate-500 font-bold">-</span>
+                                <input type="date" id="chart-end-date" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:outline-none focus:border-indigo-600">
+                                <button id="btn-filter-chart" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-lg transition-colors shadow-sm">Lọc</button>
+                            </div>
+                        </div>
+                        <div class="flex-1 flex flex-col relative w-full h-full min-h-[260px]">
+                            <canvas id="revenueChart" class="w-full h-full"></canvas>
                         </div>
                     </div>
-                    <div class="flex-1 flex flex-col relative w-full h-full min-h-[250px]">
-                        <canvas id="revenueChart" class="w-full h-full"></canvas>
-                    </div>
-                </div>
                     
                     <!-- Top Bán Chạy -->
-                    <div class="bg-white rounded-[24px] shadow-[0_2px_20px_rgba(0,0,0,0.04)] border border-slate-100 hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                <div class="w-6 h-6 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/></svg>
-                                </div>
-                                Top Bán Chạy Nhất
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col">
+                        <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
+                            <h3 class="text-base font-black text-slate-900 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.316.492-.633 1.135-.867 1.833-.466 1.393-.656 2.924-.656 4.119 0 .8.09 1.547.258 2.213-.306-.237-.582-.544-.805-.91-.295-.483-.497-1.077-.594-1.745a1 1 0 00-1.928.328c.18 1.25.6 2.404 1.22 3.328.62.923 1.488 1.63 2.563 1.936a5.502 5.502 0 004.832-1.408c1.328-1.258 2.05-3.056 2.05-4.887 0-1.785-.694-3.54-1.801-4.896a12.825 12.825 0 00-2-1.977zM10 15a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+                                Top Sản Phẩm Bán Chạy
                             </h3>
-                            <a href="#menu-owner-products" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center">Xem tất cả <svg class="w-3 h-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg></a>
+                            <a href="#menu-owner-products" class="text-xs font-bold text-indigo-600 hover:text-indigo-800">Xem tất cả &rarr;</a>
                         </div>
-                        <div class="flex-1 overflow-auto">
-                            <div class="space-y-5">
+                        <div class="flex-1 overflow-y-auto custom-scrollbar">
+                            <div class="space-y-4">
                                 ${(data.top_products || []).map((p, index) => {
                                     const maxSold = Math.max(...(data.top_products || []).map(x => x.sold));
                                     const progress = maxSold > 0 ? Math.round((p.sold / maxSold) * 100) : 0;
-                                    const colors = [
-                                        {bg: 'bg-amber-100', text: 'text-amber-600'},
-                                        {bg: 'bg-slate-100', text: 'text-slate-600'},
-                                        {bg: 'bg-rose-100', text: 'text-rose-600'},
-                                        {bg: 'bg-blue-50', text: 'text-blue-600'},
-                                        {bg: 'bg-emerald-50', text: 'text-emerald-600'}
-                                    ];
-                                    const c = colors[index % colors.length];
+                                    const rankBadge = index === 0 ? 'bg-amber-500 text-white' : (index === 1 ? 'bg-slate-400 text-white' : (index === 2 ? 'bg-amber-700 text-white' : 'bg-slate-200 text-slate-700'));
                                     const img = p.image_url ? `<img src="${p.image_url}" class="w-full h-full object-cover">` : `<img src="https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random" class="w-full h-full object-cover">`;
                                     
                                     return `
-                                    <div class="flex items-center gap-4 group">
-                                        <div class="w-7 h-7 rounded-full ${c.bg} ${c.text} flex items-center justify-center font-black text-xs shrink-0">${index + 1}</div>
-                                        <div class="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-6 h-6 rounded-md ${rankBadge} flex items-center justify-center font-black text-xs shrink-0">${index + 1}</div>
+                                        <div class="w-10 h-10 rounded-lg bg-slate-100 overflow-hidden shrink-0 border border-slate-200">
                                             ${img}
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <h4 class="text-sm font-bold text-slate-800 truncate">${p.name}</h4>
-                                            <div class="flex items-center gap-2 mt-1.5">
+                                            <h4 class="text-xs font-bold text-slate-900 truncate">${p.name}</h4>
+                                            <div class="flex items-center gap-2 mt-1">
                                                 <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                    <div class="h-full bg-indigo-500 rounded-full" style="width: ${progress}%"></div>
+                                                    <div class="h-full bg-indigo-600 rounded-full" style="width: ${progress}%"></div>
                                                 </div>
-                                                <span class="text-[10px] font-bold text-slate-400 w-8">${progress}%</span>
+                                                <span class="text-[10px] font-bold text-slate-500 w-7">${progress}%</span>
                                             </div>
                                         </div>
                                         <div class="text-right shrink-0">
-                                            <div class="text-xs font-bold text-slate-700">${p.sold} sản phẩm</div>
-                                            <div class="text-[10px] text-slate-500 mt-0.5">Doanh thu: ${fmt.format(p.revenue || 0)}</div>
+                                            <div class="text-xs font-black text-slate-900">${p.sold} đã bán</div>
+                                            <div class="text-[10px] text-indigo-700 font-bold mt-0.5">${fmt.format(p.revenue || 0)}</div>
                                         </div>
                                     </div>
                                     `;
                                 }).join('')}
-                                ${(!data.top_products || data.top_products.length === 0) ? '<p class="text-sm text-slate-500 text-center py-4">Chưa có dữ liệu</p>' : ''}
+                                ${(!data.top_products || data.top_products.length === 0) ? '<p class="text-xs text-slate-500 text-center py-6 font-semibold">Chưa có giao dịch bán hàng nào</p>' : ''}
                             </div>
                         </div>
-                        
-                        <!-- Line gradient def -->
-                        <svg width="0" height="0" class="hidden">
-                            <defs>
-                                <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                    <stop offset="0%" stop-color="#a855f7" />
-                                    <stop offset="50%" stop-color="#3b82f6" />
-                                    <stop offset="100%" stop-color="#06b6d4" />
-                                </linearGradient>
-                            </defs>
-                        </svg>
                     </div>
                 </div>
 
                 <!-- AI Insight Banner -->
-                <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-900 rounded-[24px] shadow-[0_10px_30px_rgba(79,70,229,0.3)] p-8 shrink-0 flex flex-col md:flex-row items-center justify-between relative overflow-hidden group">
-                    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                    <div class="absolute -right-20 -top-20 w-64 h-64 bg-purple-500 rounded-full blur-[80px] opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
-                    <div class="absolute -left-20 -bottom-20 w-64 h-64 bg-indigo-500 rounded-full blur-[80px] opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
-                    
-                    <div class="flex items-center gap-6 relative z-10 w-full md:w-auto">
-                        <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-1 shadow-lg shadow-purple-500/30 flex-shrink-0">
-                            <div class="w-full h-full bg-slate-900 rounded-xl flex items-center justify-center">
-                                <svg class="w-10 h-10 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                            </div>
+                <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl shadow-md p-6 shrink-0 flex flex-col md:flex-row items-center justify-between border border-slate-800 relative overflow-hidden">
+                    <div class="flex items-center gap-5 relative z-10 w-full md:w-auto">
+                        <div class="w-14 h-14 rounded-xl bg-indigo-600/30 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shrink-0">
+                            <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                         </div>
                         <div>
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 uppercase tracking-widest">AI Phân tích</span>
-                                <span class="flex h-2 w-2 relative">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                </span>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-black bg-indigo-500 text-white uppercase tracking-wider">AI Phân tích Doanh thu</span>
                             </div>
-                            <h3 class="text-xl md:text-2xl font-black text-white leading-tight">Doanh thu của bạn đang tăng <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">18.4%</span></h3>
-                            <p class="text-slate-300 text-sm mt-1 max-w-md">Nhóm khách hàng trẻ mang lại mức tăng trưởng đột phá. Nên tập trung quảng cáo phụ kiện.</p>
+                            <h3 class="text-lg md:text-xl font-black text-white leading-tight">Tổng kết tình hình kinh doanh thời gian thực</h3>
+                            <p class="text-slate-300 text-xs mt-1 font-medium max-w-lg">Bấm phân tích để AI rà soát dữ liệu hóa đơn, tồn kho và đưa ra gợi ý chiến lược nhập hàng.</p>
                         </div>
                     </div>
                     
-                    <div class="flex items-center gap-6 mt-6 md:mt-0 relative z-10 w-full md:w-auto justify-end">
-                        <div class="flex items-center gap-3">
-                            <div class="text-right">
-                                <div class="text-xs font-bold text-slate-300">Độ tin cậy</div>
-                                <div class="text-lg font-black text-white">94%</div>
-                            </div>
-                            <!-- Circular progress -->
-                            <div class="relative w-12 h-12">
-                                <svg class="w-12 h-12 transform -rotate-90">
-                                    <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" fill="transparent" class="text-slate-700"/>
-                                    <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="4" fill="transparent" stroke-dasharray="125.6" stroke-dashoffset="7.5" class="text-emerald-400"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <button id="btn-ai-insight" class="px-6 py-3.5 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-purple-500/30 transition-all hover:-translate-y-0.5 flex items-center gap-2 whitespace-nowrap">
-                            Phân Tích Dữ Liệu Thực
+                    <div class="mt-4 md:mt-0 relative z-10 w-full md:w-auto flex justify-end">
+                        <button id="btn-ai-insight" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center gap-2 whitespace-nowrap">
+                            Phân Tích Ngay
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                         </button>
                     </div>
                 </div>
-                <div id="ai-insight-result" class="hidden p-6 bg-indigo-50/50 rounded-2xl border border-indigo-100 text-sm text-indigo-900 leading-relaxed shadow-inner">
+                <div id="ai-insight-result" class="hidden p-5 bg-white rounded-2xl border border-indigo-200 text-sm font-semibold text-slate-800 leading-relaxed shadow-sm">
                 </div>
             </div>
         `;
@@ -219,14 +163,13 @@ export default class OwnerDashboardView {
 
     renderChart(chartData) {
         if (!chartData || chartData.length === 0) return '';
-        const max = Math.max(...chartData.map(c => c.revenue), 1000000); // at least 1M to show some scale
+        const max = Math.max(...chartData.map(c => c.revenue), 1000000);
         return chartData.map(c => {
             const h = (c.revenue / max) * 100;
             return `
                 <div class="flex-1 flex flex-col items-center justify-end group h-full relative cursor-pointer">
-                    <div class="w-full max-w-[40px] bg-indigo-500 rounded-t-sm transition-all duration-300 group-hover:bg-indigo-400" style="height: ${h}%"></div>
-                    <!-- Tooltip -->
-                    <div class="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-xs py-1 px-2 rounded whitespace-nowrap z-10 pointer-events-none">
+                    <div class="w-full max-w-[40px] bg-indigo-600 rounded-t-sm transition-all duration-200 group-hover:bg-indigo-500" style="height: ${h}%"></div>
+                    <div class="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-xs font-bold py-1 px-2 rounded whitespace-nowrap z-10 pointer-events-none">
                         ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(c.revenue)}
                     </div>
                 </div>
@@ -235,6 +178,6 @@ export default class OwnerDashboardView {
     }
 
     renderError(msg) {
-        this.container.innerHTML = `<div class="p-8 text-center text-rose-500 font-bold">${msg}</div>`;
+        this.container.innerHTML = `<div class="p-8 text-center text-rose-600 font-black text-sm bg-white rounded-2xl border border-rose-200">${msg}</div>`;
     }
 }

@@ -1,10 +1,12 @@
 import OwnerCashflowView from '../views/pages/OwnerCashflowView.js';
 import TransactionService from '../services/TransactionService.js';
+import OrderModel from '../models/OrderModel.js';
 
 export default class OwnerCashflowController {
     constructor() {
         this.view = new OwnerCashflowView();
         this.transactionService = new TransactionService();
+        this.orderModel = new OrderModel();
         
         this.summary = {};
         this.transactions = [];

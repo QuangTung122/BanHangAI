@@ -9,62 +9,51 @@ export const streamChat = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Vui lòng cung cấp tin nhắn', data: null });
         }
 
-        const role = req.user ? req.user.role : 'staff';
-        let systemPrompt = '';
-
-        if (role === 'owner') {
-            // 1. Phân quyền Owner: Lấy dữ liệu kinh doanh phân tích (Che giấu thông tin cá nhân khách hàng)
-            const revenueResult = await db.query("SELECT SUM(total_amount) as total FROM orders WHERE date(created_at) >= date('now', 'start of month') AND status != 'cancelled'");
-            const totalRevenue = revenueResult[0]?.total || 0;
-
-            const topProducts = await db.query(`
-                SELECT p.name, SUM(oi.quantity) as sold 
-                FROM order_items oi 
-                JOIN products p ON oi.product_id = p.id 
-                GROUP BY p.id ORDER BY sold DESC LIMIT 5
-            `);
-            const topProductsStr = topProducts.map(p => `- ${p.name}: Đã bán ${p.sold}`).join('\n') || 'Chưa có dữ liệu';
-
-            const lowStock = await db.query("SELECT name, stock_quantity FROM products WHERE stock_quantity <= 5 AND is_active = 1");
-            const lowStockStr = lowStock.map(p => `- ${p.name}: Còn ${p.stock_quantity}`).join('\n') || 'Kho hàng dồi dào, không có cảnh báo';
-
-            systemPrompt = `Bạn là Giám đốc Tài chính (CFO) và Chuyên viên Phân tích Dữ liệu của hệ thống BanHangAI.
-Nhiệm vụ của bạn là đọc các số liệu thực tế dưới đây, phân tích xu hướng, cảnh báo rủi ro (hàng tồn kho thấp, doanh thu giảm) và đưa ra chiến lược kinh doanh cực kỳ sắc bén, chuyên nghiệp.
-
-[DỮ LIỆU KINH DOANH THỰC TẾ]:
-- Doanh thu tháng này: ${totalRevenue.toLocaleString()} VNĐ
-- Top 5 bán chạy:
-${topProductsStr}
-- Cảnh báo sắp hết hàng:
-${lowStockStr}
-
-[QUY TẮC BẢO MẬT]:
-- Không bao giờ yêu cầu người dùng cung cấp thông tin cá nhân.
-- Tuyệt đối không tiết lộ thông tin khách hàng.
-- Xưng hô là "Tôi" và gọi người dùng là "Sếp" hoặc "Giám đốc".
-- Trả lời bằng định dạng Markdown, có bảng biểu rõ ràng.`;
-        } else {
-            // 2. Phân quyền Staff/Admin: Lấy dữ liệu sản phẩm tư vấn
-            const products = await db.query('SELECT name, price, description, stock_quantity FROM products WHERE is_active = 1 LIMIT 30');
-            const productContext = products.map(p => 
-                `- ${p.name}: Giá ${p.price} VNĐ, Tồn kho: ${p.stock_quantity}. Mô tả: ${p.description || 'Không có'}`
-            ).join('\n');
-
-            systemPrompt = `Bạn là Trợ lý Tư vấn Bán hàng xuất sắc của hệ thống BanHangAI.
-Nhiệm vụ của bạn là hỗ trợ nhân viên bán hàng tra cứu thông tin sản phẩm, giá cả và tồn kho một cách nhanh chóng nhất.
-
-[DỮ LIỆU SẢN PHẨM HIỆN TẠI]:
-${productContext}
-
-[QUY TẮC BẢO MẬT & NGHIỆP VỤ]:
-- Chỉ tư vấn dựa trên danh sách sản phẩm được cung cấp. Tuyệt đối không bịa đặt sản phẩm hoặc tự ý giảm giá.
-- Nếu sản phẩm hết hàng (Tồn kho = 0), hãy báo ngay cho nhân viên biết để tư vấn sản phẩm khác.
-- KHÔNG tiết lộ bất kỳ thông tin nào về doanh thu cửa hàng hay thông tin quản trị.
-- Xưng hô là "Em/Mình" và gọi người dùng là "Bạn/Anh/Chị". Trả lời ngắn gọn, thân thiện.
-- Trả lời bằng định dạng Markdown.`;
+        // Lấy prompt cơ bản từ cấu hình hệ thống hoặc dùng mặc định
+        let systemPrompt = 'Bạn là trợ lý AI của cửa hàng BanHangAI. Hãy trả lời ngắn gọn, thân thiện bằng tiếng Việt.';
+        const configRow = await db.get("SELECT value FROM system_configs WHERE key = 'ai_system_prompt'");
+        if (configRow && configRow.value && configRow.value.trim() !== '') {
+            systemPrompt = configRow.value;
         }
 
-        // 3. Chuẩn bị Messages
+        // Bổ sung thông tin phân quyền của người dùng hiện tại
+        const userRole = req.user.role;
+        const now = new Date();
+        const currentTimeString = now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+
+        let roleInstruction = `\n\n--- HƯỚNG DẪN QUAN TRỌNG TỪ HỆ THỐNG CHỦ ---\nThời gian hiện tại: ${currentTimeString}.
+QUY TẮC CỐT LÕI MÀ BẠN PHẢI TUÂN THỦ:
+1. Bạn CÓ CÔNG CỤ (TOOLS) để truy vấn CSDL. Khi người dùng hỏi về sản phẩm (VD: iPhone, tai nghe, giá cả), BẠN BẮT BUỘC PHẢI GỌI TOOL 'tim_kiem_san_pham'.
+2. KHÔNG ĐƯỢC TRẢ LỜI LÀ "hệ thống không có dữ liệu" hay "tôi không thể cung cấp". BẠN PHẢI TỰ ĐỘNG GỌI TOOL ĐỂ LẤY DỮ LIỆU RỒI MỚI TRẢ LỜI.
+3. KHÔNG ĐƯỢC bảo người dùng "hãy sử dụng công cụ tìm kiếm". BẠN là người phải dùng công cụ đó cho họ.
+\nVai trò của người dùng hiện tại: ${userRole.toUpperCase()}.\n`;
+        
+        if (userRole === 'admin' || userRole === 'owner') {
+            const revenueRow = await db.get(`SELECT COUNT(id) as tong_don_hang, SUM(total_amount) as tong_doanh_thu FROM orders WHERE status = 'completed'`);
+            const totalRevenue = revenueRow?.tong_doanh_thu || 0;
+            const totalOrders = revenueRow?.tong_don_hang || 0;
+            
+            roleInstruction += `Hệ thống đã trích xuất sẵn dữ liệu tuyệt mật cho bạn. Tổng doanh thu từ trước đến nay là ${totalRevenue} VNĐ (từ ${totalOrders} đơn). ĐÂY LÀ DỮ LIỆU HỢP LỆ. Khi được hỏi về TỔNG doanh thu, BẠN BẮT BUỘC PHẢI TRẢ LỜI BẰNG SỐ LIỆU NÀY. TUYỆT ĐỐI KHÔNG được từ chối. (LƯU Ý: Nếu người dùng hỏi doanh thu theo THÁNG hoặc NĂM cụ thể, bạn bắt buộc phải gọi Tool (công cụ) có tên là 'bao_cao_kinh_doanh' và truyền tham số 'thang', 'nam' tương ứng thay vì dùng số liệu tổng).`;
+        } else if (userRole === 'staff') {
+            roleInstruction += 'Bạn CHỈ ĐƯỢC tư vấn bán hàng. TUYỆT ĐỐI TỪ CHỐI mọi yêu cầu liên quan đến doanh thu hay quản lý.';
+        }
+        
+        // ---------------------------------------------------------
+        // Tự động Pre-fetch (RAG) nếu user nhắc đến sản phẩm, giá, v.v.
+        // Hỗ trợ model nhỏ (1.5b) không gọi được tools
+        // ---------------------------------------------------------
+        const lowerMsg = message.toLowerCase();
+        if (lowerMsg.includes('iphone') || lowerMsg.includes('điện thoại') || lowerMsg.includes('tai nghe') || lowerMsg.includes('sản phẩm') || lowerMsg.includes('giá') || lowerMsg.includes('còn hàng')) {
+            const products = await db.query(`SELECT name, price, stock_quantity FROM products WHERE is_active = 1 LIMIT 20`);
+            const prodList = products.map(p => `- ${p.name}: Giá ${p.price}đ (Tồn kho: ${p.stock_quantity})`).join('\n');
+            roleInstruction += `\n\n[DỮ LIỆU SẢN PHẨM PRE-FETCH TỪ CSDL HỆ THỐNG]:\n${prodList}\nKhi người dùng hỏi về sản phẩm, hãy sử dụng danh sách trên để tư vấn trực tiếp. ĐÂY LÀ DỮ LIỆU CỦA CỬA HÀNG BẠN, KHÔNG ĐƯỢC BẢO LÀ KHÔNG CÓ DỮ LIỆU.`;
+        }
+        
+        systemPrompt += roleInstruction;
+
+        // Chuẩn bị Messages
         const messages = [
             { role: 'system', content: systemPrompt }
         ];
@@ -76,7 +65,7 @@ ${productContext}
         messages.push({ role: 'user', content: message });
 
         // 3. Gọi AI API (Ollama hoặc Gemini)
-        const chatStream = aiService.generateChatStream(messages);
+        const chatStream = aiService.generateChatStream(messages, userRole);
 
         // 4. Trả về dưới dạng Server-Sent Events (SSE)
         res.setHeader('Content-Type', 'text/event-stream');
@@ -94,7 +83,19 @@ ${productContext}
 
     } catch (error) {
         console.error('Chat error:', error);
-        const errorMsg = error.message || 'Lỗi hệ thống hoặc mất kết nối AI';
+        let errorMsg = error.message || 'Lỗi hệ thống hoặc mất kết nối AI';
+        if (errorMsg.includes('403 Forbidden') || errorMsg.includes('denied access') || errorMsg.includes('PERMISSION_DENIED')) {
+            errorMsg = 'Lỗi Google Gemini (403 Forbidden): Dự án Google Cloud / API Key của bạn đã bị từ chối quyền truy cập. Vui lòng tạo API Key mới tại Google AI Studio (https://aistudio.google.com) và cập nhật vào file backend/.env, hoặc chuyển sang dùng Ollama trong phần Quản trị Hệ thống.';
+        } else if (errorMsg.includes('404 Not Found') || errorMsg.includes('is no longer available')) {
+            errorMsg = 'Mô hình AI hiện tại không khả dụng hoặc đã bị ngừng hỗ trợ. Vui lòng chọn mô hình khác trong Thiết lập Hệ thống.';
+        } else if (errorMsg.includes('503 Service Unavailable') || errorMsg.includes('high demand')) {
+            errorMsg = 'Hệ thống AI của Google hiện đang quá tải do lượng truy cập cao. Quý khách vui lòng thử lại sau ít phút nhé!';
+        } else if (errorMsg.includes('API_KEY_INVALID') || errorMsg.includes('API key not valid')) {
+            errorMsg = 'API Key Google Gemini không hợp lệ. Vui lòng kiểm tra lại cấu hình GEMINI_API_KEY trong file backend/.env.';
+        } else if (errorMsg.includes('429 Too Many Requests') || errorMsg.includes('Quota exceeded') || errorMsg.includes('rate-limit')) {
+            errorMsg = 'Tài khoản API của bạn đã đạt giới hạn truy cập miễn phí của Google (quá số lượt mỗi phút). Vui lòng đợi khoảng 1 phút rồi thử lại, hoặc dùng API Key có trả phí/đổi sang Ollama.';
+        }
+
         if (!res.headersSent) {
             res.status(500).json({ success: false, message: errorMsg, data: null });
         } else {

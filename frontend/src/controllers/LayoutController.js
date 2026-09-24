@@ -402,6 +402,11 @@ export default class LayoutController {
                 const OwnerStaffController = module.default;
                 this.childController = new OwnerStaffController();
             }).catch(err => console.error(err));
+        } else if (menuId === 'menu-settings') {
+            import('./UserSettingsController.js').then(module => {
+                const UserSettingsController = module.default;
+                this.childController = new UserSettingsController();
+            }).catch(err => console.error(err));
         } else {
             contentArea.innerHTML = `
                 <div class="flex items-center justify-center h-full">

@@ -20,7 +20,7 @@ const upload = multer({ storage: storage });
 
 router.use(requireAuth);
 // Chỉ cho phép Owner truy cập Sổ quỹ
-router.use(requireRole(['owner', 'admin']));
+router.use(requireRole(['owner']));
 
 router.get('/summary', transactionController.getSummary);
 router.get('/', transactionController.getTransactions);

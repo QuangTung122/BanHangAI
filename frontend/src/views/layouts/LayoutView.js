@@ -8,8 +8,8 @@ export default class LayoutView {
         if (this.container) return;
         
         this.container = document.createElement('div');
-        // Theme: Midnight Cyber (Dark Mode) - Background slate-950
-        this.container.className = 'flex h-screen w-full bg-slate-950 overflow-hidden font-sans text-slate-300 antialiased selection:bg-cyan-500/30';
+        // Theme: Chuẩn hóa Clean Modern Business SaaS (Nền sáng làm việc rõ nét, Sidebar tối tinh tế)
+        this.container.className = 'flex h-screen w-full bg-slate-100 overflow-hidden font-sans text-slate-800 antialiased selection:bg-indigo-500 selection:text-white';
         this.container.id = 'layout-container';
 
         this.container.innerHTML = `
@@ -27,45 +27,32 @@ export default class LayoutView {
         
         return `
             <!-- Sidebar Dark Card -->
-            <aside class="w-[260px] bg-slate-900 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.5)] m-4 mr-0 flex flex-col shrink-0 relative z-20 border border-slate-800/60 overflow-hidden">
+            <aside class="w-[260px] bg-slate-900 text-white m-3 mr-0 rounded-[20px] shadow-xl flex flex-col shrink-0 relative z-20 border border-slate-800 overflow-hidden">
                 <!-- Logo -->
                 <div class="h-20 flex items-center px-6 border-b border-slate-800 shrink-0">
-                    <img src="assets/images/logo-system.png" alt="BanHangAI Logo" class="w-10 h-10 object-contain drop-shadow-[0_0_15px_rgba(34,211,238,0.3)] mr-3 shrink-0">
+                    <img src="assets/images/logo-system.png" alt="BanHangAI Logo" class="w-10 h-10 object-contain drop-shadow-md mr-3 shrink-0 rounded-lg">
                     <div class="flex flex-col justify-center">
                         <span class="font-black text-[16px] tracking-tight text-white leading-tight">HTH Smart Sales</span>
-                        <span class="text-[9px] font-extrabold text-cyan-400 uppercase tracking-widest mt-0.5">Smarter Sales. Better Business.</span>
+                        <span class="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mt-0.5">Smarter Sales POS</span>
                     </div>
                 </div>
                 
                 <!-- Menu -->
-                <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-1.5 scroll-smooth custom-scrollbar" id="sidebar-nav">
+                <nav class="flex-1 overflow-y-auto py-5 px-3 space-y-1 scroll-smooth custom-scrollbar" id="sidebar-nav">
                     ${sidebarMenu}
                 </nav>
-                
-                <!-- AI Assistant Banner (Dark/Neon) -->
-                <div class="px-4 pb-4 mt-auto">
-                    <div class="bg-gradient-to-br from-slate-800 to-slate-900/80 rounded-[20px] p-5 border border-slate-700/50 shadow-lg relative overflow-hidden group cursor-pointer hover:border-cyan-500/30 transition-all">
-                        <div class="absolute -right-4 -top-4 w-16 h-16 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 group-hover:scale-150 transition-all duration-500"></div>
-                        <div class="flex items-center gap-2.5 mb-2 relative z-10">
-                            <img src="assets/images/logo-ai.png" alt="AI Logo" class="w-8 h-8 object-cover rounded-full shadow-[0_0_10px_rgba(34,211,238,0.4)]">
-                            <span class="font-extrabold text-cyan-400 text-sm drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]">AI Assistant</span>
-                        </div>
-                        <p class="text-[11px] text-slate-400 font-medium leading-relaxed mb-3 relative z-10">Trợ lý phân tích & gợi ý tự động.</p>
-                        <button class="w-full py-2 bg-slate-950/50 border border-slate-700 text-cyan-400 rounded-xl text-xs font-bold hover:bg-cyan-500 hover:text-white hover:border-cyan-500 transition-colors shadow-sm relative z-10">Hỏi ngay</button>
-                    </div>
-                </div>
 
                 <!-- Mini Music Player -->
-                <div class="p-4 border-t border-slate-800 bg-slate-950/30">
+                <div class="p-3.5 border-t border-slate-800 bg-slate-950/60">
                     <div class="flex items-center gap-2">
-                        <button id="btn-play-music" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center hover:bg-slate-700 hover:text-cyan-400 text-slate-400 transition-colors">
+                        <button id="btn-play-music" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center hover:bg-indigo-600 hover:border-indigo-500 text-slate-200 transition-colors shrink-0">
                             <svg id="icon-play" class="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                             <svg id="icon-pause" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                         </button>
-                        <div class="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden cursor-pointer" id="music-progress-container">
-                            <div id="music-progress-bar" class="w-0 h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-100"></div>
+                        <div class="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden cursor-pointer" id="music-progress-container">
+                            <div id="music-progress-bar" class="w-0 h-full bg-indigo-500 transition-all duration-100"></div>
                         </div>
-                        <span id="music-time" class="text-[10px] font-bold text-slate-500 w-8 text-right">0:00</span>
+                        <span id="music-time" class="text-[10px] font-bold text-slate-400 w-8 text-right">0:00</span>
                     </div>
                     <audio id="sys-audio-player" loop></audio>
                 </div>
@@ -75,62 +62,57 @@ export default class LayoutView {
 
     _renderMainWorkspace(user) {
         return `
-            <main class="flex-1 flex flex-col h-full overflow-hidden relative z-10">
-                <!-- Top Navbar -->
-                <header class="h-24 bg-transparent flex items-center justify-between px-8 shrink-0 relative z-30 border-b border-slate-800/30">
+            <main class="flex-1 flex flex-col h-full overflow-hidden relative z-10 bg-slate-100 text-slate-800">
+                <!-- Top Navbar: Trắng sáng, viền sắc nét, chữ đen đậm tương phản cao -->
+                <header class="h-20 bg-white border-b border-slate-200/90 shadow-sm flex items-center justify-between px-8 shrink-0 relative z-30">
                     <div>
-                        <div class="font-extrabold text-white text-2xl" id="topbar-title">Bảng điều khiển</div>
-                        <div class="text-sm text-slate-500 font-medium mt-1">Hệ thống quản trị BanHangAI 🌟</div>
+                        <div class="font-black text-slate-900 text-2xl tracking-tight" id="topbar-title">Bảng điều khiển</div>
+                        <div class="text-xs text-slate-600 font-semibold mt-0.5">Hệ thống quản trị bán hàng & chuỗi cửa hàng</div>
                     </div>
                     
-                    <div class="flex items-center gap-5">
-                        <!-- AI Button -->
-                        <button id="btn-global-ai" class="hidden sm:flex px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-bold rounded-xl shadow-[0_0_15px_rgba(34,211,238,0.3)] hover:-translate-y-0.5 hover:shadow-[0_0_25px_rgba(34,211,238,0.5)] transition-all items-center gap-2">
-                            ✨ AI Phân Tích
-                        </button>
-
-                        <div class="w-px h-8 bg-slate-800"></div>
-
+                    <div class="flex items-center gap-4">
                         <!-- Notifications -->
                         <div class="relative">
-                            <button id="btn-notifications" class="relative p-2.5 text-slate-400 hover:text-cyan-400 bg-slate-900 rounded-xl shadow-sm border border-slate-800 transition-colors">
+                            <button id="btn-notifications" class="relative p-2.5 text-slate-700 hover:text-indigo-600 bg-slate-50 hover:bg-slate-100 rounded-xl shadow-sm border border-slate-200 transition-colors" title="Thông báo">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                                 </svg>
-                                <span id="notification-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full hidden border-2 border-slate-900">0</span>
+                                <span id="notification-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white text-[10px] font-black flex items-center justify-center rounded-full hidden border-2 border-white">0</span>
                             </button>
                             
-                            <div id="notification-dropdown" class="absolute right-0 mt-3 w-80 bg-slate-900 rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] border border-slate-800 hidden z-50 overflow-hidden">
-                                <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
-                                    <h3 class="font-bold text-white text-sm">Thông báo</h3>
-                                    <button id="btn-mark-all-read" class="text-xs text-cyan-400 font-bold hidden hover:underline">Đã đọc tất cả</button>
+                            <div id="notification-dropdown" class="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.2)] border border-slate-200 hidden z-50 overflow-hidden">
+                                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                    <h3 class="font-black text-slate-900 text-sm">Thông báo hệ thống</h3>
+                                    <button id="btn-mark-all-read" class="text-xs text-indigo-600 font-bold hidden hover:underline">Đã đọc tất cả</button>
                                 </div>
-                                <div id="notification-list" class="max-h-96 overflow-y-auto">
-                                    <div class="p-8 text-center text-slate-500 text-sm">Đang tải...</div>
+                                <div id="notification-list" class="max-h-96 overflow-y-auto divide-y divide-slate-100">
+                                    <div class="p-8 text-center text-slate-500 font-medium text-sm">Đang tải thông báo...</div>
                                 </div>
                             </div>
                         </div>
+
+                        <div class="w-px h-7 bg-slate-200"></div>
                         
                         <!-- User Profile -->
-                        <div class="flex items-center gap-3 cursor-pointer group">
+                        <div class="flex items-center gap-3">
                             <div class="text-right hidden sm:block">
-                                <div class="text-sm font-bold text-slate-200 group-hover:text-cyan-400 transition-colors">${user.full_name || user.username}</div>
-                                <div class="text-[11px] text-slate-500 font-semibold uppercase">${user.role}</div>
+                                <div class="text-sm font-black text-slate-900 leading-tight">${user.full_name || user.username}</div>
+                                <div class="inline-block px-2 py-0.5 mt-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase">${user.role}</div>
                             </div>
-                            <div class="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-cyan-400 font-black border border-slate-700">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-700 flex items-center justify-center text-white font-black shadow-sm text-sm">
                                 ${(user.full_name || user.username).charAt(0).toUpperCase()}
                             </div>
                         </div>
                         
                         <!-- Logout -->
-                        <button id="btn-logout" class="text-slate-500 hover:text-rose-500 p-2 rounded-xl hover:bg-slate-900 transition-colors ml-2" title="Đăng xuất">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                        <button id="btn-logout" class="text-slate-500 hover:text-rose-600 p-2.5 rounded-xl hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-colors" title="Đăng xuất">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                         </button>
                     </div>
                 </header>
                 
                 <!-- Dynamic Content Area -->
-                <div id="content-area" class="flex-1 overflow-y-auto px-8 pb-8 scroll-smooth relative z-0">
+                <div id="content-area" class="flex-1 overflow-y-auto p-4 md:p-6 scroll-smooth relative z-0 bg-slate-100 text-slate-800">
                     <!-- Child views will be injected here -->
                 </div>
             </main>
@@ -164,11 +146,15 @@ export default class LayoutView {
             menus.push({ id: 'menu-staff-return-warranty', icon: 'M8 7h12m-12 5h12M8 17h12M4 7h.01M4 12h.01M4 17h.01', text: 'Đổi trả & Bảo hành' });
             menus.push({ id: 'menu-staff-attendance', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', text: 'Chấm công của tôi' });
         }
+        
+        if (role === 'staff' || role === 'owner') {
+            menus.push({ id: 'menu-settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z', text: 'Cài đặt cá nhân' });
+        }
 
         return menus.map(m => `
-            <a href="#${m.id}" id="${m.id}" class="sidebar-item flex items-center px-4 py-3.5 rounded-2xl text-sm font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition-all duration-300 mb-1">
-                <svg class="w-5 h-5 mr-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="${m.icon}"/>
+            <a href="#${m.id}" id="${m.id}" class="sidebar-item flex items-center px-3.5 py-3 rounded-xl text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition-all duration-200 mb-1">
+                <svg class="w-5 h-5 mr-3 shrink-0 text-slate-400 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${m.icon}"/>
                 </svg>
                 ${m.text}
             </a>
@@ -178,15 +164,25 @@ export default class LayoutView {
     setActiveMenu(menuId, title) {
         // Xóa trạng thái active cũ
         this.container.querySelectorAll('.sidebar-item').forEach(el => {
-            el.classList.remove('bg-gradient-to-r', 'from-cyan-500', 'to-blue-500', 'text-white', 'shadow-lg', 'shadow-cyan-500/20', 'border', 'border-cyan-500/30');
-            el.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-slate-800');
+            el.classList.remove('bg-indigo-600', 'text-white', 'shadow-md', 'shadow-indigo-500/20', 'font-black');
+            el.classList.add('text-slate-300', 'hover:text-white', 'hover:bg-slate-800', 'font-bold');
+            const icon = el.querySelector('svg');
+            if (icon) {
+                icon.classList.remove('text-white');
+                icon.classList.add('text-slate-400');
+            }
         });
         
         // Gắn trạng thái active mới
         const activeEl = document.getElementById(menuId);
         if (activeEl) {
-            activeEl.classList.remove('text-slate-400', 'hover:text-white', 'hover:bg-slate-800');
-            activeEl.classList.add('bg-gradient-to-r', 'from-cyan-500', 'to-blue-500', 'text-white', 'shadow-lg', 'shadow-cyan-500/20', 'border', 'border-cyan-500/30');
+            activeEl.classList.remove('text-slate-300', 'hover:text-white', 'hover:bg-slate-800');
+            activeEl.classList.add('bg-indigo-600', 'text-white', 'shadow-md', 'shadow-indigo-500/20', 'font-black');
+            const icon = activeEl.querySelector('svg');
+            if (icon) {
+                icon.classList.remove('text-slate-400');
+                icon.classList.add('text-white');
+            }
         }
 
         // Đổi tiêu đề Topbar

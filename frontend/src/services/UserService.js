@@ -9,6 +9,13 @@ class UserService {
         return await ApiClient.post('/users', data);
     }
 
+    async updateUser(id, data) {
+        return await ApiClient.request(`/users/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+    }
+
     async changeRole(id, role) {
         return await ApiClient.request(`/users/${id}/role`, {
             method: 'PUT',
@@ -23,9 +30,10 @@ class UserService {
         });
     }
 
-    async resetPassword(id) {
+    async resetPassword(id, newPassword = null) {
         return await ApiClient.request(`/users/${id}/reset-password`, {
-            method: 'PUT'
+            method: 'PUT',
+            body: JSON.stringify(newPassword ? { new_password: newPassword } : {})
         });
     }
 

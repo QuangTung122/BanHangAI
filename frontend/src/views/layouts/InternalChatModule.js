@@ -115,24 +115,42 @@ export default class InternalChatModule {
         const history = this.container.querySelector('#team-chat-history');
         history.innerHTML = messages.map(m => {
             const isMe = m.sender_id === currentUserId;
+            let timeString = '';
+            if (m.created_at) {
+                let dateStr = m.created_at;
+                if (!dateStr.includes('Z') && !dateStr.includes('+')) {
+                    dateStr = dateStr.replace(' ', 'T') + 'Z';
+                }
+                timeString = new Date(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            }
             return `
-                <div class="flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}">
+                <div class="flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'} mb-2">
                     <div class="${isMe ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-800'} px-3 py-2 rounded-2xl ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'} shadow-sm max-w-[85%]">
                         ${m.content}
                     </div>
+                    ${timeString ? `<span class="text-[10px] text-slate-400 px-1">${timeString}</span>` : ''}
                 </div>
             `;
         }).join('');
         history.scrollTop = history.scrollHeight;
     }
 
-    appendMessage(message, isMe = true) {
+    appendMessage(message, isMe = true, createdAt = new Date()) {
         const history = this.container.querySelector('#team-chat-history');
+        let timeString = '';
+        if (createdAt) {
+            let dateStr = typeof createdAt === 'string' ? createdAt : createdAt.toISOString();
+            if (!dateStr.includes('Z') && !dateStr.includes('+')) {
+                dateStr = dateStr.replace(' ', 'T') + 'Z';
+            }
+            timeString = new Date(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+        }
         const msgHtml = `
-            <div class="flex gap-2 ${isMe ? 'justify-end' : 'justify-start'}">
+            <div class="flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'} mb-2">
                 <div class="${isMe ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-800'} px-3 py-2 rounded-2xl ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'} shadow-sm max-w-[85%]">
                     ${message}
                 </div>
+                ${timeString ? `<span class="text-[10px] text-slate-400 px-1">${timeString}</span>` : ''}
             </div>
         `;
         history.insertAdjacentHTML('beforeend', msgHtml);

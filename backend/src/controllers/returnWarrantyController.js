@@ -101,29 +101,45 @@ export const createReturnRequest = async (req, res) => {
 export const getReturnRequests = async (req, res) => {
     try {
         const { status, customer_id, order_id } = req.query;
-        let sql = `SELECT * FROM returns WHERE is_active = 1`;
+        let sql = `
+            SELECT r.*, u.username as creator_name, o.created_at as order_created_at
+            FROM returns r 
+            LEFT JOIN users u ON r.created_by = u.id 
+            LEFT JOIN orders o ON r.order_id = o.id 
+            WHERE r.is_active = 1
+        `;
         const params = [];
 
         if (status) {
-            sql += ` AND status = ?`;
+            sql += ` AND r.status = ?`;
             params.push(status);
         }
 
         if (customer_id) {
-            sql += ` AND customer_id = ?`;
+            sql += ` AND r.customer_id = ?`;
             params.push(customer_id);
         }
 
         if (order_id) {
-            sql += ` AND order_id = ?`;
+            sql += ` AND r.order_id = ?`;
             params.push(order_id);
         }
 
-        sql += ` ORDER BY requested_at DESC`;
+        sql += ` ORDER BY r.requested_at DESC`;
 
         const returns = await db.query(sql, params);
 
+
+        const generateInvoiceCode = (orderId, createdAtStr) => {
+            if (!createdAtStr) return 'INV-' + orderId;
+            const dateStr = createdAtStr.includes('Z') ? createdAtStr : createdAtStr.replace(' ', 'T') + 'Z';
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return 'INV-' + orderId;
+            const yymmdd = date.toISOString().slice(2, 10).replace(/-/g, '');
+            return `INV-${yymmdd}-${String(orderId).padStart(4, '0')}`;
+        };
         for (const item of returns) {
+            item.invoice_code = generateInvoiceCode(item.order_id, item.order_created_at);
             item.items = await db.query(`SELECT * FROM return_items WHERE return_id = ?`, [item.id]);
         }
 
@@ -162,7 +178,12 @@ export const approveReturnRequest = async (req, res) => {
             await db.run(
                 `INSERT INTO transactions (type, amount, category, description, user_id, payment_method, source, reference_id)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                ['expense', refund_amount, 'Đổi trả', `Hoàn tiền cho đơn hàng đổi trả #${id}`, req.user.id, 'cash', 'manual', id]
+                ['expense', refund_amount, 'Đổi trả', 'Hoàn tiền cho đơn hàng đổi trả #' + id, req.user.id, 'cash', 'manual', id]
+            );
+        } else if (action === 'collect' && refund_amount > 0) {
+            await db.run(
+                'INSERT INTO transactions (type, amount, category, description, user_id, payment_method, source, reference_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                ['income', refund_amount, 'Đổi trả', 'Thu thêm tiền khách khi đổi trả #' + id, req.user.id, 'cash', 'manual', id]
             );
         }
 
@@ -262,31 +283,37 @@ export const createWarrantyClaim = async (req, res) => {
 export const getWarrantyClaims = async (req, res) => {
     try {
         const { status, customer_id, product_id } = req.query;
-        let sql = `SELECT * FROM warranty_claims WHERE is_active = 1`;
+        let sql = `
+            SELECT w.*, u.username as creator_name, o.created_at as order_created_at
+            FROM warranty_claims w 
+            LEFT JOIN users u ON w.created_by = u.id 
+            LEFT JOIN orders o ON w.order_id = o.id 
+            WHERE w.is_active = 1
+        `;
         const params = [];
 
         if (status) {
-            sql += ` AND status = ?`;
+            sql += ` AND w.status = ?`;
             params.push(status);
         }
 
         if (customer_id) {
-            sql += ` AND customer_id = ?`;
+            sql += ` AND w.customer_id = ?`;
             params.push(customer_id);
         }
 
         if (product_id) {
-            sql += ` AND product_id = ?`;
+            sql += ` AND w.product_id = ?`;
             params.push(product_id);
         }
 
-        sql += ` ORDER BY claimed_at DESC`;
+        sql += ` ORDER BY w.claimed_at DESC`;
 
         const claims = await db.query(sql, params);
-        res.json({
-            success: true,
-            data: claims
-        });
+        for (const item of claims) {
+            item.invoice_code = generateInvoiceCode(item.order_id, item.order_created_at);
+        }
+        res.json({ success: true, data: claims });
     } catch (error) {
         console.error('getWarrantyClaims error:', error);
         res.status(500).json({
@@ -299,7 +326,7 @@ export const getWarrantyClaims = async (req, res) => {
 export const updateWarrantyClaimStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, approved_by, resolution_notes, notes } = req.body;
+        const { status, approved_by, resolution_notes, notes, fee_amount } = req.body;
 
         const validStatuses = ['pending', 'in_review', 'approved', 'repairing', 'repaired', 'rejected', 'completed', 'cancelled'];
         if (!validStatuses.includes(status)) {
@@ -314,9 +341,18 @@ export const updateWarrantyClaimStatus = async (req, res) => {
             [status, approved_by || req.user.id, resolution_notes || null, notes || null, id]
         );
 
+        if (status === 'completed' && fee_amount > 0) {
+            await db.run(
+                `INSERT INTO transactions (type, amount, category, description, user_id, payment_method, source, reference_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                ['income', fee_amount, 'Dịch vụ', 'Thu phí sửa chữa/dịch vụ bảo hành phiếu #' + id, req.user.id, 'cash', 'manual', id]
+            );
+        }
+
         await logAction(req.user.id, 'warranty_claim_updated', 'Cập nhật trạng thái bảo hành', {
             warranty_claim_id: id,
-            status
+            status,
+            fee_amount: fee_amount || 0
         });
 
         res.json({
@@ -332,3 +368,28 @@ export const updateWarrantyClaimStatus = async (req, res) => {
         });
     }
 };
+
+export const deleteReturnRequest = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.run('UPDATE returns SET is_active = 0 WHERE id = ?', [id]);
+        await logAction(req.user.id, 'return_request_deleted', 'X�a phi?u d?i tr?', { return_id: id });
+        res.json({ success: true, message: '�� x�a phi?u d?i tr?' });
+    } catch (error) {
+        console.error('deleteReturnRequest error:', error);
+        res.status(500).json({ success: false, message: 'L?i h? th?ng khi x�a phi?u' });
+    }
+};
+
+export const deleteWarrantyClaim = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.run('UPDATE warranty_claims SET is_active = 0 WHERE id = ?', [id]);
+        await logAction(req.user.id, 'warranty_claim_deleted', 'X�a phi?u b?o h�nh', { warranty_claim_id: id });
+        res.json({ success: true, message: '�� x�a phi?u b?o h�nh' });
+    } catch (error) {
+        console.error('deleteWarrantyClaim error:', error);
+        res.status(500).json({ success: false, message: 'L?i h? th?ng khi x�a phi?u' });
+    }
+};
+

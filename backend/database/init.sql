@@ -285,8 +285,8 @@ INSERT INTO products (category_id, name, slug, description, price, stock_quantit
 -- System Configs
 INSERT INTO system_configs (key, value) VALUES
 ('ollama_host', 'http://localhost:11434'),
-('ai_model', 'qwen2.5-coder:1.5b'),
+('ai_model', 'qwen2.5:1.5b'),
 ('ai_max_tokens', '4096'),
-('ai_system_prompt', 'B?n l� tr? l� AI chuy�n nghi?p c?a c?a h�ng b�n l?...'),
+('ai_system_prompt', ''),
 ('ai_temperature', '0.7'),
 ('bgm_url', 'https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3');
