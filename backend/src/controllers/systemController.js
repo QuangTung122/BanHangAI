@@ -58,24 +58,26 @@ export const resetData = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Xác nhận không hợp lệ. Vui lòng nhập đúng chữ XAC NHAN XOA' });
         }
 
-        await db.run('BEGIN TRANSACTION');
-        
-        // Xóa các bảng dữ liệu rác (Transaction, Order, v.v.)
-        await db.run('DELETE FROM order_items');
-        await db.run('DELETE FROM installment_payments');
-        await db.run('DELETE FROM orders');
-        await db.run('DELETE FROM transactions');
-        await db.run('DELETE FROM attendance');
-        
-        // Xóa bảng sản phẩm theo yêu cầu của user
-        await db.run('DELETE FROM products');
-
-        await db.run('COMMIT');
+        await db.transaction(async () => {
+            await db.run('DELETE FROM return_items');
+            await db.run('DELETE FROM returns');
+            await db.run('DELETE FROM warranty_claims');
+            await db.run('DELETE FROM order_items');
+            await db.run('DELETE FROM installment_payments');
+            await db.run('DELETE FROM transactions');
+            await db.run('DELETE FROM orders');
+            await db.run('DELETE FROM purchase_receipt_items');
+            await db.run('DELETE FROM purchase_receipts');
+            await db.run('DELETE FROM inventory_movements');
+            await db.run('DELETE FROM attendance');
+            await db.run('DELETE FROM products');
+            await db.run('DELETE FROM suppliers');
+            await db.run('DELETE FROM customers');
+        });
 
         await logAction(req.user.id, 'SYSTEM', 'Dọn dẹp (Reset) toàn bộ dữ liệu');
         res.status(200).json({ success: true, message: 'Đã dọn sạch dữ liệu thành công!' });
     } catch (error) {
-        await db.run('ROLLBACK');
         console.error('Lỗi khi xóa dữ liệu:', error);
         res.status(500).json({ success: false, message: 'Lỗi máy chủ: ' + error.message });
     }

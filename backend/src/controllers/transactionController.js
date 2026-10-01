@@ -73,12 +73,13 @@ export const getSummary = async (req, res) => {
         let balanceQuery = `
             SELECT 
                 SUM(CASE WHEN payment_method = 'cash' AND type = 'income' THEN amount ELSE 0 END) - SUM(CASE WHEN payment_method = 'cash' AND type = 'expense' THEN amount ELSE 0 END) as total_cash,
-                SUM(CASE WHEN payment_method = 'transfer' AND type = 'income' THEN amount ELSE 0 END) - SUM(CASE WHEN payment_method = 'transfer' AND type = 'expense' THEN amount ELSE 0 END) as total_transfer
+                SUM(CASE WHEN payment_method = 'transfer' AND type = 'income' THEN amount ELSE 0 END) - SUM(CASE WHEN payment_method = 'transfer' AND type = 'expense' THEN amount ELSE 0 END) as total_transfer,
+                SUM(CASE WHEN payment_method = 'card' AND type = 'income' THEN amount ELSE 0 END) - SUM(CASE WHEN payment_method = 'card' AND type = 'expense' THEN amount ELSE 0 END) as total_card
             FROM transactions
         `;
         const balanceResult = await db.query(balanceQuery, []);
-        const balanceSummary = balanceResult[0] || { total_cash: 0, total_transfer: 0 };
-        const balance = (balanceSummary.total_cash || 0) + (balanceSummary.total_transfer || 0);
+        const balanceSummary = balanceResult[0] || { total_cash: 0, total_transfer: 0, total_card: 0 };
+        const balance = (balanceSummary.total_cash || 0) + (balanceSummary.total_transfer || 0) + (balanceSummary.total_card || 0);
 
         // 3. Get All-Time Cash Breakdown per User (counters)
         let breakdownQuery = `
@@ -117,6 +118,7 @@ export const getSummary = async (req, res) => {
                 balance: balance,
                 total_cash: balanceSummary.total_cash || 0,
                 total_transfer: balanceSummary.total_transfer || 0,
+                total_card: balanceSummary.total_card || 0,
                 cash_breakdown: {
                     safe: safeCash,
                     counters: counters
@@ -130,8 +132,10 @@ export const getSummary = async (req, res) => {
 };
 
 export const createTransaction = async (req, res) => {
-    const { type, amount, category, description, payment_method = 'cash', source = 'manual', invoice_id = null } = req.body;
+    const { type, amount, category, description, payment_method = 'cash' } = req.body;
     const user_id = req.user.id;
+    const numericAmount = Number(amount);
+    const normalizedCategory = typeof category === 'string' ? category.trim() : '';
     
     // Nếu có file upload, tạo đường dẫn (URL) cho file đó
     let attachment_url = null;
@@ -139,18 +143,21 @@ export const createTransaction = async (req, res) => {
         attachment_url = `/uploads/${req.file.filename}`;
     }
     
-    if (!type || !amount || !category) {
-        return res.status(400).json({ success: false, message: 'Vui lòng điền đủ thông tin' });
+    if (!['income', 'expense'].includes(type) || !normalizedCategory || normalizedCategory.length > 100) {
+        return res.status(400).json({ success: false, message: 'Loại phiếu hoặc danh mục không hợp lệ', data: null });
     }
     
-    if (amount <= 0) {
-        return res.status(400).json({ success: false, message: 'Số tiền phải lớn hơn 0' });
+    if (!Number.isSafeInteger(numericAmount) || numericAmount <= 0) {
+        return res.status(400).json({ success: false, message: 'Số tiền phải là số nguyên lớn hơn 0', data: null });
+    }
+    if (!['cash', 'transfer', 'card'].includes(payment_method)) {
+        return res.status(400).json({ success: false, message: 'Phương thức thanh toán không hợp lệ', data: null });
     }
 
     try {
         await db.run(
-            `INSERT INTO transactions (type, amount, category, description, user_id, payment_method, source, invoice_id, attachment_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [type, amount, category, description || '', user_id, payment_method, source, invoice_id, attachment_url]
+            `INSERT INTO transactions (type, amount, category, description, user_id, payment_method, source, attachment_url) VALUES (?, ?, ?, ?, ?, ?, 'manual', ?)`,
+            [type, numericAmount, normalizedCategory, String(description || '').trim().slice(0, 500), user_id, payment_method, attachment_url]
         );
         res.status(201).json({ success: true, message: 'Tạo phiếu thành công' });
     } catch (error) {
@@ -162,33 +169,51 @@ export const createTransaction = async (req, res) => {
 export const collectFromStaff = async (req, res) => {
     const { staff_id, amount, receive_method, description } = req.body;
     const owner_id = req.user.id; 
+    const numericAmount = Number(amount);
+    const receiveMethod = receive_method || 'cash';
     
-    if (!staff_id || !amount || amount <= 0) {
-        return res.status(400).json({ success: false, message: 'Dữ liệu không hợp lệ' });
+    if (!Number.isSafeInteger(Number(staff_id)) || Number(staff_id) < 1 || !Number.isSafeInteger(numericAmount) || numericAmount <= 0) {
+        return res.status(400).json({ success: false, message: 'Dữ liệu không hợp lệ', data: null });
+    }
+    if (!['cash', 'transfer'].includes(receiveMethod)) {
+        return res.status(400).json({ success: false, message: 'Hình thức nhận tiền không hợp lệ', data: null });
     }
     
     try {
-        await db.run('BEGIN TRANSACTION');
-        
-        // 1. Expense for Staff (Tiền mặt) - Reduces their cash balance
-        await db.run(
-            `INSERT INTO transactions (type, amount, category, description, user_id, payment_method, source) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            ['expense', amount, 'Điều chuyển nội bộ', description || 'Nộp tiền về két', staff_id, 'cash', 'manual']
-        );
-        
-        // 2. Income for Owner - Increases owner's safe or transfer balance
-        await db.run(
-            `INSERT INTO transactions (type, amount, category, description, user_id, payment_method, source) 
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            ['income', amount, 'Điều chuyển nội bộ', description || 'Thu tiền từ nhân viên', owner_id, receive_method || 'cash', 'manual']
-        );
-        
-        await db.run('COMMIT');
+        await db.transaction(async () => {
+            const staff = await db.get('SELECT id FROM users WHERE id = ? AND role = ? AND is_active = 1', [staff_id, 'staff']);
+            if (!staff) {
+                const error = new Error('Không tìm thấy nhân viên đang hoạt động');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const balanceRow = await db.get(`
+                SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE -amount END), 0) AS balance
+                FROM transactions
+                WHERE user_id = ? AND payment_method = 'cash'
+            `, [staff_id]);
+            if (numericAmount > Number(balanceRow?.balance || 0)) {
+                const error = new Error('Số tiền bàn giao vượt quá số tiền mặt nhân viên đang giữ');
+                error.statusCode = 409;
+                throw error;
+            }
+
+            const note = String(description || '').trim().slice(0, 300);
+            await db.run(
+                `INSERT INTO transactions (type, amount, category, description, user_id, payment_method, source)
+                 VALUES ('expense', ?, 'Điều chuyển nội bộ', ?, ?, 'cash', 'manual')`,
+                [numericAmount, note || 'Nộp tiền về két', staff_id]
+            );
+            await db.run(
+                `INSERT INTO transactions (type, amount, category, description, user_id, payment_method, source)
+                 VALUES ('income', ?, 'Điều chuyển nội bộ', ?, ?, ?, 'manual')`,
+                [numericAmount, note || 'Thu tiền từ nhân viên', owner_id, receiveMethod]
+            );
+        });
         res.json({ success: true, message: 'Thu tiền từ nhân viên thành công' });
     } catch (error) {
-        await db.run('ROLLBACK');
         console.error(error);
-        res.status(500).json({ success: false, message: 'Lỗi server khi thu tiền' });
+        res.status(error.statusCode || 500).json({ success: false, message: error.statusCode ? error.message : 'Lỗi server khi thu tiền', data: null });
     }
 };

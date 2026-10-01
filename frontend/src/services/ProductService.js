@@ -12,6 +12,26 @@ class ProductService {
         return await ApiClient.get(url);
     }
 
+    async getStockReceipts() {
+        return await ApiClient.get('/products/receipts');
+    }
+
+    async getPosRecommendations(need) {
+        return await ApiClient.post('/products/assist', { need });
+    }
+
+    async getBundleSuggestions(productIds) {
+        return await ApiClient.post('/products/bundle-suggestions', { product_ids: productIds });
+    }
+
+    async getReplenishmentSuggestions() {
+        return await ApiClient.get('/products/replenishment-suggestions');
+    }
+
+    async createStockReceipt(data) {
+        return await ApiClient.post('/products/receipts', data);
+    }
+
     async createProduct(data) {
         return await ApiClient.post('/products', data);
     }

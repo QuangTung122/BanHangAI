@@ -10,7 +10,7 @@ export default class StaffReturnWarrantyView {
                     <div class="p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50 shrink-0">
                         <div>
                             <h2 class="text-lg font-black text-slate-900">Đổi trả hàng & Tiếp nhận Bảo hành</h2>
-                            <p class="text-xs text-slate-600 font-semibold mt-0.5">Xử lý các yêu cầu đổi hàng, hoàn tiền hoặc bảo hành sản phẩm của khách hàng</p>
+                            <p class="text-xs text-slate-600 font-semibold mt-0.5">Staff tiếp nhận và theo dõi; chủ cửa hàng/admin duyệt đổi hoặc hoàn tiền. Bảo hành được chuyển hãng/TTBH khi cần.</p>
                         </div>
                         <div class="flex gap-2">
                             <button data-tab="create" class="main-tab-btn px-4 py-2 rounded-xl text-xs font-black bg-indigo-600 text-white shadow-sm">Tạo yêu cầu mới</button>
@@ -181,7 +181,7 @@ export default class StaffReturnWarrantyView {
                         <div class="font-black text-indigo-700 text-sm">${order.invoice_code || 'INV-' + order.id}</div>
                         <div class="text-xs text-slate-600 font-semibold mt-0.5">${new Date(order.created_at).toLocaleString('vi-VN')}</div>
                     </div>
-                    <span class="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 text-[10px] font-black uppercase border border-emerald-200">Đã thanh toán</span>
+                    <span class="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 text-[10px] font-black uppercase border border-emerald-200">Đã bán · ${order.payment_type === 'installment' ? 'Trả góp' : 'Thanh toán đủ'}</span>
                 </div>
                 <div class="mt-2.5 pt-2 border-t border-slate-100 text-xs text-slate-700 font-semibold space-y-0.5">
                     <div>Khách hàng: <strong class="text-slate-900 font-black">${order.customer_name || 'Khách vãng lai'}</strong></div>
@@ -194,12 +194,15 @@ export default class StaffReturnWarrantyView {
     renderDetail(order) {
         const items = order.items || [];
 
-        const itemHtml = items.map(item => `
+        const itemHtml = items.map(item => {
+            const returnableQuantity = Math.max(0, Number(item.returnable_quantity ?? item.quantity) || 0);
+            return `
             <div class="border border-slate-200 rounded-xl p-3.5 bg-slate-50">
                 <div class="flex items-center justify-between gap-3">
                     <div>
                         <div class="font-black text-slate-900 text-sm">${item.product_name || 'Sản phẩm'}</div>
-                        <div class="text-xs text-slate-700 font-semibold mt-1">Số lượng: <b class="text-slate-900">${item.quantity}</b> • Đơn giá: <b class="text-indigo-700">${this.formatMoney(item.unit_price)}</b></div>
+                        <div class="text-xs text-slate-700 font-semibold mt-1">Đã mua: <b class="text-slate-900">${item.quantity}</b> • Còn có thể trả: <b class="${returnableQuantity > 0 ? 'text-emerald-700' : 'text-rose-700'}">${returnableQuantity}</b></div>
+                        <div class="text-xs text-slate-700 font-semibold mt-1">Đơn giá: <b class="text-indigo-700">${this.formatMoney(item.unit_price)}</b></div>
                     </div>
                     <div class="text-right">
                         <div class="text-[10px] uppercase font-bold text-slate-500">Chế độ</div>
@@ -207,12 +210,13 @@ export default class StaffReturnWarrantyView {
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2 mt-3 pt-2 border-t border-slate-200">
-                    <button class="action-btn px-3 py-1.5 rounded-lg text-xs font-black bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 transition-colors shadow-sm" data-action="exchange" data-item-id="${item.id}">Đổi hàng</button>
-                    <button class="action-btn px-3 py-1.5 rounded-lg text-xs font-black bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300 transition-colors shadow-sm" data-action="refund" data-item-id="${item.id}">Trả hàng hoàn tiền</button>
+                    <button class="action-btn px-3 py-1.5 rounded-lg text-xs font-black bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed" data-action="exchange" data-item-id="${item.id}" ${returnableQuantity === 0 ? 'disabled' : ''}>Đổi hàng</button>
+                    <button class="action-btn px-3 py-1.5 rounded-lg text-xs font-black bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300 transition-colors shadow-sm disabled:opacity-40 disabled:cursor-not-allowed" data-action="refund" data-item-id="${item.id}" ${returnableQuantity === 0 ? 'disabled' : ''}>Trả hàng hoàn tiền</button>
                     <button class="action-btn px-3 py-1.5 rounded-lg text-xs font-black bg-blue-100 text-blue-900 hover:bg-blue-200 border border-blue-300 transition-colors shadow-sm" data-action="warranty" data-item-id="${item.id}">Nhận bảo hành</button>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
 
         this.container.querySelector('#return-detail-panel').innerHTML = `
             <div class="space-y-4">
@@ -265,9 +269,23 @@ export default class StaffReturnWarrantyView {
                     <label class="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Hình thức tiếp nhận</label>
                     <select id="warranty-type" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-bold focus:outline-none focus:border-indigo-600 shadow-sm">
                         <option value="repair">Gửi trung tâm bảo hành sửa chữa</option>
-                        <option value="replace">Đổi mới linh kiện tại chỗ</option>
+                        <option value="replace">Yêu cầu hãng đổi mới theo bảo hành</option>
                         <option value="inspection">Giữ máy thẩm định lỗi</option>
                     </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Mã tiếp nhận hãng/TTBH (nếu có)</label>
+                    <input id="warranty-service-reference" maxlength="100" placeholder="Để trống nếu chưa gửi hãng" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold">
+                </div>
+            `;
+        }
+
+        const returnableQuantity = Math.max(0, Number(item.returnable_quantity ?? item.quantity) || 0);
+        if (type !== 'warranty') {
+            formFields += `
+                <div>
+                    <label class="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1">Số lượng tiếp nhận (còn ${returnableQuantity})</label>
+                    <input id="return-quantity" type="number" min="1" max="${returnableQuantity}" value="${returnableQuantity > 0 ? 1 : 0}" required ${returnableQuantity === 0 ? 'disabled' : ''} class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 font-bold focus:outline-none focus:border-indigo-600 shadow-sm">
                 </div>
             `;
         }
@@ -332,10 +350,25 @@ export default class StaffReturnWarrantyView {
 
         listEl.innerHTML = historyData.map(item => {
             let actionBtn = '';
-            if (item.idPrefix === 'WAR-' && item.status !== 'completed' && item.status !== 'cancelled' && item.status !== 'rejected') {
-                actionBtn = `<button class="btn-complete-warranty px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-[11px] font-black hover:bg-emerald-600 shadow-sm" data-id="${item.id}">Hoàn thành</button>`;
-            } else if (item.idPrefix === 'RET-' && item.status !== 'completed' && item.status !== 'cancelled' && item.status !== 'rejected') {
-                actionBtn = `<button class="btn-complete-return px-3 py-1.5 bg-indigo-500 text-white rounded-lg text-[11px] font-black hover:bg-indigo-600 shadow-sm" data-id="${item.id}">Hoàn thành</button>`;
+            if (item.idPrefix === 'WAR-') {
+                const warrantyActions = {
+                    pending: ['in_review', 'Gửi hãng/TTBH', 'bg-blue-600'],
+                    approved: ['repairing', 'Bắt đầu xử lý', 'bg-indigo-600'],
+                    repairing: ['repaired', 'Đã nhận kết quả', 'bg-indigo-600'],
+                    repaired: ['completed', 'Bàn giao & hoàn tất', 'bg-emerald-600']
+                };
+                if (['owner', 'admin'].includes(this.currentRole) && item.status === 'in_review') {
+                    actionBtn = `<button class="btn-warranty-transition px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[11px] font-black" data-id="${item.id}" data-status="approved">Duyệt hồ sơ</button><button class="btn-warranty-transition px-3 py-1.5 bg-rose-600 text-white rounded-lg text-[11px] font-black" data-id="${item.id}" data-status="rejected">Từ chối</button>`;
+                } else if (warrantyActions[item.status]) {
+                    const [nextStatus, label, color] = warrantyActions[item.status];
+                    actionBtn = `<button class="btn-warranty-transition ${nextStatus === 'completed' ? 'btn-complete-warranty' : ''} px-3 py-1.5 ${color} text-white rounded-lg text-[11px] font-black" data-id="${item.id}" data-status="${nextStatus}">${label}</button>`;
+                }
+            } else if (item.idPrefix === 'RET-') {
+                if (['owner', 'admin'].includes(this.currentRole) && item.status === 'pending') {
+                    actionBtn = `<button class="btn-approve-return px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[11px] font-black" data-id="${item.id}" data-status="approved">Duyệt</button><button class="btn-approve-return px-3 py-1.5 bg-rose-600 text-white rounded-lg text-[11px] font-black" data-id="${item.id}" data-status="rejected">Từ chối</button>`;
+                } else if (item.status === 'approved') {
+                    actionBtn = `<button class="btn-complete-return px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[11px] font-black" data-id="${item.id}">Thực hiện & hoàn tất</button>`;
+                }
             }
 
             return `
@@ -343,19 +376,27 @@ export default class StaffReturnWarrantyView {
                 <td class="py-3 px-4 border-b border-slate-100 font-black text-slate-900">${item.idPrefix}${item.id}</td>
                 <td class="py-3 px-4 border-b border-slate-100 font-bold text-indigo-700">${item.invoice_code || ('INV-' + item.order_id)}</td>
                 <td class="py-3 px-4 border-b border-slate-100 font-bold text-slate-700">${item.customer_name || 'Khách vãng lai'}</td>
-                <td class="py-3 px-4 border-b border-slate-100">${getTypeBadge(item.displayType)}</td>
+                <td class="py-3 px-4 border-b border-slate-100">${getTypeBadge(item.displayType)}<div class="mt-1 text-[11px] font-bold text-slate-500">${this.statusLabel(item.status)}</div></td>
                 <td class="py-3 px-4 border-b border-slate-100 text-sm font-semibold text-slate-700">${item.creator_name || 'Hệ thống'}</td>
                 <td class="py-3 px-4 border-b border-slate-100 text-slate-500 font-semibold text-xs">${new Date(item.created_at || item.requested_at || item.claimed_at).toLocaleString('vi-VN')}</td>
                 <td class="py-3 px-4 border-b border-slate-100 text-right">
                     <div class="flex items-center justify-end gap-2">
                         ${actionBtn}
                         <button class="btn-track px-3 py-1.5 bg-white border border-slate-300 text-slate-700 rounded-lg text-[11px] font-black hover:bg-slate-50 shadow-sm" data-id="${item.id}" data-type="${item.idPrefix}">Theo dõi</button>
-                        <button class="btn-delete-ticket px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-[11px] font-black hover:bg-rose-100 shadow-sm" data-id="${item.id}" data-type="${item.idPrefix}">Xóa</button>
                     </div>
                 </td>
             </tr>
             `;
         }).join('');
+    }
+
+    statusLabel(status) {
+        const labels = {
+            pending: 'Chờ tiếp nhận', in_review: 'Đang chờ duyệt', approved: 'Đã duyệt',
+            repairing: 'Đang xử lý tại hãng', repaired: 'Đã có kết quả', completed: 'Đã hoàn tất',
+            rejected: 'Bị từ chối', cancelled: 'Đã hủy'
+        };
+        return labels[status] || status || '—';
     }
 
     showWarrantyFeeModal(warrantyId) {
@@ -401,8 +442,12 @@ export default class StaffReturnWarrantyView {
                     </div>
                     <div>
                         <div class="text-xs text-slate-500 uppercase font-bold">Trạng thái</div>
-                        <div class="font-black text-slate-900">${data.status}</div>
+                        <div class="font-black text-slate-900">${this.statusLabel(data.status)}</div>
                     </div>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <div class="text-xs text-slate-500 uppercase font-bold mb-1">Đơn vị xử lý</div>
+                    <div class="text-sm font-semibold text-slate-800">${data.service_provider || 'Hãng/TTBH ủy quyền (mô phỏng)'}${data.service_reference ? ` · Mã: ${data.service_reference}` : ''}</div>
                 </div>
                 <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
                     <div class="text-xs text-slate-500 uppercase font-bold mb-1">Mô tả lỗi</div>
@@ -424,7 +469,7 @@ export default class StaffReturnWarrantyView {
                     </div>
                     <div>
                         <div class="text-xs text-slate-500 uppercase font-bold">Trạng thái</div>
-                        <div class="font-black text-slate-900">${data.status}</div>
+                        <div class="font-black text-slate-900">${this.statusLabel(data.status)}</div>
                     </div>
                 </div>
                 <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">

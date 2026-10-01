@@ -3,8 +3,9 @@ export default class OwnerProductView {
         this.container = document.getElementById('content-area');
     }
 
-    render(products, categories, currentFilter = 'all') {
+    render(products, categories, currentFilter = 'all', replenishmentSuggestions = []) {
         this.categories = categories;
+        this.receiptProducts = this.receiptProducts || [];
         const fmt = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
 
         let rows = products.map((p, idx) => `
@@ -54,16 +55,27 @@ export default class OwnerProductView {
 
         let html = `
             <div class="h-full flex flex-col gap-6 relative">
+                <section class="bg-white rounded-2xl border border-amber-200 shadow-sm p-4 md:p-5">
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                        <div><h3 class="font-black text-slate-900">Hỗ trợ quyết định nhập hàng</h3><p class="text-xs text-slate-600 mt-1">Dựa trên tồn kho và lượng bán 30 ngày gần nhất; chỉ là đề xuất để owner xem xét.</p></div>
+                        <span class="text-[10px] font-black uppercase text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1">AI + quy tắc dữ liệu</span>
+                    </div>
+                    ${replenishmentSuggestions.length ? `<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">${replenishmentSuggestions.slice(0, 6).map((item) => `<div class="border ${item.priority === 'critical' ? 'border-rose-200 bg-rose-50/60' : 'border-amber-100 bg-amber-50/40'} rounded-xl p-3"><div class="flex justify-between gap-2"><p class="font-bold text-sm text-slate-900">${item.name}</p><span class="text-[10px] font-black uppercase ${item.priority === 'critical' ? 'text-rose-700' : 'text-amber-800'}">${item.priority === 'critical' ? 'Ưu tiên cao' : 'Theo dõi'}</span></div><p class="text-xs text-slate-600 mt-1">Tồn ${item.stock_quantity} · Bán ${item.sold_30_days} trong 30 ngày${item.days_of_stock !== null ? ` · khoảng ${item.days_of_stock} ngày tồn` : ''}</p><p class="text-xs font-black text-indigo-700 mt-1">Tham khảo nhập: ${item.suggested_quantity}</p></div>`).join('')}</div>` : '<p class="text-sm text-emerald-700 bg-emerald-50 rounded-xl p-3">Chưa có sản phẩm cần ưu tiên nhập theo ngưỡng và dữ liệu bán gần đây.</p>'}
+                </section>
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex-1 flex flex-col">
                     <div class="p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
                             <h2 class="text-lg font-black text-slate-900">Quản lý Kho hàng & Sản phẩm</h2>
                             <p class="text-xs text-slate-600 font-semibold mt-0.5">Theo dõi số lượng tồn kho, giá nhập và giá bán lẻ theo thời gian thực</p>
                         </div>
-                        <button id="btn-add-product" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-black rounded-xl shadow-sm transition-all flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"/></svg>
-                            Thêm sản phẩm mới
-                        </button>
+                        <div class="flex flex-wrap gap-2">
+                            <button id="btn-view-stock-receipts" class="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-700 text-xs font-black rounded-xl border border-slate-300 transition-all">Lịch sử nhập kho</button>
+                            <button id="btn-stock-receipt" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-black rounded-xl shadow-sm transition-all">+ Nhập hàng</button>
+                            <button id="btn-add-product" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-black rounded-xl shadow-sm transition-all flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"/></svg>
+                                Thêm sản phẩm mới
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between gap-4 bg-slate-50 flex-wrap">
@@ -235,6 +247,43 @@ export default class OwnerProductView {
                     </div>
                 </div>
             </div>
+
+            <div id="modal-stock-receipt" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center hidden p-4">
+                <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-emerald-50">
+                        <div>
+                            <h3 class="text-base font-black text-slate-900">Lập phiếu nhập kho</h3>
+                            <p class="text-xs text-slate-600 mt-1">Ghi nhà cung cấp, giá vốn và số lượng. Hệ thống cập nhật tồn kho cùng phiếu nhập.</p>
+                        </div>
+                        <button type="button" id="btn-close-stock-receipt" class="w-8 h-8 rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-100">×</button>
+                    </div>
+                    <form id="form-stock-receipt" class="flex flex-col min-h-0">
+                        <div class="p-6 overflow-y-auto space-y-5">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div><label class="block text-xs font-bold text-slate-700 mb-1">Nhà cung cấp *</label><input id="receipt-supplier-name" required maxlength="120" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold" placeholder="Tên nhà cung cấp"></div>
+                                <div><label class="block text-xs font-bold text-slate-700 mb-1">Số điện thoại</label><input id="receipt-supplier-phone" maxlength="20" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold" placeholder="Số liên hệ"></div>
+                                <div><label class="block text-xs font-bold text-slate-700 mb-1">Số hóa đơn nhà cung cấp</label><input id="receipt-supplier-invoice" maxlength="80" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold" placeholder="Không bắt buộc"></div>
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between mb-2"><h4 class="text-sm font-black text-slate-800">Sản phẩm nhập</h4><button type="button" id="btn-add-receipt-line" class="px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-black">+ Thêm dòng</button></div>
+                                <div id="receipt-lines" class="space-y-2"></div>
+                            </div>
+                            <div><label class="block text-xs font-bold text-slate-700 mb-1">Ghi chú</label><textarea id="receipt-notes" maxlength="500" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold" placeholder="Tình trạng giao hàng, điều khoản bảo hành..."></textarea></div>
+                        </div>
+                        <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
+                            <button type="button" id="btn-cancel-stock-receipt" class="px-4 py-2 bg-white border border-slate-300 text-slate-700 text-xs font-black rounded-lg">Hủy</button>
+                            <button type="submit" id="btn-submit-stock-receipt" class="px-5 py-2 bg-emerald-600 text-white text-xs font-black rounded-lg hover:bg-emerald-700">Ghi nhận nhập kho</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="modal-stock-receipt-history" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center hidden p-4">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50"><h3 class="text-base font-black text-slate-900">Lịch sử nhập kho</h3><button type="button" id="btn-close-stock-receipt-history" class="w-8 h-8 rounded-lg border border-slate-300 bg-white text-slate-600">×</button></div>
+                    <div class="overflow-auto p-4"><table class="w-full text-left text-sm"><thead class="bg-slate-100 text-xs uppercase text-slate-600"><tr><th class="p-3">Mã phiếu</th><th class="p-3">Nhà cung cấp</th><th class="p-3">Hóa đơn NCC</th><th class="p-3">Sản phẩm</th><th class="p-3">Tổng nhập</th><th class="p-3">Người nhận</th><th class="p-3">Ngày nhập</th></tr></thead><tbody id="stock-receipt-history-rows"><tr><td colspan="7" class="p-8 text-center text-slate-500">Đang tải...</td></tr></tbody></table></div>
+                </div>
+            </div>
         `;
 
         this.container.innerHTML = html;
@@ -253,6 +302,131 @@ export default class OwnerProductView {
     bindAddProduct(handler) {
         const btn = document.getElementById('btn-add-product');
         if (btn) btn.addEventListener('click', handler);
+    }
+
+    setReceiptProducts(products) {
+        this.receiptProducts = products || [];
+    }
+
+    bindStockReceipt(onSubmit, onHistory) {
+        const modal = document.getElementById('modal-stock-receipt');
+        const historyModal = document.getElementById('modal-stock-receipt-history');
+        const lines = document.getElementById('receipt-lines');
+        const form = document.getElementById('form-stock-receipt');
+        const addLineButton = document.getElementById('btn-add-receipt-line');
+        const openButton = document.getElementById('btn-stock-receipt');
+        const historyButton = document.getElementById('btn-view-stock-receipts');
+
+        openButton?.addEventListener('click', () => {
+            form?.reset();
+            if (lines) lines.innerHTML = '';
+            this.appendStockReceiptLine();
+            modal?.classList.remove('hidden');
+        });
+        document.getElementById('btn-close-stock-receipt')?.addEventListener('click', () => this.hideStockReceiptModal());
+        document.getElementById('btn-cancel-stock-receipt')?.addEventListener('click', () => this.hideStockReceiptModal());
+        document.getElementById('btn-close-stock-receipt-history')?.addEventListener('click', () => historyModal?.classList.add('hidden'));
+
+        addLineButton?.addEventListener('click', () => this.appendStockReceiptLine());
+        lines?.addEventListener('click', (event) => {
+            const removeButton = event.target.closest('.btn-remove-receipt-line');
+            if (removeButton) {
+                const line = removeButton.closest('.receipt-line');
+                if (lines.children.length > 1) line?.remove();
+                else if (line) {
+                    line.querySelector('.receipt-quantity').value = '1';
+                    const selected = line.querySelector('.receipt-product-select')?.selectedOptions[0];
+                    line.querySelector('.receipt-unit-cost').value = selected?.dataset.cost || '0';
+                }
+            }
+        });
+        lines?.addEventListener('change', (event) => {
+            const select = event.target.closest('.receipt-product-select');
+            if (!select) return;
+            const selected = select.selectedOptions[0];
+            const costInput = select.closest('.receipt-line')?.querySelector('.receipt-unit-cost');
+            if (costInput && selected) costInput.value = selected.dataset.cost || '0';
+        });
+
+        form?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const receiptItems = [...(lines?.querySelectorAll('.receipt-line') || [])].map((line) => ({
+                product_id: Number(line.querySelector('.receipt-product-select')?.value),
+                quantity: Number(line.querySelector('.receipt-quantity')?.value),
+                unit_cost: Number(line.querySelector('.receipt-unit-cost')?.value)
+            }));
+            if (!receiptItems.length || receiptItems.some((item) => !item.product_id || !item.quantity || item.unit_cost < 0)) {
+                window.showToast?.('Hãy chọn sản phẩm, số lượng và giá nhập hợp lệ cho từng dòng.', 'warning');
+                return;
+            }
+
+            const submitButton = document.getElementById('btn-submit-stock-receipt');
+            submitButton.disabled = true;
+            submitButton.innerText = 'Đang ghi nhận...';
+            try {
+                await onSubmit({
+                    supplier_name: document.getElementById('receipt-supplier-name').value.trim(),
+                    supplier_phone: document.getElementById('receipt-supplier-phone').value.trim(),
+                    supplier_invoice: document.getElementById('receipt-supplier-invoice').value.trim(),
+                    notes: document.getElementById('receipt-notes').value.trim(),
+                    items: receiptItems
+                });
+            } finally {
+                submitButton.disabled = false;
+                submitButton.innerText = 'Ghi nhận nhập kho';
+            }
+        });
+
+        historyButton?.addEventListener('click', async () => {
+            historyModal?.classList.remove('hidden');
+            const rows = document.getElementById('stock-receipt-history-rows');
+            if (rows) rows.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-500">Đang tải...</td></tr>';
+            try {
+                const receipts = await onHistory();
+                this.renderStockReceiptHistory(receipts || []);
+            } catch (error) {
+                if (rows) rows.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-rose-600">Không tải được lịch sử nhập kho.</td></tr>';
+            }
+        });
+    }
+
+    appendStockReceiptLine() {
+        const lines = document.getElementById('receipt-lines');
+        if (!lines || !this.receiptProducts?.length) {
+            window.showToast?.('Cần tạo ít nhất một sản phẩm trước khi lập phiếu nhập.', 'warning');
+            return;
+        }
+        const options = this.receiptProducts.map((product) =>
+            `<option value="${product.id}" data-cost="${product.import_price || 0}">${product.name}${product.sku ? ` · ${product.sku}` : ''}</option>`
+        ).join('');
+        const line = document.createElement('div');
+        line.className = 'receipt-line grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_auto] gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl';
+        line.innerHTML = `
+            <select class="receipt-product-select px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold" required>${options}</select>
+            <input class="receipt-quantity px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold" type="number" min="1" step="1" value="1" required aria-label="Số lượng nhập">
+            <input class="receipt-unit-cost px-3 py-2 border border-slate-300 rounded-lg text-sm font-semibold" type="number" min="0" step="1" value="${this.receiptProducts[0].import_price || 0}" required aria-label="Giá nhập một sản phẩm">
+            <button type="button" class="btn-remove-receipt-line px-3 py-2 text-rose-700 bg-rose-50 border border-rose-200 rounded-lg text-xs font-black">Xóa dòng</button>
+        `;
+        lines.appendChild(line);
+    }
+
+    renderStockReceiptHistory(receipts) {
+        const rows = document.getElementById('stock-receipt-history-rows');
+        if (!rows) return;
+        if (!receipts.length) {
+            rows.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-500">Chưa có phiếu nhập kho.</td></tr>';
+            return;
+        }
+        const money = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+        rows.innerHTML = receipts.map((receipt) => {
+            const totalQuantity = (receipt.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+            const receivedAt = new Date(`${String(receipt.created_at || '').replace(' ', 'T')}Z`);
+            return `<tr class="border-b border-slate-100"><td class="p-3 font-black text-indigo-700">PN-${receipt.id}</td><td class="p-3">${receipt.supplier_name}</td><td class="p-3">${receipt.supplier_invoice || '--'}</td><td class="p-3">${(receipt.items || []).length} mã · ${totalQuantity} sản phẩm</td><td class="p-3 font-bold">${money.format(receipt.total_cost || 0)}</td><td class="p-3">${receipt.receiver_name || '--'}</td><td class="p-3">${Number.isNaN(receivedAt.getTime()) ? '--' : receivedAt.toLocaleString('vi-VN')}</td></tr>`;
+        }).join('');
+    }
+
+    hideStockReceiptModal() {
+        document.getElementById('modal-stock-receipt')?.classList.add('hidden');
     }
 
     bindCloseModal(handler) {

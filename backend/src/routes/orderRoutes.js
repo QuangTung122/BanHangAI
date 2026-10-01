@@ -8,6 +8,5 @@ router.use(requireAuth);
 router.get('/my-stats', orderController.getMyStats);
 router.post('/', orderController.createOrder);
 router.get('/', orderController.getOrders);
-router.post('/:id/payments', orderController.addInstallmentPayment);
 
 export default router;

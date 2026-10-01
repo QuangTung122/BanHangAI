@@ -36,7 +36,8 @@ export async function getAiConfig() {
     config.host = config.host.replace('://localhost', '://127.0.0.1');
 
     const maxTokensRow = rows.find(r => r.key === 'ai_max_tokens');
-    config.max_tokens = maxTokensRow ? parseInt(maxTokensRow.value) : 8192;
+    const configuredMaxTokens = maxTokensRow ? parseInt(maxTokensRow.value, 10) : 512;
+    config.max_tokens = Number.isFinite(configuredMaxTokens) && configuredMaxTokens > 0 ? configuredMaxTokens : 512;
 
     return config;
 }
@@ -127,75 +128,139 @@ export async function* generateChatStream(messages, userRole = 'admin') {
         }
     } else {
         let currentMessages = [...messages];
-        let toolCallOccurred = false;
+        const maxToolRounds = 2;
 
-        do {
-            toolCallOccurred = false;
-            
+        for (let round = 0; round < maxToolRounds; round += 1) {
             const requestBody = {
                 model: config.model,
                 messages: currentMessages,
                 stream: true,
                 tools: ollamaToolDeclarations,
                 options: {
-                    num_predict: config.max_tokens,
-                    num_ctx: 8192
+                    temperature: 0.2,
+                    num_predict: Math.min(config.max_tokens, 512),
+                    num_ctx: 4096
                 }
             };
 
             const response = await fetch(`${config.host}/api/chat`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody),
+                signal: AbortSignal.timeout(60000)
             });
 
             if (!response.ok) {
                 throw new Error(`Ollama API trả về mã lỗi: ${response.status}`);
             }
 
-            let funcCallName = null;
-            let funcCallArgs = null;
-            let assistantMessage = { role: 'assistant', content: '' };
+            let funcCall = null;
+            const assistantMessage = { role: 'assistant', content: '' };
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            const consumeLine = (line) => {
+                if (!line.trim()) return;
+                let parsed;
+                try {
+                    parsed = JSON.parse(line);
+                } catch {
+                    return;
+                }
+                if (parsed.error) throw new Error(parsed.error);
+                const message = parsed.message;
+                if (!message) return;
+                if (Array.isArray(message.tool_calls) && message.tool_calls.length > 0) {
+                    assistantMessage.tool_calls = message.tool_calls;
+                    const firstCall = message.tool_calls[0];
+                    funcCall = {
+                        name: firstCall?.function?.name,
+                        args: firstCall?.function?.arguments
+                    };
+                    return;
+                }
+                if (message.content) {
+                    assistantMessage.content += message.content;
+                    yieldChunk(message.content);
+                }
+            };
+
+            // Keep the stream incremental while carrying incomplete JSON lines between chunks.
+            const pendingChunks = [];
+            const yieldChunk = (value) => pendingChunks.push(value);
+            const flushOutput = async function* () {
+                while (pendingChunks.length) yield pendingChunks.shift();
+            };
 
             for await (const chunk of response.body) {
-                 const chunkStr = Buffer.from(chunk).toString('utf-8');
-                 const lines = chunkStr.split('\n').filter(line => line.trim() !== '');
-                 for (const line of lines) {
-                     try {
-                          const parsed = JSON.parse(line);
-                          if (parsed.message) {
-                              if (parsed.message.tool_calls && parsed.message.tool_calls.length > 0) {
-                                  // Lấy tool call đầu tiên
-                                  funcCallName = parsed.message.tool_calls[0].function.name;
-                                  funcCallArgs = parsed.message.tool_calls[0].function.arguments;
-                                  assistantMessage.tool_calls = parsed.message.tool_calls;
-                              } else if (parsed.message.content) {
-                                  const cleanContent = parsed.message.content.replace(/[\u4e00-\u9fa5]/g, '');
-                                  assistantMessage.content += cleanContent;
-                                  if (cleanContent) {
-                                      yield cleanContent;
-                                  }
-                              }
-                          }
-                      } catch(e) {}
-                 }
+                buffer += decoder.decode(chunk, { stream: true });
+                let newlineIndex;
+                while ((newlineIndex = buffer.indexOf('\n')) !== -1) {
+                    const line = buffer.slice(0, newlineIndex).replace(/\r$/, '');
+                    buffer = buffer.slice(newlineIndex + 1);
+                    consumeLine(line);
+                    yield* flushOutput();
+                }
+            }
+            buffer += decoder.decode();
+            if (buffer.trim()) {
+                consumeLine(buffer);
+                yield* flushOutput();
             }
 
-            if (funcCallName) {
-                toolCallOccurred = true;
-                currentMessages.push(assistantMessage);
-                
-                // Thực thi tool
-                const apiResponse = await executeAiTool(funcCallName, funcCallArgs, userRole);
-                
-                // Gửi lại kết quả tool cho Ollama
-                currentMessages.push({
-                    role: 'tool',
-                    content: JSON.stringify(apiResponse)
-                });
+            if (!funcCall?.name) return;
+
+            let functionArgs = funcCall.args || {};
+            if (typeof functionArgs === 'string') {
+                try {
+                    functionArgs = JSON.parse(functionArgs);
+                } catch {
+                    functionArgs = {};
+                }
             }
-        } while (toolCallOccurred);
+            currentMessages.push(assistantMessage);
+            const apiResponse = await executeAiTool(funcCall.name, functionArgs, userRole);
+            currentMessages.push({ role: 'tool', content: JSON.stringify(apiResponse) });
+        }
+
+        yield 'Mình chưa xử lý được yêu cầu này từ dữ liệu hiện có. Bạn thử hỏi ngắn gọn hơn hoặc dùng lệnh tra cứu cụ thể nhé.';
     }
+}
+
+// Text-only generation for database-grounded helpers. This path deliberately
+// omits tools so a small model can explain a server-selected result without
+// running another query or taking an action of its own.
+export async function generateGroundedText(systemPrompt, userPrompt) {
+    const config = await getAiConfig();
+    if (config.provider === 'gemini') {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) throw new Error('Thiếu GEMINI_API_KEY trong file .env');
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({
+            model: config.model,
+            systemInstruction: systemPrompt,
+            generationConfig: { maxOutputTokens: Math.min(config.max_tokens, 240), temperature: 0.2 }
+        });
+        const result = await model.generateContent(userPrompt);
+        return result.response.text().trim();
+    }
+
+    const response = await fetch(`${config.host}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            model: config.model,
+            stream: false,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: userPrompt }
+            ],
+            options: { temperature: 0.2, num_predict: Math.min(config.max_tokens, 240), num_ctx: 4096 }
+        }),
+        signal: AbortSignal.timeout(30000)
+    });
+    if (!response.ok) throw new Error(`Ollama API trả về mã lỗi: ${response.status}`);
+    const payload = await response.json();
+    if (payload.error) throw new Error(payload.error);
+    return String(payload.message?.content || '').trim();
 }

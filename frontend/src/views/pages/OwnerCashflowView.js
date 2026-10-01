@@ -51,7 +51,7 @@ export default class OwnerCashflowView {
                                 <h3 class="text-2xl font-black text-indigo-700 mt-0.5">${fmt.format(summary.balance || 0)}</h3>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 pt-2.5 border-t border-slate-100">
+                        <div class="grid grid-cols-3 gap-2 pt-2.5 border-t border-slate-100">
                             <div class="cursor-pointer" id="cash-breakdown-trigger">
                                 <p class="text-[10px] font-black text-slate-600 uppercase hover:text-amber-700 transition-colors">Tiền mặt tại quầy ▾</p>
                                 <p class="text-xs font-black text-amber-700 mt-0.5">${fmt.format(summary.total_cash || 0)}</p>
@@ -59,6 +59,10 @@ export default class OwnerCashflowView {
                             <div>
                                 <p class="text-[10px] font-black text-slate-600 uppercase">Tài khoản Ngân Hàng</p>
                                 <p class="text-xs font-black text-indigo-700 mt-0.5">${fmt.format(summary.total_transfer || 0)}</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-slate-600 uppercase">Thanh toán thẻ</p>
+                                <p class="text-xs font-black text-violet-700 mt-0.5">${fmt.format(summary.total_card || 0)}</p>
                             </div>
                         </div>
                     </div>
@@ -308,7 +312,9 @@ export default class OwnerCashflowView {
             
             const methodBadge = t.payment_method === 'transfer'
                 ? `<span class="inline-block mt-0.5 px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded border border-indigo-200">Chuyển khoản</span>`
-                : `<span class="inline-block mt-0.5 px-2 py-0.5 bg-amber-50 text-amber-900 text-[10px] font-bold rounded border border-amber-200">Tiền mặt</span>`;
+                : t.payment_method === 'card'
+                    ? `<span class="inline-block mt-0.5 px-2 py-0.5 bg-violet-50 text-violet-800 text-[10px] font-bold rounded border border-violet-200">Thẻ</span>`
+                    : `<span class="inline-block mt-0.5 px-2 py-0.5 bg-amber-50 text-amber-900 text-[10px] font-bold rounded border border-amber-200">Tiền mặt</span>`;
                 
             const amountColor = isIncome ? 'text-emerald-700' : 'text-rose-700';
             const amountPrefix = isIncome ? '+' : '-';

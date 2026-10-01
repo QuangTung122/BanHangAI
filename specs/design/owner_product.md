@@ -25,3 +25,5 @@
 - `POST /api/owner/product` - Thêm mới/Xử lý
 - `PUT /api/owner/product/:id` - Cập nhật
 - `DELETE /api/owner/product/:id` - Xóa
+- `GET /api/products/replenishment-suggestions` - Cảnh báo theo tồn kho, ngưỡng tối thiểu và lượng bán 30 ngày; chỉ owner/admin được truy cập.
+- Gợi ý số lượng nhập chỉ để tham khảo, không tự tạo phiếu nhập hoặc thay đổi tồn kho.

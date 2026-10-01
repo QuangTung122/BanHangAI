@@ -1,12 +1,15 @@
 import StaffReturnWarrantyView from '../views/pages/StaffReturnWarrantyView.js';
 import ReturnWarrantyService from '../services/ReturnWarrantyService.js';
 import OrderModel from '../models/OrderModel.js';
+import AuthModel from '../models/AuthModel.js';
 
 export default class StaffReturnWarrantyController {
     constructor() {
         this.view = new StaffReturnWarrantyView();
         this.orderModel = new OrderModel();
         this.service = new ReturnWarrantyService();
+        this.currentRole = new AuthModel().user?.role || 'staff';
+        this.view.currentRole = this.currentRole;
         this.orders = [];
         this.selectedOrder = null;
         this.historyData = [];
@@ -19,7 +22,7 @@ export default class StaffReturnWarrantyController {
         try {
             const res = await this.orderModel.fetchOrders();
             if (res && res.success) {
-                this.orders = res.data || [];
+                this.orders = (res.data || []).filter(order => order.status !== 'cancelled' && Number(order.has_payment) === 1);
             }
         } catch (error) {
             console.error('Lỗi tải hóa đơn cho đổi trả:', error);
@@ -119,6 +122,43 @@ export default class StaffReturnWarrantyController {
         container.querySelector('#btn-refresh-history')?.addEventListener('click', () => this.fetchHistory());
 
         container.addEventListener('click', async (e) => {
+            const returnApprovalBtn = e.target.closest('.btn-approve-return');
+            if (returnApprovalBtn) {
+                const id = Number(returnApprovalBtn.dataset.id);
+                const status = returnApprovalBtn.dataset.status;
+                returnApprovalBtn.disabled = true;
+                try {
+                    const res = await this.service.updateReturnRequestStatus(id, { status, action: 'none', refund_amount: 0 });
+                    if (res.data?.success) {
+                        window.showToast?.(status === 'approved' ? 'Đã duyệt phiếu đổi trả' : 'Đã từ chối phiếu đổi trả', 'success');
+                        await this.fetchHistory();
+                    } else window.showToast?.(res.data?.message || 'Không thể cập nhật phiếu', 'error');
+                } catch (error) {
+                    window.showToast?.('Lỗi kết nối máy chủ', 'error');
+                } finally {
+                    returnApprovalBtn.disabled = false;
+                }
+                return;
+            }
+
+            const warrantyTransitionBtn = e.target.closest('.btn-warranty-transition:not(.btn-complete-warranty)');
+            if (warrantyTransitionBtn) {
+                const id = Number(warrantyTransitionBtn.dataset.id);
+                const status = warrantyTransitionBtn.dataset.status;
+                warrantyTransitionBtn.disabled = true;
+                try {
+                    const res = await this.service.updateWarrantyClaimStatus(id, { status });
+                    if (res.data?.success) {
+                        window.showToast?.('Đã cập nhật tiến độ bảo hành', 'success');
+                        await this.fetchHistory();
+                    } else window.showToast?.(res.data?.message || 'Không thể cập nhật tiến độ', 'error');
+                } catch (error) {
+                    window.showToast?.('Lỗi kết nối máy chủ', 'error');
+                } finally {
+                    warrantyTransitionBtn.disabled = false;
+                }
+                return;
+            }
             // Xem Modal
             const trackBtn = e.target.closest('.btn-track');
             if (trackBtn) {
@@ -330,7 +370,7 @@ export default class StaffReturnWarrantyController {
                         order_item_id: selectedItem?.id,
                         product_id: selectedItem?.product_id,
                         product_name: selectedItem?.product_name,
-                        quantity: selectedItem?.quantity || 1,
+                        quantity: Number(container.querySelector('#return-quantity')?.value || 1),
                         unit_price: selectedItem?.unit_price || 0,
                         condition_status: container.querySelector('#return-condition')?.value || 'new',
                         defect_type: type === 'warranty' ? (container.querySelector('#warranty-type')?.value || 'repair') : null,
@@ -365,6 +405,8 @@ export default class StaffReturnWarrantyController {
                             claim_type: container.querySelector('#warranty-type')?.value || 'repair',
                             issue_description: reason,
                             issue_code: 'GENERAL',
+                            service_provider: 'Hãng/TTBH ủy quyền (mô phỏng)',
+                            service_reference: container.querySelector('#warranty-service-reference')?.value?.trim() || null,
                             created_by: null
                         };
                         

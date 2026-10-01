@@ -65,9 +65,24 @@ export default class ChatModule {
                 </div>
 
                 <!-- Khung nhập liệu -->
-                <div class="p-3 bg-white border-t border-slate-100">
+                <div class="relative p-3 bg-white border-t border-slate-100">
+                    <!-- Popup Lệnh Slash (Ẩn mặc định) -->
+                    <div id="command-popup" class="hidden absolute bottom-[60px] left-3 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden text-sm">
+                        <div class="p-2 border-b border-slate-100 bg-slate-50 font-bold text-xs text-slate-500 uppercase tracking-wider">Tổ hợp lệnh</div>
+                        <ul class="py-1">
+                            <li><button type="button" class="cmd-item w-full text-left px-3 py-2 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 font-medium" data-cmd="/giá ">💰 /giá</button></li>
+                            <li><button type="button" class="cmd-item w-full text-left px-3 py-2 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 font-medium" data-cmd="/tồn kho ">📦 /tồn kho</button></li>
+                            <li><button type="button" class="cmd-item w-full text-left px-3 py-2 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 font-medium" data-cmd="/khách hàng ">👤 /khách hàng</button></li>
+                            <li><button type="button" class="cmd-item w-full text-left px-3 py-2 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 font-medium" data-cmd="/báo cáo ">📊 /báo cáo</button></li>
+                            <li><button type="button" class="cmd-item w-full text-left px-3 py-2 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 font-medium" data-cmd="/liệt kê ">📋 /liệt kê</button></li>
+                            <li><button type="button" class="cmd-item w-full text-left px-3 py-2 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 font-medium" data-cmd="/tư vấn ">💡 /tư vấn</button></li>
+                        </ul>
+                    </div>
                     <form id="chat-form" class="flex items-center gap-2">
-                        <input type="text" id="chat-input" class="flex-1 bg-slate-100 border-none rounded-full px-4 py-2 focus:ring-2 focus:ring-indigo-100 focus:outline-none text-sm text-slate-700" placeholder="Hỏi tôi về sản phẩm..." autocomplete="off">
+                        <button type="button" id="btn-show-commands" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center hover:bg-indigo-100 hover:text-indigo-600 transition-colors shrink-0" title="Chọn lệnh">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path></svg>
+                        </button>
+                        <input type="text" id="chat-input" class="flex-1 bg-slate-100 border-none rounded-full px-4 py-2 focus:ring-2 focus:ring-indigo-100 focus:outline-none text-sm text-slate-700" placeholder="Gõ / để dùng lệnh hoặc hỏi..." autocomplete="off">
                         <button type="submit" id="btn-send-chat" class="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center hover:bg-indigo-100 transition-colors shrink-0">
                             <svg class="w-4 h-4 translate-x-px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                         </button>
@@ -95,6 +110,44 @@ export default class ChatModule {
 
         btnToggle.addEventListener('click', toggle);
         btnClose.addEventListener('click', toggle);
+        this.bindCommands();
+    }
+
+    bindCommands() {
+        const btnCommands = this.container.querySelector('#btn-show-commands');
+        const popup = this.container.querySelector('#command-popup');
+        const input = this.container.querySelector('#chat-input');
+        const cmdItems = this.container.querySelectorAll('.cmd-item');
+
+        if (!btnCommands || !popup) return;
+
+        btnCommands.addEventListener('click', (e) => {
+            e.stopPropagation();
+            popup.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!popup.classList.contains('hidden') && !popup.contains(e.target) && !btnCommands.contains(e.target)) {
+                popup.classList.add('hidden');
+            }
+        });
+
+        cmdItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const cmd = item.getAttribute('data-cmd');
+                input.value = cmd;
+                input.focus();
+                popup.classList.add('hidden');
+            });
+        });
+
+        input.addEventListener('input', (e) => {
+            if (e.target.value === '/') {
+                popup.classList.remove('hidden');
+            } else if (e.target.value.length === 0 || !e.target.value.startsWith('/')) {
+                popup.classList.add('hidden');
+            }
+        });
     }
 
     bindSendMessage(handler) {

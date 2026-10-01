@@ -6,9 +6,7 @@ import {
     approveReturnRequest,
     createWarrantyClaim,
     getWarrantyClaims,
-    updateWarrantyClaimStatus,
-    deleteReturnRequest,
-    deleteWarrantyClaim
+    updateWarrantyClaimStatus
 } from '../controllers/returnWarrantyController.js';
 
 const router = express.Router();
@@ -23,8 +21,5 @@ router.put('/returns/:id/approve', approveReturnRequest);
 router.post('/warranty-claims', createWarrantyClaim);
 router.get('/warranty-claims', getWarrantyClaims);
 router.put('/warranty-claims/:id/status', updateWarrantyClaimStatus);
-
-router.delete('/returns/:id', deleteReturnRequest);
-router.delete('/warranty-claims/:id', deleteWarrantyClaim);
 
 export default router;

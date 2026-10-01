@@ -1,6 +1,7 @@
 import StaffPOSView from '../views/pages/StaffPOSView.js';
 import ProductModel from '../models/ProductModel.js';
 import CartModel from '../models/CartModel.js';
+import ProductService from '../services/ProductService.js';
 
 export default class StaffPOSController {
     constructor() {
@@ -11,6 +12,7 @@ export default class StaffPOSController {
         this.currentCategory = '';
         this.currentSearch = '';
         this.searchTimeout = null;
+        this.bundleTimeout = null;
 
         this.init();
     }
@@ -35,10 +37,15 @@ export default class StaffPOSController {
         );
 
         this.bindEvents();
+        this.refreshBundleSuggestions();
     }
 
     bindEvents() {
         const container = this.view.container;
+        container.querySelector('#btn-pos-ai-search')?.addEventListener('click', () => this.recommendProducts());
+        container.querySelector('#pos-ai-need')?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') { event.preventDefault(); this.recommendProducts(); }
+        });
 
         // Ô tìm kiếm (Debounce)
         const searchInput = container.querySelector('#pos-search');
@@ -87,7 +94,7 @@ export default class StaffPOSController {
                             }
                             const res = this.cartModel.addItem(product, qty);
                             if (res.success) {
-                                this.view.updateCart(this.cartModel.items, this.cartModel.getTotalPrice());
+                                this.updateCart();
                             } else {
                                 alert(res.message);
                             }
@@ -99,6 +106,16 @@ export default class StaffPOSController {
 
         // Sự kiện trên Giỏ hàng (+, -, xóa, clear, checkout)
         container.addEventListener('click', (e) => {
+            const suggestedAdd = e.target.closest('.btn-ai-add-cart, .btn-bundle-add');
+            if (suggestedAdd) {
+                const productId = Number(suggestedAdd.dataset.id);
+                const product = this.productModel.products.find((item) => item.id === productId)
+                    || this.suggestedProducts?.find((item) => item.id === productId);
+                if (product) {
+                    const result = this.cartModel.addItem(product, 1);
+                    if (result.success) this.updateCart(); else alert(result.message);
+                }
+            }
             // Tăng
             const btnPlus = e.target.closest('.btn-qty-plus');
             if (btnPlus) {
@@ -107,7 +124,7 @@ export default class StaffPOSController {
                 if (item) {
                     const res = this.cartModel.updateQuantity(id, item.quantity + 1);
                     if (!res.success) alert(res.message);
-                    this.view.updateCart(this.cartModel.items, this.cartModel.getTotalPrice());
+                    this.updateCart();
                 }
             }
 
@@ -118,7 +135,7 @@ export default class StaffPOSController {
                 const item = this.cartModel.items.find(i => i.product.id === id);
                 if (item) {
                     this.cartModel.updateQuantity(id, item.quantity - 1);
-                    this.view.updateCart(this.cartModel.items, this.cartModel.getTotalPrice());
+                    this.updateCart();
                 }
             }
 
@@ -127,7 +144,7 @@ export default class StaffPOSController {
             if (btnRemove) {
                 const id = parseInt(btnRemove.dataset.id);
                 this.cartModel.removeItem(id);
-                this.view.updateCart(this.cartModel.items, this.cartModel.getTotalPrice());
+                this.updateCart();
             }
 
             // Xóa giỏ hàng
@@ -135,7 +152,7 @@ export default class StaffPOSController {
             if (btnClear) {
                 if (this.cartModel.items.length > 0 && confirm('Bạn có chắc muốn xóa sạch giỏ hàng?')) {
                     this.cartModel.clearCart();
-                    this.view.updateCart(this.cartModel.items, this.cartModel.getTotalPrice());
+                    this.updateCart();
                 }
             }
 
@@ -171,6 +188,7 @@ export default class StaffPOSController {
                 this.calculateInstallment();
             });
         }
+        container.querySelector('#pos-down-payment')?.addEventListener('input', () => this.calculateInstallment());
     }
 
     calculateInstallment() {
@@ -178,20 +196,52 @@ export default class StaffPOSController {
         if (total === 0) return;
 
         const termSelect = this.view.container.querySelector('#pos-installment-term');
-        const term = parseInt(termSelect.value); // 3, 6, 9, 12
-        
-        // Tính % Phí theo quy tắc: 3 tháng=2%, 6 tháng=4%, 9 tháng=6%, 12 tháng=8%
-        let feePercent = 0.02; 
-        if (term === 6) feePercent = 0.04;
-        if (term === 9) feePercent = 0.06;
-        if (term === 12) feePercent = 0.08;
+        const downPayment = Math.min(total, Math.max(0, Number(this.view.container.querySelector('#pos-down-payment')?.value) || 0));
+        this.view.container.querySelector('#pos-inst-down').innerText = this.view.formatMoney(downPayment);
+        this.view.container.querySelector('#pos-inst-financed').innerText = this.view.formatMoney(total - downPayment);
+    }
 
-        const fee = total * feePercent;
-        const monthly = (total + fee) / term;
+    updateCart() {
+        this.view.updateCart(this.cartModel.items, this.cartModel.getTotalPrice());
+        this.refreshBundleSuggestions();
+    }
 
-        this.view.container.querySelector('#pos-inst-base').innerText = this.view.formatMoney(total);
-        this.view.container.querySelector('#pos-inst-fee').innerText = this.view.formatMoney(fee);
-        this.view.container.querySelector('#pos-inst-monthly').innerText = this.view.formatMoney(monthly);
+    async recommendProducts() {
+        const input = this.view.container.querySelector('#pos-ai-need');
+        const need = input?.value.trim() || '';
+        if (need.length < 3) { alert('Vui lòng mô tả nhu cầu khách ít nhất 3 ký tự.'); return; }
+        const button = this.view.container.querySelector('#btn-pos-ai-search');
+        button.disabled = true;
+        this.view.renderPosRecommendations(null, true);
+        try {
+            const response = await ProductService.getPosRecommendations(need);
+            if (response.data?.success) {
+                this.suggestedProducts = response.data.data.products || [];
+                this.view.renderPosRecommendations(response.data.data);
+            }
+            else this.view.renderPosRecommendations({ explanation: response.data?.message || 'Không thể tạo gợi ý.' });
+        } catch (error) {
+            console.error('POS recommendation failed:', error);
+            this.view.renderPosRecommendations({ explanation: 'Không kết nối được dịch vụ gợi ý. Có thể tiếp tục tìm sản phẩm bằng bộ lọc thường.' });
+        } finally { button.disabled = false; }
+    }
+
+    refreshBundleSuggestions() {
+        clearTimeout(this.bundleTimeout);
+        const ids = this.cartModel.items.map((item) => item.product.id);
+        if (!ids.length) { this.view.renderBundleSuggestions([]); return; }
+        this.bundleTimeout = setTimeout(async () => {
+            this.view.renderBundleSuggestions([], true);
+            try {
+                const response = await ProductService.getBundleSuggestions(ids);
+                const products = response.data?.data?.products || [];
+                this.suggestedProducts = [...(this.suggestedProducts || []), ...products.filter((product) => !(this.suggestedProducts || []).some((known) => known.id === product.id))];
+                this.view.renderBundleSuggestions(products);
+            } catch (error) {
+                console.warn('Bundle suggestions unavailable:', error);
+                this.view.renderBundleSuggestions([]);
+            }
+        }, 250);
     }
 
     async handleCheckout() {
@@ -205,11 +255,15 @@ export default class StaffPOSController {
         const name = this.view.container.querySelector('#pos-customer-name').value.trim();
         const receiptType = this.view.container.querySelector('#pos-receipt-type').value; // Hình thức nhận tiền
         
-        let cccd = null, term = null, monthlyFee = null, qrAmount = this.cartModel.getTotalPrice();
+        let cccd = null, term = null, qrAmount = this.cartModel.getTotalPrice();
+        let financePartner = null, financeReference = null, downPayment = 0;
 
         if (paymentType === 'installment') {
             cccd = this.view.container.querySelector('#pos-customer-cccd').value.trim();
             term = parseInt(this.view.container.querySelector('#pos-installment-term').value);
+            financePartner = this.view.container.querySelector('#pos-finance-partner').value;
+            financeReference = this.view.container.querySelector('#pos-finance-reference').value.trim();
+            downPayment = Number(this.view.container.querySelector('#pos-down-payment').value || 0);
             
             if (!name || !phone || !cccd) {
                 alert('Vui lòng nhập đầy đủ Tên, Số điện thoại và CCCD để làm hồ sơ trả góp!');
@@ -223,17 +277,12 @@ export default class StaffPOSController {
                 alert('Số CCCD phải đủ 12 số!');
                 return;
             }
-            
-            // Tính cước hàng tháng để gán vào QR code (khách thanh toán tháng đầu tiên)
-            let feePercent = 0.02; 
-            if (term === 6) feePercent = 0.04;
-            if (term === 9) feePercent = 0.06;
-            if (term === 12) feePercent = 0.08;
-            
             const total = this.cartModel.getTotalPrice();
-            const fee = total * feePercent;
-            monthlyFee = (total + fee) / term;
-            qrAmount = monthlyFee; // Chỉ quét QR số tiền tháng đầu
+            if (!Number.isSafeInteger(downPayment) || downPayment < 0 || downPayment >= total) {
+                alert('Tiền khách trả trước phải nhỏ hơn tổng hóa đơn để còn khoản tài chính giải ngân.');
+                return;
+            }
+            qrAmount = downPayment;
         } else {
             if (phone && !/^[0-9]{10}$/.test(phone)) {
                 alert('Số điện thoại không hợp lệ! Vui lòng nhập đúng 10 chữ số.');
@@ -248,7 +297,9 @@ export default class StaffPOSController {
             customer_phone: phone,
             customer_cccd: cccd,
             installment_term: term,
-            monthly_fee: monthlyFee
+            finance_partner: financePartner,
+            finance_application_code: financeReference,
+            down_payment: downPayment
         };
 
         const btn = this.view.container.querySelector('#btn-checkout');
@@ -258,15 +309,23 @@ export default class StaffPOSController {
         try {
             const { data } = await this.cartModel.createOrder(orderData);
             if (data && data.success) {
-                const invoiceCode = data.data.invoice_code;
-                const dateStr = new Date(data.data.created_at).toLocaleString('vi-VN');
+                const savedOrder = data.data;
+                const invoiceCode = savedOrder.invoice_code;
+                const dateStr = new Date(savedOrder.created_at).toLocaleString('vi-VN');
+                orderData.total_amount = savedOrder.total_amount;
+                orderData.down_payment = savedOrder.down_payment ?? downPayment;
+                orderData.financed_amount = savedOrder.financed_amount;
+                orderData.finance_partner = savedOrder.finance_partner || financePartner;
+                orderData.finance_application_code = savedOrder.finance_application_code;
+                orderData.items = savedOrder.items;
+                const confirmedPayment = paymentType === 'installment' ? (savedOrder.down_payment || 0) : savedOrder.total_amount;
                 
                 // Render HTML Hóa đơn
-                this.printReceipt(invoiceCode, dateStr, orderData, receiptType, qrAmount);
+                this.printReceipt(invoiceCode, dateStr, orderData, receiptType, confirmedPayment);
                 
                 // Clear giỏ hàng & form
                 this.cartModel.clearCart();
-                this.view.updateCart(this.cartModel.items, 0);
+                this.updateCart();
                 this.view.container.querySelector('#pos-customer-name').value = '';
                 this.view.container.querySelector('#pos-customer-phone').value = '';
                 this.view.container.querySelector('#pos-customer-cccd').value = '';
@@ -291,7 +350,7 @@ export default class StaffPOSController {
         
         // Generate VietQR URL if Bank Transfer is selected
         let qrHtml = '';
-        if (receiptType === 'transfer' || receiptType === 'Chuyển khoản ngân hàng') {
+        if ((receiptType === 'transfer' || receiptType === 'Chuyển khoản ngân hàng') && Number(qrAmount) > 0) {
             const bankId = 'MB'; // Demo bank
             const accNo = '0123456789';
             const accName = 'ECOM AI SYSTEM';
@@ -299,7 +358,7 @@ export default class StaffPOSController {
             const qrUrl = `https://img.vietqr.io/image/${bankId}-${accNo}-compact.png?amount=${Math.round(qrAmount)}&addInfo=${encodeURIComponent(invoiceCode)}&accountName=${encodeURIComponent(accName)}`;
             qrHtml = `
                 <div style="text-align: center; margin: 15px 0; border: 1px dashed #000; padding: 10px;">
-                    <p style="margin: 0 0 5px 0; font-weight: bold;">Quét mã QR để thanh toán</p>
+                    <p style="margin: 0 0 5px 0; font-weight: bold;">Quét mã QR để thanh toán tại cửa hàng</p>
                     <img src="${qrUrl}" style="width: 200px; height: 200px;" />
                     <p style="margin: 5px 0 0 0; font-size: 12px;">Nội dung: ${invoiceCode}</p>
                     <p style="margin: 0; font-weight: bold; font-size: 14px;">Số tiền: ${this.view.formatMoney(qrAmount)}</p>
@@ -313,14 +372,17 @@ export default class StaffPOSController {
             const maskedCCCD = orderData.customer_cccd.slice(0, 3) + '******' + orderData.customer_cccd.slice(-3);
             instHtml = `
                 <div style="border-top: 1px dashed #000; padding-top: 10px; margin-top: 10px;">
-                    <p style="font-weight: bold; text-align: center; margin: 0 0 5px 0;">THÔNG TIN TRẢ GÓP</p>
+                    <p style="font-weight: bold; text-align: center; margin: 0 0 5px 0;">HỒ SƠ TÀI CHÍNH (MÔ PHỎNG)</p>
                     <table style="width: 100%; font-size: 12px;">
                         <tr><td>Khách hàng:</td><td style="text-align: right;">${orderData.customer_name}</td></tr>
-                        <tr><td>Điện thoại:</td><td style="text-align: right;">${orderData.customer_phone}</td></tr>
-                        <tr><td>Số CCCD:</td><td style="text-align: right;">${maskedCCCD}</td></tr>
-                        <tr><td>Kỳ hạn:</td><td style="text-align: right;">${orderData.installment_term} tháng</td></tr>
-                        <tr><td><strong>Cước mỗi tháng:</strong></td><td style="text-align: right;"><strong>${this.view.formatMoney(orderData.monthly_fee)}</strong></td></tr>
+                        <tr><td>Đối tác:</td><td style="text-align: right;">${orderData.finance_partner}</td></tr>
+                        <tr><td>Mã hồ sơ:</td><td style="text-align: right;">${orderData.finance_application_code}</td></tr>
+                        <tr><td>CCCD:</td><td style="text-align: right;">${maskedCCCD}</td></tr>
+                        <tr><td>Kỳ hạn đăng ký:</td><td style="text-align: right;">${orderData.installment_term} tháng</td></tr>
+                        <tr><td>Khách trả tại quầy:</td><td style="text-align: right;">${this.view.formatMoney(orderData.down_payment)}</td></tr>
+                        <tr><td>Đối tác giải ngân demo:</td><td style="text-align: right;">${this.view.formatMoney(orderData.financed_amount)}</td></tr>
                     </table>
+                    <p style="font-size: 10px;">Kỳ thanh toán và nghĩa vụ vay do khách hàng thực hiện theo hợp đồng với bên cho vay.</p>
                 </div>
             `;
         } else if (orderData.customer_name || orderData.customer_phone) {
@@ -335,20 +397,26 @@ export default class StaffPOSController {
 
         // Items HTML
         let itemsHtml = '';
-        this.cartModel.items.forEach(item => {
-            const unitPrice = item.product.discount_percent 
-                ? item.product.price * (1 - item.product.discount_percent / 100) 
-                : item.product.price;
+        const receiptItems = Array.isArray(orderData.items)
+            ? orderData.items
+            : this.cartModel.items.map((item) => ({
+                name: item.product.name,
+                quantity: item.quantity,
+                unit_price: item.product.discount_percent
+                    ? item.product.price * (1 - item.product.discount_percent / 100)
+                    : item.product.price
+            }));
+        receiptItems.forEach(item => {
             itemsHtml += `
                 <tr>
-                    <td style="padding: 4px 0;">${item.product.name}</td>
+                    <td style="padding: 4px 0;">${item.name}</td>
                     <td style="text-align: center;">${item.quantity}</td>
-                    <td style="text-align: right;">${this.view.formatMoney(unitPrice * item.quantity)}</td>
+                    <td style="text-align: right;">${this.view.formatMoney(item.unit_price * item.quantity)}</td>
                 </tr>
             `;
         });
 
-        const totalAmt = this.cartModel.getTotalPrice();
+        const totalAmt = orderData.total_amount ?? this.cartModel.getTotalPrice();
 
         doc.write(`
             <html>
@@ -436,13 +504,14 @@ export default class StaffPOSController {
             e.preventDefault();
             if (this.cartModel.items.length > 0 && confirm('Bạn có chắc muốn xóa sạch giỏ hàng?')) {
                 this.cartModel.clearCart();
-                this.view.updateCart(this.cartModel.items, this.cartModel.getTotalPrice());
+                this.updateCart();
             }
         }
     }
 
     destroy() {
         document.removeEventListener('keydown', this.handleKeydown);
+        clearTimeout(this.bundleTimeout);
         if (this.view.container) {
             this.view.container.innerHTML = '';
         }

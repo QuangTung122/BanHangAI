@@ -1,30 +1,30 @@
-# Thiết kế Chức năng Đổi trả & Bảo hành (Staff)
+# Thiết kế chức năng Đổi trả & Bảo hành
 
-## 1. Giới thiệu
-Chức năng cho phép nhân viên bán hàng (Staff) tiếp nhận và xử lý các yêu cầu đổi trả hàng hóa, hoàn tiền và bảo hành sản phẩm từ khách hàng. Cung cấp lịch sử chi tiết các yêu cầu đã tạo.
+## 1. Phạm vi
 
-## 2. Bố cục Giao diện (Wireframe Layout)
+- Cửa hàng tiếp nhận, kiểm tra điều kiện theo hóa đơn, lưu tình trạng hàng và theo dõi yêu cầu.
+- Đổi/trả là quyết định theo chính sách của cửa hàng; owner/admin duyệt trước khi thực hiện nhập kho, xuất hàng đổi hoặc ghi nhận hoàn/thu tiền.
+- Bảo hành hãng là hồ sơ dịch vụ: staff tiếp nhận và gửi hãng/TTBH, lưu mã biên nhận và cập nhật tiến độ; owner/admin duyệt kết quả thẩm định. Cửa hàng có thể bàn giao máy sau khi đã có kết quả sửa chữa.
+- Hãng/đơn vị và mã biên nhận trong bản demo là dữ liệu giả lập; không kết nối hãng thật.
 
-Giao diện chia làm 2 tab chính: **Xử lý yêu cầu** và **Lịch sử yêu cầu**.
+## 2. Luồng đổi trả
 
-### Tab 1: Xử lý yêu cầu (Tạo mới)
-- **Bên trái**: Form tìm kiếm hóa đơn gốc (theo mã, sđt, tên) và danh sách các hóa đơn kết quả.
-- **Bên phải**: 
-  - Hiển thị chi tiết hóa đơn được chọn (thông tin khách hàng, danh sách sản phẩm).
-  - Từng sản phẩm có 3 nút thao tác: `Đổi hàng`, `Trả hàng hoàn tiền`, `Nhận bảo hành`.
-  - Khi click vào 1 thao tác, vùng này chuyển sang form điền thông tin xử lý (Lý do, tình trạng, sản phẩm thay thế/cách thức bảo hành).
-  - Nút **Xác nhận tạo phiếu** để gọi API.
+1. Staff tra cứu hóa đơn đã thanh toán, chọn mặt hàng và số lượng còn đủ điều kiện xử lý.
+2. Staff ghi lý do, tình trạng sản phẩm và đề nghị đổi hàng hoặc hoàn tiền; hệ thống tạo phiếu `pending`.
+3. Owner/admin duyệt hoặc từ chối phiếu. Phiếu đang chờ duyệt không được tác động tồn kho hoặc sổ quỹ.
+4. Sau khi duyệt, staff thực hiện đổi/nhận hàng, nhập số tiền hoàn hoặc thu thêm và hoàn tất phiếu.
+5. Khi hoàn tất, hệ thống mới ghi nhận biến động tồn kho, giao dịch thu/chi và khóa phiếu khỏi xử lý lặp.
 
-### Tab 2: Lịch sử yêu cầu
-- Bộ lọc: Loại yêu cầu (Đổi trả / Bảo hành), Trạng thái, Tìm kiếm.
-- Bảng danh sách: Mã phiếu, Mã hóa đơn gốc, Loại, Sản phẩm, Tình trạng xử lý, Ngày tạo.
-- Hỗ trợ phân trang và xem chi tiết phiếu.
+## 3. Luồng bảo hành
 
-## 3. Quy trình Xử lý
-1. **Tìm kiếm hóa đơn**: Nhân viên nhập thông tin để tìm hóa đơn khách hàng mang đến.
-2. **Chọn sản phẩm**: Trong chi tiết hóa đơn, chọn sản phẩm khách muốn xử lý.
-3. **Nhập thông tin**: 
-   - Đổi trả: Chọn lý do, tình trạng hàng, (sản phẩm đổi nếu có).
-   - Bảo hành: Chọn lỗi, hình thức tiếp nhận (sửa chữa, thay mới, giữ thẩm định).
-4. **Xác nhận**: Hệ thống ghi nhận yêu cầu vào CSDL (bảng `returns` hoặc `warranty_claims`), hiển thị thông báo thành công và ghi nhật ký hoạt động.
-5. **Theo dõi**: Nhân viên hoặc Quản lý có thể theo dõi trạng thái phê duyệt trong tab "Lịch sử yêu cầu".
+1. Staff kiểm tra hóa đơn, sản phẩm, serial và thời hạn bảo hành; mô tả lỗi, hình thức yêu cầu, đơn vị dịch vụ demo và mã tiếp nhận nếu có.
+2. Hệ thống tạo phiếu `pending`; staff gửi hãng/TTBH, chuyển trạng thái `in_review`.
+3. Owner/admin duyệt hoặc từ chối kết quả thẩm định.
+4. Với hồ sơ được duyệt, tiến độ lần lượt là `approved` → `repairing` → `repaired` → `completed`.
+5. Phí chỉ được ghi nhận khi hoàn tất và phải là khoản phí dịch vụ thực tế được thống nhất; yêu cầu bảo hành hãng không mặc định là đổi trả/hoàn tiền.
+
+## 4. Phân quyền
+
+- Staff tạo phiếu, gửi hãng, cập nhật tiến độ xử lý và hoàn tất phiếu đã được duyệt.
+- Owner/admin duyệt hoặc từ chối đổi trả và kết quả bảo hành.
+- Phiếu được lưu làm lịch sử; giao diện không cung cấp thao tác xóa phiếu nghiệp vụ.

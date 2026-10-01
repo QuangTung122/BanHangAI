@@ -14,12 +14,6 @@ export default class OrderModel {
         return data;
     }
 
-    async addInstallmentPayment(orderId, payAll = false, paymentMethod = 'cash') {
-        const service = new OrderService();
-        const res = await service.addInstallmentPayment(orderId, payAll, paymentMethod);
-        return res.data;
-    }
-
     async getMyStats() {
         const service = new OrderService();
         const res = await service.getMyStats();

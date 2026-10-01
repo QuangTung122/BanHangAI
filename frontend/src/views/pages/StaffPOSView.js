@@ -24,6 +24,14 @@ export default class StaffPOSView {
                         </div>
                     </div>
 
+                    <div class="px-4 py-3 bg-indigo-50 border-b border-indigo-100 shrink-0">
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input id="pos-ai-need" type="text" maxlength="300" class="flex-1 px-3 py-2 bg-white border border-indigo-200 rounded-lg text-sm font-semibold text-slate-800" placeholder="Tư vấn theo nhu cầu: laptop học tập dưới 15 triệu...">
+                            <button id="btn-pos-ai-search" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-lg">Gợi ý sản phẩm</button>
+                        </div>
+                        <div id="pos-ai-results" class="hidden mt-2 text-sm"></div>
+                    </div>
+
                     <!-- Danh sách Sản phẩm -->
                     <div class="flex-1 overflow-y-auto p-4 md:p-5" id="pos-product-list">
                         ${this.renderProductGrid(products)}
@@ -46,6 +54,7 @@ export default class StaffPOSView {
                     <div class="flex-1 overflow-y-auto p-4 bg-slate-50 divide-y divide-slate-200" id="pos-cart-items">
                         ${this.renderCartItems(cartItems)}
                     </div>
+                    <div id="pos-bundle-suggestions" class="hidden max-h-48 overflow-y-auto border-t border-indigo-100 bg-indigo-50/60 p-3"></div>
 
                     <!-- Checkout Summary -->
                     <div class="p-5 bg-white border-t border-slate-200 shrink-0 shadow-lg relative z-20 max-h-[55vh] overflow-y-auto custom-scrollbar">
@@ -73,29 +82,41 @@ export default class StaffPOSView {
                                 <label class="text-xs font-bold text-slate-700 block mb-1.5 uppercase tracking-wide">Phương thức thanh toán</label>
                                 <select id="pos-payment-type" class="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 font-bold text-slate-900 cursor-pointer shadow-sm">
                                     <option value="full">Trả thẳng (Thanh toán 100%)</option>
-                                    <option value="installment">Trả góp định kỳ</option>
+                                    <option value="installment">Trả góp qua đối tác tài chính</option>
                                 </select>
                             </div>
                             
                             <!-- Khối Trả góp -->
                             <div id="pos-installment-box" class="bg-amber-50 border border-amber-300 rounded-xl p-3.5 hidden space-y-2.5">
-                                <h3 class="text-xs font-black text-amber-900 uppercase tracking-wide border-b border-amber-200 pb-1">Hồ sơ khách hàng trả góp</h3>
+                                <h3 class="text-xs font-black text-amber-900 uppercase tracking-wide border-b border-amber-200 pb-1">Hồ sơ đối tác tài chính (mô phỏng)</h3>
                                 <input type="text" id="pos-customer-cccd" placeholder="Số CCCD chính chủ (12 số)" maxlength="12" class="w-full px-3.5 py-2 bg-white border border-amber-300 rounded-lg text-sm text-slate-900 font-bold placeholder-slate-400 focus:outline-none focus:border-amber-600">
-                                
-                                <label class="text-xs font-bold text-amber-900 block mt-2 uppercase tracking-wide">Kỳ hạn trả góp</label>
-                                <select id="pos-installment-term" class="w-full px-3.5 py-2 bg-white border border-amber-300 rounded-lg text-sm focus:outline-none focus:border-amber-600 text-slate-900 font-bold cursor-pointer">
-                                    <option value="3">3 Tháng (Phí 2%)</option>
-                                    <option value="6">6 Tháng (Phí 4%)</option>
-                                    <option value="9">9 Tháng (Phí 6%)</option>
-                                    <option value="12">12 Tháng (Phí 8%)</option>
+
+                                <label class="text-xs font-bold text-amber-900 block mt-2 uppercase tracking-wide">Đối tác cho vay</label>
+                                <select id="pos-finance-partner" class="w-full px-3.5 py-2 bg-white border border-amber-300 rounded-lg text-sm text-slate-900 font-bold">
+                                    <option>Home Credit (mô phỏng)</option>
+                                    <option>FE CREDIT (mô phỏng)</option>
+                                    <option>Ngân hàng liên kết (mô phỏng)</option>
                                 </select>
+                                <input type="text" id="pos-finance-reference" placeholder="Mã hồ sơ demo (có thể để trống)" maxlength="80" class="w-full px-3.5 py-2 bg-white border border-amber-300 rounded-lg text-sm text-slate-900 font-bold placeholder-slate-400">
+                                
+                                <label class="text-xs font-bold text-amber-900 block mt-2 uppercase tracking-wide">Kỳ hạn khách đăng ký</label>
+                                <select id="pos-installment-term" class="w-full px-3.5 py-2 bg-white border border-amber-300 rounded-lg text-sm focus:outline-none focus:border-amber-600 text-slate-900 font-bold cursor-pointer">
+                                    <option value="3">3 tháng</option>
+                                    <option value="6">6 tháng</option>
+                                    <option value="9">9 tháng</option>
+                                    <option value="12">12 tháng</option>
+                                    <option value="18">18 tháng</option>
+                                    <option value="24">24 tháng</option>
+                                </select>
+                                <label class="text-xs font-bold text-amber-900 block mt-2 uppercase tracking-wide">Khách trả trước tại cửa hàng</label>
+                                <input type="number" id="pos-down-payment" min="0" step="1000" value="0" class="w-full px-3.5 py-2 bg-white border border-amber-300 rounded-lg text-sm font-bold text-slate-900">
                                 
                                 <div class="bg-white p-3 rounded-lg text-xs space-y-1 mt-2 border border-amber-200">
-                                    <div class="flex justify-between text-slate-700 font-bold"><span>Tiền gốc:</span> <span id="pos-inst-base" class="font-black text-slate-900">0đ</span></div>
-                                    <div class="flex justify-between text-slate-700 font-bold"><span>Phí trả góp:</span> <span id="pos-inst-fee" class="font-black text-slate-900">0đ</span></div>
+                                    <div class="flex justify-between text-slate-700 font-bold"><span>Khách trả tại quầy:</span> <span id="pos-inst-down" class="font-black text-slate-900">0đ</span></div>
                                     <div class="flex justify-between text-indigo-900 border-t border-amber-200 pt-1.5 mt-1 font-black">
-                                        <span>Góp mỗi tháng:</span> <span id="pos-inst-monthly" class="text-sm font-black text-indigo-700">0đ</span>
+                                        <span>Đối tác tài chính giải ngân demo:</span> <span id="pos-inst-financed" class="font-black text-indigo-700">0đ</span>
                                     </div>
+                                    <p class="text-[11px] text-amber-900 pt-1">Cửa hàng hỗ trợ hồ sơ; hợp đồng và các kỳ thanh toán thuộc khách hàng với bên cho vay. Demo mặc định mô phỏng hồ sơ được duyệt.</p>
                                 </div>
                             </div>
 
@@ -235,6 +256,40 @@ export default class StaffPOSView {
         document.querySelectorAll('.text-2xl.font-black.text-indigo-700').forEach(el => {
             el.innerText = this.formatMoney(total);
         });
+        const downPaymentInput = document.getElementById('pos-down-payment');
+        if (downPaymentInput) {
+            const downPayment = Math.min(total, Math.max(0, Number(downPaymentInput.value) || 0));
+            downPaymentInput.max = String(total);
+            downPaymentInput.value = String(downPayment);
+            document.getElementById('pos-inst-down').innerText = this.formatMoney(downPayment);
+            document.getElementById('pos-inst-financed').innerText = this.formatMoney(total - downPayment);
+        }
+    }
+
+    renderPosRecommendations(data, loading = false) {
+        const target = document.getElementById('pos-ai-results');
+        if (!target) return;
+        target.classList.remove('hidden');
+        if (loading) {
+            target.innerHTML = '<div class="animate-pulse text-indigo-800 font-semibold">Đang lọc dữ liệu sản phẩm…</div>';
+            return;
+        }
+        const products = data?.products || [];
+        target.innerHTML = `<div class="rounded-lg border border-indigo-100 bg-white p-3">
+            <p class="text-slate-700 mb-2">${data?.explanation || 'Không có gợi ý.'}</p>
+            ${products.length ? `<div class="space-y-2">${products.map((p) => `<div class="flex items-center justify-between gap-3 border-t border-slate-100 pt-2"><div><p class="font-bold text-slate-900">${p.name}</p><p class="text-xs text-slate-500">${p.match_reason} · Còn ${p.stock_quantity}</p></div><div class="text-right"><p class="font-black text-indigo-700">${this.formatMoney(p.price * (1 - (p.discount_percent || 0) / 100))}</p><button class="btn-ai-add-cart text-xs font-bold text-indigo-700" data-id="${p.id}">Thêm vào giỏ</button></div></div>`).join('')}</div>` : ''}
+            <p class="text-[11px] text-slate-400 mt-2">${data?.ai_used ? 'AI diễn giải kết quả đã lọc.' : 'Gợi ý dựa trên quy tắc và dữ liệu hệ thống.'} Giá và tồn kho lấy từ CSDL.</p></div>`;
+    }
+
+    renderBundleSuggestions(products, loading = false) {
+        const target = document.getElementById('pos-bundle-suggestions');
+        if (!target) return;
+        target.classList.toggle('hidden', !loading && (!products || products.length === 0));
+        if (loading) {
+            target.innerHTML = '<p class="text-xs font-bold text-indigo-800">Đang tìm sản phẩm mua kèm…</p>';
+            return;
+        }
+        target.innerHTML = `<p class="text-[11px] uppercase tracking-wide font-black text-indigo-800 mb-2">Có thể bán kèm</p>${(products || []).map((p) => `<div class="flex justify-between items-center gap-2 py-1.5 border-t border-indigo-100"><div class="min-w-0"><p class="text-xs font-bold text-slate-800 truncate">${p.name}</p><p class="text-[10px] text-slate-500">${p.reason} · Còn ${p.stock_quantity}</p></div><div class="text-right shrink-0"><p class="text-xs font-black text-indigo-700">${this.formatMoney(p.price * (1 - (p.discount_percent || 0) / 100))}</p><button class="btn-bundle-add text-[10px] font-bold text-indigo-700" data-id="${p.id}">Thêm</button></div></div>`).join('')}`;
     }
 
     updateActiveCategory(slug) {

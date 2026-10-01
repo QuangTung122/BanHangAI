@@ -105,19 +105,18 @@ export default class OwnerDashboardController {
                 btnAi.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Đang phân tích...';
                 
                 try {
-                    // Gọi API chat với prompt ẩn chứa data dashboard
-                    const prompt = `Dưới đây là số liệu thống kê cửa hàng hiện tại: Tổng doanh thu: ${this.dashboardData.total_revenue}, Đơn hàng hoàn thành: ${this.dashboardData.completed_orders}, Số sản phẩm sắp hết hàng: ${this.dashboardData.low_stock_products}. Top sản phẩm bán chạy: ${JSON.stringify(this.dashboardData.top_products)}. Hãy đóng vai là chuyên gia phân tích dữ liệu, phân tích ngắn gọn trong 3-4 câu và đưa ra 1-2 lời khuyên cho chủ cửa hàng để tăng doanh thu hoặc tối ưu hóa. Chỉ cần text đơn giản không cần định dạng phức tạp.`;
-                    
                     const { default: ApiClient } = await import('../core/ApiClient.js');
                     const res = await ApiClient.post('/dashboard/insight', {
-                        message: prompt
+                        message: 'Hãy tóm tắt tình hình kinh doanh tháng này và đề xuất hành động.'
                     });
                     
                     if (res.data && res.data.success) {
-                        resultDiv.innerHTML = res.data.data.reply;
+                        const report = res.data.data;
+                        resultDiv.textContent = `${report.ai_used ? 'AI diễn giải dữ liệu hệ thống' : 'Tổng hợp theo quy tắc dữ liệu'}\n\n${report.reply}`;
                         resultDiv.classList.remove('hidden');
                     } else {
-                        alert('Lỗi phân tích AI: ' + (res.data?.message || 'Không có phản hồi'));
+                        resultDiv.textContent = res.data?.message || 'Không thể tạo báo cáo lúc này.';
+                        resultDiv.classList.remove('hidden');
                     }
                 } catch (err) {
                     console.error(err);

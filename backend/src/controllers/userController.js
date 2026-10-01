@@ -236,54 +236,56 @@ export const deleteUser = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Không thể tự xóa tài khoản đang đăng nhập của bản thân' });
         }
 
-        const user = await db.get('SELECT id, username, role FROM users WHERE id = ?', [id]);
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'Tài khoản không tồn tại hoặc đã bị xóa trước đó' });
-        }
-
-        // Không cho phép xóa admin duy nhất trong hệ thống
-        if (user.role === 'admin') {
-            const adminCount = await db.get("SELECT COUNT(*) as count FROM users WHERE role = 'admin'");
-            if (adminCount && adminCount.count <= 1) {
-                return res.status(400).json({ success: false, message: 'Không thể xóa tài khoản Quản trị viên (Admin) duy nhất của hệ thống' });
+        let user;
+        await db.transaction(async () => {
+            user = await db.get('SELECT id, username, role FROM users WHERE id = ?', [id]);
+            if (!user) {
+                const error = new Error('Tài khoản không tồn tại hoặc đã bị xóa trước đó');
+                error.statusCode = 404;
+                throw error;
             }
-        }
 
-        // Kiểm tra xem user có dữ liệu tài chính hoặc đơn hàng không
-        const transactions = await db.get('SELECT id FROM transactions WHERE user_id = ? LIMIT 1', [id]);
-        if (transactions) {
-            return res.status(400).json({ success: false, message: 'Không thể xóa tài khoản đã có lịch sử thu chi/giao dịch. Vui lòng chọn Khóa tài khoản thay thế.' });
-        }
+            if (user.role === 'admin') {
+                const adminCount = await db.get("SELECT COUNT(*) AS count FROM users WHERE role = 'admin'");
+                if (adminCount && adminCount.count <= 1) {
+                    const error = new Error('Không thể xóa tài khoản Quản trị viên (Admin) duy nhất của hệ thống');
+                    error.statusCode = 400;
+                    throw error;
+                }
+            }
 
-        const orders = await db.get('SELECT id FROM orders WHERE user_id = ? LIMIT 1', [id]);
-        if (orders) {
-            return res.status(400).json({ success: false, message: 'Không thể xóa tài khoản đã có lịch sử đơn hàng. Vui lòng chọn Khóa tài khoản thay thế.' });
-        }
+            const transactions = await db.get('SELECT id FROM transactions WHERE user_id = ? LIMIT 1', [id]);
+            if (transactions) {
+                const error = new Error('Tài khoản đã có lịch sử thu chi. Hãy khóa tài khoản để giữ nguyên dấu vết kế toán.');
+                error.statusCode = 400;
+                throw error;
+            }
+            const orders = await db.get('SELECT id FROM orders WHERE user_id = ? LIMIT 1', [id]);
+            if (orders) {
+                const error = new Error('Tài khoản đã có lịch sử đơn hàng. Hãy khóa tài khoản để giữ nguyên lịch sử bán hàng.');
+                error.statusCode = 400;
+                throw error;
+            }
 
-        // Dọn dẹp dữ liệu liên kết phụ trợ trước khi xóa để bảo toàn tính toàn vẹn CSDL
-        await db.run('DELETE FROM messages WHERE sender_id = ? OR receiver_id = ?', [id, id]);
-        await db.run('DELETE FROM notifications WHERE user_id = ?', [id]);
-        await db.run('DELETE FROM attendance WHERE user_id = ?', [id]);
-        
-        // Dọn dẹp chat messages & sessions
-        await db.run('DELETE FROM chat_messages WHERE session_id IN (SELECT id FROM chat_sessions WHERE user_id = ?)', [id]);
-        await db.run('DELETE FROM chat_sessions WHERE user_id = ?', [id]);
+            const operationalRefs = await db.get(`
+                SELECT
+                    (SELECT COUNT(*) FROM returns WHERE created_by = ? OR approved_by = ? OR customer_id = ?) +
+                    (SELECT COUNT(*) FROM warranty_claims WHERE created_by = ? OR approved_by = ? OR customer_id = ?) +
+                    (SELECT COUNT(*) FROM installment_payments WHERE cashier_id = ?) AS count
+            `, [id, id, id, id, id, id, id]);
+            if (operationalRefs?.count > 0) {
+                const error = new Error('Tài khoản đã được ghi nhận trong hồ sơ đổi trả, bảo hành hoặc trả góp. Hãy khóa tài khoản để bảo toàn lịch sử.');
+                error.statusCode = 400;
+                throw error;
+            }
 
-        // Cập nhật các bảng liên kết sang NULL để tránh lỗi khóa ngoại
-        await db.run('UPDATE audit_logs SET user_id = NULL WHERE user_id = ?', [id]);
-        try {
-            await db.run('UPDATE returns SET created_by = NULL WHERE created_by = ?', [id]);
-            await db.run('UPDATE returns SET approved_by = NULL WHERE approved_by = ?', [id]);
-            await db.run('UPDATE returns SET customer_id = NULL WHERE customer_id = ?', [id]);
-            await db.run('UPDATE warranty_claims SET created_by = NULL WHERE created_by = ?', [id]);
-            await db.run('UPDATE warranty_claims SET approved_by = NULL WHERE approved_by = ?', [id]);
-            await db.run('UPDATE warranty_claims SET customer_id = NULL WHERE customer_id = ?', [id]);
-            await db.run('UPDATE installment_payments SET cashier_id = NULL WHERE cashier_id = ?', [id]);
-        } catch (err) {
-            // Không chặn nếu các bảng trên chưa có hoặc không áp dụng
-        }
-
-        await db.run('DELETE FROM users WHERE id = ?', [id]);
+            await db.run('DELETE FROM messages WHERE sender_id = ? OR receiver_id = ?', [id, id]);
+            await db.run('DELETE FROM notifications WHERE user_id = ?', [id]);
+            await db.run('DELETE FROM attendance WHERE user_id = ?', [id]);
+            await db.run('DELETE FROM chat_sessions WHERE user_id = ?', [id]);
+            await db.run('UPDATE audit_logs SET user_id = NULL WHERE user_id = ?', [id]);
+            await db.run('DELETE FROM users WHERE id = ?', [id]);
+        });
 
         await logAction(req.user.id, 'USER_DELETE', `Đã xóa tài khoản "${user.username}" (ID: ${id})`, {
             deleted_user_id: id,
@@ -294,6 +296,6 @@ export const deleteUser = async (req, res) => {
         res.status(200).json({ success: true, message: `Đã xóa vĩnh viễn tài khoản "${user.username}" thành công` });
     } catch (error) {
         console.error('Delete user error:', error);
-        res.status(500).json({ success: false, message: 'Lỗi máy chủ khi xóa tài khoản' });
+        res.status(error.statusCode || 500).json({ success: false, message: error.statusCode ? error.message : 'Lỗi máy chủ khi xóa tài khoản', data: null });
     }
 };

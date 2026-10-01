@@ -9,10 +9,6 @@ export default class OrderService {
         return await ApiClient.get(url);
     }
 
-    async addInstallmentPayment(orderId, payAll = false, paymentMethod = 'cash') {
-        return await ApiClient.post(`/orders/${orderId}/payments`, { pay_all: payAll, payment_method: paymentMethod });
-    }
-
     async getMyStats() {
         return await ApiClient.get('/orders/my-stats');
     }

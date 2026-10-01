@@ -25,3 +25,5 @@
 - `POST /api/owner/dashboard` - Thêm mới/Xử lý
 - `PUT /api/owner/dashboard/:id` - Cập nhật
 - `DELETE /api/owner/dashboard/:id` - Xóa
+- `POST /api/dashboard/insight` - Tổng hợp số liệu tháng từ CSDL; dùng Ollama để diễn giải khi khả dụng và fallback tổng hợp theo quy tắc khi AI lỗi.
+- AI không tự ghi dữ liệu và không được tạo số giá/tồn kho/doanh thu; các tỷ lệ so sánh chỉ hiển thị khi có số liệu kỳ đối chiếu thực.

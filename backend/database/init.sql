@@ -50,10 +50,77 @@ CREATE TABLE products (
     FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE SET NULL
 );
 
+CREATE TABLE customers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    full_name TEXT NOT NULL,
+    phone TEXT UNIQUE,
+    email TEXT,
+    address TEXT,
+    customer_group TEXT NOT NULL DEFAULT 'regular',
+    notes TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE inventory_movements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL,
+    movement_type TEXT NOT NULL CHECK(movement_type IN ('opening','purchase','sale','return','adjustment','write_off')),
+    quantity_change INTEGER NOT NULL CHECK(quantity_change <> 0),
+    unit_cost INTEGER,
+    reference_type TEXT,
+    reference_id INTEGER,
+    note TEXT,
+    user_id INTEGER,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(product_id) REFERENCES products(id),
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE suppliers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    phone TEXT,
+    email TEXT,
+    address TEXT,
+    notes TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE purchase_receipts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    supplier_id INTEGER,
+    supplier_name TEXT NOT NULL,
+    supplier_invoice TEXT,
+    total_cost INTEGER NOT NULL CHECK(total_cost >= 0),
+    notes TEXT,
+    received_by INTEGER,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL,
+    FOREIGN KEY(received_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE purchase_receipt_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    receipt_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    product_name TEXT NOT NULL,
+    sku TEXT,
+    quantity INTEGER NOT NULL CHECK(quantity > 0),
+    unit_cost INTEGER NOT NULL CHECK(unit_cost >= 0),
+    line_total INTEGER NOT NULL CHECK(line_total >= 0),
+    FOREIGN KEY(receipt_id) REFERENCES purchase_receipts(id) ON DELETE CASCADE,
+    FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE RESTRICT
+);
+
 CREATE TABLE orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
+    customer_id INTEGER,
     total_amount INTEGER NOT NULL,
+    financed_total INTEGER,
     customer_name TEXT,
     customer_phone TEXT,
     shipping_address TEXT,
@@ -62,15 +129,24 @@ CREATE TABLE orders (
     customer_cccd TEXT,
     installment_term INTEGER,
     monthly_fee INTEGER,
+    finance_partner TEXT,
+    finance_application_code TEXT,
+    financing_status TEXT CHECK(financing_status IN ('pending','approved','rejected','cancelled')),
+    down_payment INTEGER NOT NULL DEFAULT 0,
+    financed_amount INTEGER,
     payment_method TEXT DEFAULT 'cash',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE SET NULL
 );
 
 CREATE TABLE order_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     order_id INTEGER NOT NULL,
     product_id INTEGER NOT NULL,
+    product_name TEXT,
+    sku TEXT,
+    warranty_months INTEGER NOT NULL DEFAULT 0,
     quantity INTEGER NOT NULL,
     unit_price INTEGER NOT NULL,
     FOREIGN KEY(order_id) REFERENCES orders(id) ON DELETE CASCADE,
@@ -81,6 +157,7 @@ CREATE TABLE returns (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     order_id INTEGER NOT NULL,
     customer_id INTEGER,
+    store_customer_id INTEGER,
     customer_name TEXT,
     customer_phone TEXT,
     return_type TEXT NOT NULL CHECK(return_type IN ('exchange', 'refund', 'store_credit')),
@@ -96,6 +173,7 @@ CREATE TABLE returns (
     is_active INTEGER DEFAULT 1,
     FOREIGN KEY(order_id) REFERENCES orders(id),
     FOREIGN KEY(customer_id) REFERENCES users(id),
+    FOREIGN KEY(store_customer_id) REFERENCES customers(id) ON DELETE SET NULL,
     FOREIGN KEY(approved_by) REFERENCES users(id),
     FOREIGN KEY(exchange_product_id) REFERENCES products(id),
     FOREIGN KEY(created_by) REFERENCES users(id)
@@ -128,6 +206,7 @@ CREATE TABLE warranty_claims (
     order_item_id INTEGER,
     product_id INTEGER NOT NULL,
     customer_id INTEGER,
+    store_customer_id INTEGER,
     customer_name TEXT,
     customer_phone TEXT,
     serial_number TEXT,
@@ -137,6 +216,8 @@ CREATE TABLE warranty_claims (
     claim_type TEXT NOT NULL CHECK(claim_type IN ('repair','replace','refund','inspection')),
     issue_description TEXT,
     issue_code TEXT,
+    service_provider TEXT DEFAULT 'Hãng/TTBH ủy quyền (mô phỏng)',
+    service_reference TEXT,
     claimed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','in_review','approved','repairing','repaired','rejected','completed','cancelled')),
     approved_by INTEGER,
@@ -148,6 +229,7 @@ CREATE TABLE warranty_claims (
     FOREIGN KEY(order_item_id) REFERENCES order_items(id),
     FOREIGN KEY(product_id) REFERENCES products(id),
     FOREIGN KEY(customer_id) REFERENCES users(id),
+    FOREIGN KEY(store_customer_id) REFERENCES customers(id) ON DELETE SET NULL,
     FOREIGN KEY(approved_by) REFERENCES users(id),
     FOREIGN KEY(created_by) REFERENCES users(id)
 );
@@ -224,6 +306,21 @@ CREATE INDEX idx_chat_messages_session ON chat_messages(session_id);
 CREATE INDEX idx_chat_sessions_user ON chat_sessions(user_id);
 CREATE INDEX idx_order_items_order ON order_items(order_id);
 CREATE INDEX idx_order_items_product ON order_items(product_id);
+CREATE INDEX idx_orders_status_created ON orders(status, created_at);
+CREATE INDEX idx_orders_customer ON orders(customer_id);
+CREATE INDEX idx_customers_name ON customers(full_name);
+CREATE INDEX idx_inventory_product_created ON inventory_movements(product_id, created_at);
+CREATE INDEX idx_inventory_reference ON inventory_movements(reference_type, reference_id);
+CREATE INDEX idx_suppliers_name ON suppliers(name);
+CREATE UNIQUE INDEX idx_suppliers_phone ON suppliers(phone) WHERE phone IS NOT NULL AND TRIM(phone) <> '';
+CREATE INDEX idx_purchase_receipts_created ON purchase_receipts(created_at);
+CREATE INDEX idx_purchase_receipts_supplier ON purchase_receipts(supplier_id, created_at);
+CREATE INDEX idx_purchase_receipt_items_receipt ON purchase_receipt_items(receipt_id);
+CREATE INDEX idx_purchase_receipt_items_product ON purchase_receipt_items(product_id);
+CREATE INDEX idx_returns_store_customer ON returns(store_customer_id);
+CREATE INDEX idx_warranty_store_customer ON warranty_claims(store_customer_id);
+CREATE INDEX idx_transactions_type_created ON transactions(type, created_at);
+CREATE INDEX idx_installment_payments_order_created ON installment_payments(order_id, created_at);
 
 CREATE TABLE messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -5,19 +5,23 @@ export default class OwnerProductController {
     constructor() {
         this.view = new OwnerProductView();
         this.products = [];
+        this.allProducts = [];
         this.categories = [];
         this.currentFilter = 'all';
         this.searchQuery = '';
         this.searchCategory = '';
+        this.replenishmentSuggestions = [];
         
         this.loadData();
     }
 
     async loadData() {
         try {
-            const [catRes, prodRes] = await Promise.all([
+            const [catRes, prodRes, allProdRes, replenishmentRes] = await Promise.all([
                 ProductService.getCategories(),
-                ProductService.getProducts(this.searchCategory, this.searchQuery)
+                ProductService.getProducts(this.searchCategory, this.searchQuery),
+                ProductService.getProducts(),
+                ProductService.getReplenishmentSuggestions().catch(() => null)
             ]);
             
             if (catRes.status === 200 && catRes.data.success) {
@@ -26,6 +30,10 @@ export default class OwnerProductController {
             if (prodRes.status === 200 && prodRes.data.success) {
                 this.products = prodRes.data.data;
             }
+            if (allProdRes.status === 200 && allProdRes.data.success) {
+                this.allProducts = allProdRes.data.data;
+            }
+            if (replenishmentRes?.data?.success) this.replenishmentSuggestions = replenishmentRes.data.data.suggestions || [];
             
             this.renderFiltered();
         } catch (error) {
@@ -41,7 +49,8 @@ export default class OwnerProductController {
             filtered = this.products.filter(p => p.stock_quantity <= (p.low_stock_threshold || 5));
         }
         
-        this.view.render(filtered, this.categories, this.currentFilter);
+        this.view.render(filtered, this.categories, this.currentFilter, this.replenishmentSuggestions);
+        this.view.setReceiptProducts(this.allProducts);
         this.bindEvents();
     }
 
@@ -49,6 +58,7 @@ export default class OwnerProductController {
         this.view.bindAddProduct(this.handleAddProductClick.bind(this));
         this.view.bindCloseModal(this.handleCloseModal.bind(this));
         this.view.bindSaveProduct(this.handleSaveProduct.bind(this));
+        this.view.bindStockReceipt(this.handleCreateStockReceipt.bind(this), this.handleLoadStockReceipts.bind(this));
         this.view.bindAIGenerate(this.handleAIGenerate.bind(this));
         this.view.bindGenerateSKU(this.handleGenerateSKU.bind(this));
         this.view.bindFilterTabs(this.handleFilterChange.bind(this));
@@ -125,6 +135,30 @@ export default class OwnerProductController {
             console.error(error);
             alert('Lỗi hệ thống');
         }
+    }
+
+    async handleCreateStockReceipt(payload) {
+        try {
+            const res = await ProductService.createStockReceipt(payload);
+            if (res.status === 201 && res.data.success) {
+                this.view.hideStockReceiptModal();
+                window.showToast?.(`Đã nhập kho thành công · Phiếu #${res.data.data.id}`, 'success');
+                this.loadData();
+            } else {
+                window.showToast?.(res.data?.message || 'Không thể ghi nhận phiếu nhập', 'error');
+            }
+        } catch (error) {
+            console.error('Lỗi tạo phiếu nhập:', error);
+            window.showToast?.(error.response?.data?.message || 'Lỗi hệ thống khi nhập hàng', 'error');
+        }
+    }
+
+    async handleLoadStockReceipts() {
+        const res = await ProductService.getStockReceipts();
+        if (res.status !== 200 || !res.data.success) {
+            throw new Error(res.data?.message || 'Không tải được lịch sử nhập kho');
+        }
+        return res.data.data;
     }
 
     handleAIGenerate(nameInput) {

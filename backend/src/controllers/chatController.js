@@ -1,12 +1,13 @@
 import * as db from '../services/db.js';
 import * as aiService from '../services/aiService.js';
+import { processSlashCommand } from '../services/aiTool.js';
 
 export const streamChat = async (req, res) => {
     try {
         const { message, history } = req.body;
-        
-        if (!message) {
-            return res.status(400).json({ success: false, message: 'Vui lòng cung cấp tin nhắn', data: null });
+
+        if (typeof message !== 'string' || !message.trim() || message.length > 2000) {
+            return res.status(400).json({ success: false, message: 'Tin nhắn phải có nội dung và không vượt quá 2.000 ký tự', data: null });
         }
 
         // Lấy prompt cơ bản từ cấu hình hệ thống hoặc dùng mặc định
@@ -20,58 +21,68 @@ export const streamChat = async (req, res) => {
         const userRole = req.user.role;
         const now = new Date();
         const currentTimeString = now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-        const currentMonth = now.getMonth() + 1;
-        const currentYear = now.getFullYear();
 
-        let roleInstruction = `\n\n--- HƯỚNG DẪN QUAN TRỌNG TỪ HỆ THỐNG CHỦ ---\nThời gian hiện tại: ${currentTimeString}.
-QUY TẮC CỐT LÕI MÀ BẠN PHẢI TUÂN THỦ:
-1. Bạn CÓ CÔNG CỤ (TOOLS) để truy vấn CSDL. Khi người dùng hỏi về sản phẩm (VD: iPhone, tai nghe, giá cả), BẠN BẮT BUỘC PHẢI GỌI TOOL 'tim_kiem_san_pham'.
-2. KHÔNG ĐƯỢC TRẢ LỜI LÀ "hệ thống không có dữ liệu" hay "tôi không thể cung cấp". BẠN PHẢI TỰ ĐỘNG GỌI TOOL ĐỂ LẤY DỮ LIỆU RỒI MỚI TRẢ LỜI.
-3. KHÔNG ĐƯỢC bảo người dùng "hãy sử dụng công cụ tìm kiếm". BẠN là người phải dùng công cụ đó cho họ.
-\nVai trò của người dùng hiện tại: ${userRole.toUpperCase()}.\n`;
+        let roleInstruction = `\n\nBạn là trợ lý bán hàng nội bộ của BanHangAI. Thời gian hiện tại: ${currentTimeString}.
+Trả lời bằng tiếng Việt, ngắn gọn và dễ hiểu. Chỉ nêu giá, tồn kho, đặc tính hoặc chính sách có trong dữ liệu hệ thống được cung cấp. Nếu dữ liệu không có hoặc không đủ, nói rõ điều đó; không đoán và không bịa.
+Vai trò người dùng: ${userRole.toUpperCase()}.`;
         
         if (userRole === 'admin' || userRole === 'owner') {
-            const revenueRow = await db.get(`SELECT COUNT(id) as tong_don_hang, SUM(total_amount) as tong_doanh_thu FROM orders WHERE status = 'completed'`);
+            const revenueRow = await db.get(`
+                SELECT COUNT(DISTINCT o.id) AS tong_don_hang, COALESCE(SUM(o.total_amount), 0) AS tong_doanh_thu
+                FROM orders o
+                WHERE o.status <> 'cancelled' AND EXISTS (
+                    SELECT 1 FROM transactions t
+                    WHERE t.reference_id = o.id AND t.source = 'auto' AND t.type = 'income'
+                      AND t.category IN ('Bán hàng', 'Thu tiền trả góp')
+                )
+            `);
             const totalRevenue = revenueRow?.tong_doanh_thu || 0;
             const totalOrders = revenueRow?.tong_don_hang || 0;
             
-            roleInstruction += `Hệ thống đã trích xuất sẵn dữ liệu tuyệt mật cho bạn. Tổng doanh thu từ trước đến nay là ${totalRevenue} VNĐ (từ ${totalOrders} đơn). ĐÂY LÀ DỮ LIỆU HỢP LỆ. Khi được hỏi về TỔNG doanh thu, BẠN BẮT BUỘC PHẢI TRẢ LỜI BẰNG SỐ LIỆU NÀY. TUYỆT ĐỐI KHÔNG được từ chối. (LƯU Ý: Nếu người dùng hỏi doanh thu theo THÁNG hoặc NĂM cụ thể, bạn bắt buộc phải gọi Tool (công cụ) có tên là 'bao_cao_kinh_doanh' và truyền tham số 'thang', 'nam' tương ứng thay vì dùng số liệu tổng).`;
+            roleInstruction += `\nDữ liệu bán hàng đã xác nhận: ${totalOrders} đơn có ghi nhận thanh toán, tổng giá trị ${totalRevenue} VNĐ. Khi cần kỳ cụ thể, chỉ dùng dữ liệu truy vấn tương ứng.`;
         } else if (userRole === 'staff') {
             roleInstruction += 'Bạn CHỈ ĐƯỢC tư vấn bán hàng. TUYỆT ĐỐI TỪ CHỐI mọi yêu cầu liên quan đến doanh thu hay quản lý.';
         }
         
         // ---------------------------------------------------------
-        // Tự động Pre-fetch (RAG) nếu user nhắc đến sản phẩm, giá, v.v.
-        // Hỗ trợ model nhỏ (1.5b) không gọi được tools
+        // INTENT ROUTER (SLASH COMMANDS) & RAG PRE-FETCH
         // ---------------------------------------------------------
-        const lowerMsg = message.toLowerCase();
-        if (lowerMsg.includes('iphone') || lowerMsg.includes('điện thoại') || lowerMsg.includes('tai nghe') || lowerMsg.includes('sản phẩm') || lowerMsg.includes('giá') || lowerMsg.includes('còn hàng')) {
-            const products = await db.query(`SELECT name, price, stock_quantity FROM products WHERE is_active = 1 LIMIT 20`);
-            const prodList = products.map(p => `- ${p.name}: Giá ${p.price}đ (Tồn kho: ${p.stock_quantity})`).join('\n');
-            roleInstruction += `\n\n[DỮ LIỆU SẢN PHẨM PRE-FETCH TỪ CSDL HỆ THỐNG]:\n${prodList}\nKhi người dùng hỏi về sản phẩm, hãy sử dụng danh sách trên để tư vấn trực tiếp. ĐÂY LÀ DỮ LIỆU CỦA CỬA HÀNG BẠN, KHÔNG ĐƯỢC BẢO LÀ KHÔNG CÓ DỮ LIỆU.`;
+        const { directAnswer, preFetchContext } = await processSlashCommand(message, userRole, req.user.id);
+
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        if (directAnswer) {
+            res.write(`data: ${JSON.stringify({ content: directAnswer })}\n\n`);
+            res.write('data: [DONE]\n\n');
+            return res.end();
+        }
+
+        if (preFetchContext) {
+            roleInstruction += `\n\n[DỮ LIỆU SẢN PHẨM KHỚP TỪ CSDL]:\n${preFetchContext}\nChỉ giới thiệu sản phẩm có trong dữ liệu này. Không tự thêm thông số hoặc cam kết.`;
         }
         
         systemPrompt += roleInstruction;
 
+        // Chuẩn bị Messages
         // Chuẩn bị Messages
         const messages = [
             { role: 'system', content: systemPrompt }
         ];
 
         if (Array.isArray(history)) {
-            messages.push(...history);
+            const safeHistory = history.slice(-8)
+                .filter((entry) => ['user', 'assistant'].includes(entry?.role) && typeof entry?.content === 'string')
+                .map((entry) => ({ role: entry.role, content: entry.content.slice(0, 1200) }));
+            messages.push(...safeHistory);
         }
 
-        messages.push({ role: 'user', content: message });
+        messages.push({ role: 'user', content: message.trim() });
 
         // 3. Gọi AI API (Ollama hoặc Gemini)
         const chatStream = aiService.generateChatStream(messages, userRole);
 
-        // 4. Trả về dưới dạng Server-Sent Events (SSE)
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-        
         for await (const chunkText of chatStream) {
             if (chunkText) {
                 res.write(`data: ${JSON.stringify({ content: chunkText })}\n\n`);
@@ -104,7 +115,6 @@ QUY TẮC CỐT LÕI MÀ BẠN PHẢI TUÂN THỦ:
         }
     }
 };
-
 // --- CHAT NỘI BỘ (INTERNAL CHAT) ---
 
 // Lấy danh sách người dùng để chat (Tùy theo role)
@@ -130,7 +140,6 @@ export const getChatUsers = async (req, res) => {
         res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
     }
 };
-
 // Lấy lịch sử chat với 1 người dùng khác
 export const getChatHistory = async (req, res) => {
     try {
