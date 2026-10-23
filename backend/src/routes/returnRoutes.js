@@ -12,7 +12,7 @@ import {
 const router = express.Router();
 
 router.use(requireAuth);
-router.use(requireRole(['staff', 'admin', 'owner']));
+router.use(requireRole(['staff', 'owner']));
 
 router.post('/returns', createReturnRequest);
 router.get('/returns', getReturnRequests);

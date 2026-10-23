@@ -17,11 +17,11 @@ Vui lòng tham khảo các file `README.md` nằm bên trong từng thư mục �
 - 📁 **[docs/](./docs/README.md)**: Chứa Hướng dẫn sử dụng và Hướng dẫn triển khai DevOps.
 - 📁 **[specs/](./specs/README.md)**: Trung tâm đặc tả kỹ thuật (Requirements, Design, Development, Testing).
 - 📁 **[prompts/](./prompts/README.md)**: Nơi lưu trữ các câu lệnh Prompt xuất sắc dùng để điều khiển AI Agent tự động code và viết Specs.
-- 📁 **[scratch/](./scratch/README.md)**: Thư mục chứa script tạm thời của AI.
+- 📁 **[test/](./test/README.md)**: Kịch bản và báo cáo kiểm thử được duy trì trong dự án.
+- 📁 **[issues/](./issues/README.md)**: Tài liệu và hình ảnh ghi nhận lỗi.
 
 ## 🚀 Khởi động nhanh (Quick Start)
 1. Đọc kỹ file `docs/operations/deployment-guide.md` để cấu hình biến môi trường `.env`.
-2. Khởi tạo Database: `cd backend && npm run db:init`.
-3. Chạy hệ thống qua Docker: `docker-compose up -d --build`.
+2. Chạy hệ thống qua Docker: `docker-compose up -d --build`.
 
 *Lưu ý kỷ luật:* Mọi cấu trúc và thiết kế hệ thống phải bám sát tài liệu `codebasemap.md` và `ANTIGRAVITY.md`.

@@ -86,11 +86,16 @@ export default class AdminSystemController {
         const btnSave = container.querySelector('#btn-save-config');
         if (btnSave) {
             btnSave.addEventListener('click', async () => {
+                const provider = container.querySelector('#cfg-ai-provider').value;
+                const modelMode = container.querySelector('[data-ai-model-mode][aria-pressed="true"]')?.getAttribute('data-ai-model-mode') || 'auto';
                 const newConfigs = {
-                    ai_provider: container.querySelector('#cfg-ai-provider').value,
+                    ai_provider: provider,
+                    ai_model_mode: modelMode,
                     gemini_model: container.querySelector('#cfg-gemini-model').value,
                     ollama_host: container.querySelector('#cfg-ollama-host').value,
                     ollama_model: container.querySelector('#cfg-ollama-model').value,
+                    ai_model: provider === 'gemini' ? container.querySelector('#cfg-gemini-model').value : container.querySelector('#cfg-ollama-model').value,
+                    ai_host: container.querySelector('#cfg-ollama-host').value,
                     ai_max_tokens: container.querySelector('#cfg-ai-tokens').value,
                     ai_system_prompt: container.querySelector('#cfg-ai-prompt').value,
                     ai_temperature: container.querySelector('#cfg-ai-temp').value,
@@ -136,6 +141,17 @@ export default class AdminSystemController {
             providerSelect.addEventListener('change', updateProviderView);
             updateProviderView();
         }
+
+        const modelModeButtons = container.querySelectorAll('[data-ai-model-mode]');
+        modelModeButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                modelModeButtons.forEach((candidate) => {
+                    const selected = candidate === button;
+                    candidate.setAttribute('aria-pressed', String(selected));
+                    candidate.className = `px-4 py-2 rounded-lg text-sm font-black transition-colors ${selected ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}`;
+                });
+            });
+        });
     }
 
     destroy() {

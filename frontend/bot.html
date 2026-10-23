@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant - BanHangAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#f3f5f9] min-h-dvh flex justify-center items-center overflow-hidden p-0 sm:p-5">
+    <main aria-label="Trò chuyện với trợ lý AI" class="w-full h-dvh sm:h-[min(900px,calc(100dvh-2.5rem))] sm:max-w-5xl">
+        <div id="standalone-chat-container" class="w-full h-full shadow-none sm:shadow-[0_24px_80px_-24px_rgba(15,23,42,0.28)] rounded-none sm:rounded-3xl overflow-hidden flex flex-col bg-white border-0 sm:border sm:border-slate-200">
+            <!-- ChatController will mount here -->
+        </div>
+    </main>
+
+    <script type="module">
+        import ChatController from './src/controllers/ChatController.js';
+        const container = document.getElementById('standalone-chat-container');
+        const chat = new ChatController(container);
+    </script>
+</body>
+</html>

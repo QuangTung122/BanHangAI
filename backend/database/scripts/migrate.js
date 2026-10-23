@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS messages (
     sender_id INTEGER,
     receiver_id INTEGER,
     content TEXT NOT NULL,
+    image_url TEXT,
     is_read BOOLEAN DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE CASCADE,

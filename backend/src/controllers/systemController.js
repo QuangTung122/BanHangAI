@@ -23,12 +23,22 @@ export const getConfigs = async (req, res) => {
 // Cập nhật cấu hình hệ thống
 export const updateConfigs = async (req, res) => {
     const configs = req.body;
+    if (configs?.ai_model_mode && !['auto', 'manual'].includes(configs.ai_model_mode)) {
+        return res.status(400).json({ success: false, message: 'Chế độ model phải là auto hoặc manual.' });
+    }
     try {
         for (const [key, value] of Object.entries(configs)) {
             await db.run(
                 'INSERT INTO system_configs (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
                 [key, value]
             );
+        }
+        if (configs?.ai_model_mode || configs?.ai_model || configs?.ai_provider) {
+            await db.run('DELETE FROM system_configs WHERE key IN (\'ai_last_model\', \'ai_last_model_reason\', \'ai_last_model_at\', \'ai_auto_model\', \'ai_auto_until\', \'ai_auto_primary\')');
+            if (configs.ai_provider === 'gemini' && configs.ai_model) {
+                await db.run('INSERT INTO system_configs (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', ['ai_last_model', configs.ai_model]);
+                await db.run('INSERT INTO system_configs (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value', ['ai_last_model_reason', 'configured']);
+            }
         }
         await logAction(req.user.id, 'SYSTEM', 'Cập nhật cấu hình hệ thống', configs);
         res.status(200).json({ success: true, message: 'Đã lưu cấu hình hệ thống' });

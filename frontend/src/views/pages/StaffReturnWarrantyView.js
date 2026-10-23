@@ -10,7 +10,7 @@ export default class StaffReturnWarrantyView {
                     <div class="p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50 shrink-0">
                         <div>
                             <h2 class="text-lg font-black text-slate-900">Đổi trả hàng & Tiếp nhận Bảo hành</h2>
-                            <p class="text-xs text-slate-600 font-semibold mt-0.5">Staff tiếp nhận và theo dõi; chủ cửa hàng/admin duyệt đổi hoặc hoàn tiền. Bảo hành được chuyển hãng/TTBH khi cần.</p>
+                            <p class="text-xs text-slate-600 font-semibold mt-0.5">Nhân viên tiếp nhận và theo dõi; chủ cửa hàng duyệt đổi hoặc hoàn tiền. Bảo hành được chuyển hãng/TTBH khi cần.</p>
                         </div>
                         <div class="flex gap-2">
                             <button data-tab="create" class="main-tab-btn px-4 py-2 rounded-xl text-xs font-black bg-indigo-600 text-white shadow-sm">Tạo yêu cầu mới</button>
@@ -146,16 +146,16 @@ export default class StaffReturnWarrantyView {
 
                 <!-- Modal Lịch sử Theo dõi -->
                 <div id="tracking-modal" class="fixed inset-0 z-[100] hidden bg-slate-900/50 flex items-center justify-center">
-                    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6">
+                    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[85vh] overflow-y-auto">
                         <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-4">
-                            <h3 class="text-lg font-black text-slate-900 flex items-center gap-2">
+                            <h3 id="tracking-modal-title" class="text-lg font-black text-slate-900 flex items-center gap-2">
                                 <span class="text-xl">🔍</span> Chi Tiết Phiếu
                             </h3>
                             <button id="btn-close-tracking-modal" class="text-slate-400 hover:text-slate-700">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                             </button>
                         </div>
-                        <div id="tracking-content" class="space-y-3 text-sm">
+                        <div id="tracking-content" class="space-y-3 text-sm max-h-[65vh] overflow-y-auto pr-1">
                             Đang tải...
                         </div>
                     </div>
@@ -357,14 +357,14 @@ export default class StaffReturnWarrantyView {
                     repairing: ['repaired', 'Đã nhận kết quả', 'bg-indigo-600'],
                     repaired: ['completed', 'Bàn giao & hoàn tất', 'bg-emerald-600']
                 };
-                if (['owner', 'admin'].includes(this.currentRole) && item.status === 'in_review') {
+                if (this.currentRole === 'owner' && item.status === 'in_review') {
                     actionBtn = `<button class="btn-warranty-transition px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[11px] font-black" data-id="${item.id}" data-status="approved">Duyệt hồ sơ</button><button class="btn-warranty-transition px-3 py-1.5 bg-rose-600 text-white rounded-lg text-[11px] font-black" data-id="${item.id}" data-status="rejected">Từ chối</button>`;
                 } else if (warrantyActions[item.status]) {
                     const [nextStatus, label, color] = warrantyActions[item.status];
                     actionBtn = `<button class="btn-warranty-transition ${nextStatus === 'completed' ? 'btn-complete-warranty' : ''} px-3 py-1.5 ${color} text-white rounded-lg text-[11px] font-black" data-id="${item.id}" data-status="${nextStatus}">${label}</button>`;
                 }
             } else if (item.idPrefix === 'RET-') {
-                if (['owner', 'admin'].includes(this.currentRole) && item.status === 'pending') {
+                if (this.currentRole === 'owner' && item.status === 'pending') {
                     actionBtn = `<button class="btn-approve-return px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[11px] font-black" data-id="${item.id}" data-status="approved">Duyệt</button><button class="btn-approve-return px-3 py-1.5 bg-rose-600 text-white rounded-lg text-[11px] font-black" data-id="${item.id}" data-status="rejected">Từ chối</button>`;
                 } else if (item.status === 'approved') {
                     actionBtn = `<button class="btn-complete-return px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-[11px] font-black" data-id="${item.id}">Thực hiện & hoàn tất</button>`;
@@ -392,11 +392,56 @@ export default class StaffReturnWarrantyView {
 
     statusLabel(status) {
         const labels = {
-            pending: 'Chờ tiếp nhận', in_review: 'Đang chờ duyệt', approved: 'Đã duyệt',
+            pending: 'Chờ tiếp nhận', in_review: 'Đang gửi hãng/TTBH', approved: 'Đã duyệt',
             repairing: 'Đang xử lý tại hãng', repaired: 'Đã có kết quả', completed: 'Đã hoàn tất',
             rejected: 'Bị từ chối', cancelled: 'Đã hủy'
         };
         return labels[status] || status || '—';
+    }
+
+    renderStatusTimeline(data, type) {
+        const returnStages = ['pending', 'approved', 'completed'];
+        const warrantyStages = ['pending', 'in_review', 'approved', 'repairing', 'repaired', 'completed'];
+        const terminalStatuses = ['rejected', 'cancelled'];
+        const stages = type === 'WAR-' ? warrantyStages : returnStages;
+        const history = Array.isArray(data.status_history) ? data.status_history : [];
+        if (!history.some((event) => event.status === 'pending')) {
+            history.unshift({ status: 'pending', created_at: data.claimed_at || data.requested_at, actor_name: data.creator_name });
+        }
+        if (!history.some((event) => event.status === data.status)) {
+            history.push({ status: data.status, created_at: data.processed_at || null });
+        }
+
+        const orderedStatuses = terminalStatuses.includes(data.status)
+            ? [...stages.filter((status) => history.some((event) => event.status === status)), data.status]
+            : stages.filter((status) => history.some((event) => event.status === status));
+        const uniqueStatuses = [...new Set(orderedStatuses)];
+        return `
+            <section class="rounded-xl border border-slate-200 bg-white p-4">
+                <h4 class="mb-3 text-xs font-black uppercase tracking-wide text-slate-600">Tiến độ hồ sơ</h4>
+                <ol class="space-y-3">
+                    ${uniqueStatuses.map((status) => {
+                        const event = [...history].reverse().find((entry) => entry.status === status);
+                        const isCurrent = status === data.status;
+                        const eventDate = event?.created_at ? new Date(String(event.created_at).replace(' ', 'T')).toLocaleString('vi-VN') : '';
+                        const actor = event?.actor_name ? ` · ${this.escapeHtml(event.actor_name)}` : '';
+                        return `<li class="flex gap-3">
+                            <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${isCurrent ? 'bg-indigo-600 text-white' : 'bg-emerald-100 text-emerald-700'} text-[10px] font-black">${isCurrent ? '●' : '✓'}</span>
+                            <div class="min-w-0">
+                                <div class="text-sm font-bold ${isCurrent ? 'text-indigo-700' : 'text-slate-800'}">${this.statusLabel(status)}${isCurrent ? ' · Hiện tại' : ''}</div>
+                                ${eventDate || actor ? `<div class="mt-0.5 text-xs text-slate-500">${eventDate}${actor}</div>` : ''}
+                            </div>
+                        </li>`;
+                    }).join('')}
+                </ol>
+            </section>
+        `;
+    }
+
+    escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[char]);
     }
 
     showWarrantyFeeModal(warrantyId) {
@@ -432,9 +477,11 @@ export default class StaffReturnWarrantyView {
     }
 
     showTrackingModal(data, type) {
+        document.getElementById('tracking-modal-title').innerText = 'Chi tiết phiếu';
         let content = '';
         if (type === 'WAR-') {
             content = `
+                ${this.renderStatusTimeline(data, type)}
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <div class="text-xs text-slate-500 uppercase font-bold">Mã Hóa Đơn</div>
@@ -462,6 +509,7 @@ export default class StaffReturnWarrantyView {
             `;
         } else {
             content = `
+                ${this.renderStatusTimeline(data, type)}
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
                         <div class="text-xs text-slate-500 uppercase font-bold">Mã Hóa Đơn</div>
@@ -491,6 +539,7 @@ export default class StaffReturnWarrantyView {
 
     hideTrackingModal() {
         document.getElementById('tracking-modal').classList.add('hidden');
+        document.getElementById('tracking-content').classList.remove('whitespace-pre-wrap');
     }
 
     formatMoney(amount = 0) {

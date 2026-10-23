@@ -2,8 +2,8 @@ export default class InternalChatModule {
     constructor() {
         this.container = document.createElement('div');
         this.container.id = 'internal-chat-module';
-        // Positioned slightly above the AI chat
-        this.container.className = 'fixed bottom-28 right-6 z-40 flex flex-col items-end';
+        // Positioned at bottom right
+        this.container.className = 'fixed bottom-6 right-6 z-40 flex flex-col items-end';
         
         this.isOpen = false;
         
@@ -46,7 +46,11 @@ export default class InternalChatModule {
                     <!-- Input area -->
                     <div class="p-3 bg-white border-t border-slate-100 hidden" id="team-chat-input-area">
                         <form id="team-chat-form" class="flex items-center gap-2">
-                            <input type="text" id="team-chat-input" class="flex-1 bg-slate-100 border-none rounded-full px-4 py-2 focus:ring-2 focus:ring-emerald-200 focus:outline-none text-sm" placeholder="Nhập tin nhắn..." autocomplete="off">
+                            <label class="w-9 h-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center cursor-pointer hover:bg-emerald-100 hover:text-emerald-700" title="Gửi ảnh">
+                                <input type="file" id="team-chat-image" accept="image/jpeg,image/png,image/webp" class="hidden">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2"/><circle cx="8.5" cy="8.5" r="1.5" stroke-width="2"/><path stroke-width="2" d="m21 15-5-5L5 21"/></svg>
+                            </label>
+                            <input type="text" id="team-chat-input" class="flex-1 min-w-0 bg-slate-100 border-none rounded-full px-4 py-2 focus:ring-2 focus:ring-emerald-200 focus:outline-none text-sm" placeholder="Nhập tin nhắn..." autocomplete="off">
                             <button type="submit" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center hover:bg-emerald-200 transition-colors shrink-0">
                                 <svg class="w-4 h-4 translate-x-px" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                             </button>
@@ -75,30 +79,31 @@ export default class InternalChatModule {
 
     renderUserList(users, onUserClick) {
         const list = this.container.querySelector('#chat-user-list');
-        list.innerHTML = users.map(u => {
-            const displayName = u.full_name || u.username || 'User';
-            return `
-            <div class="chat-user-item p-3 border-b border-slate-100 cursor-pointer hover:bg-emerald-50 transition-colors flex items-center gap-2" data-id="${u.id}" data-name="${displayName}">
-                <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-bold flex items-center justify-center text-xs shrink-0 uppercase">
-                    ${displayName.charAt(0)}
-                </div>
-                <div class="min-w-0 flex-1">
-                    <div class="text-sm font-medium text-slate-800 truncate">${displayName}</div>
-                    <div class="text-[10px] text-slate-500 uppercase">${u.role}</div>
-                </div>
-            </div>
-        `}).join('');
-
-        list.querySelectorAll('.chat-user-item').forEach(item => {
+        list.replaceChildren();
+        users.forEach((user) => {
+            const name = user.full_name || user.username || 'User';
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'chat-user-item w-full text-left p-3 border-b border-slate-100 cursor-pointer hover:bg-emerald-50 transition-colors flex items-center gap-2';
+            const avatar = document.createElement('div');
+            avatar.className = 'w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-bold flex items-center justify-center text-xs shrink-0 uppercase';
+            avatar.textContent = name.charAt(0);
+            const details = document.createElement('div');
+            details.className = 'min-w-0 flex-1';
+            const nameNode = document.createElement('div');
+            nameNode.className = 'text-sm font-medium text-slate-800 truncate';
+            nameNode.textContent = name;
+            const roleNode = document.createElement('div');
+            roleNode.className = 'text-[10px] text-slate-500 uppercase';
+            roleNode.textContent = user.role === 'all' ? 'Gửi thông báo chung' : user.role;
+            details.append(nameNode, roleNode);
+            item.append(avatar, details);
             item.addEventListener('click', () => {
-                // Remove active class
                 list.querySelectorAll('.chat-user-item').forEach(el => el.classList.remove('bg-emerald-100'));
                 item.classList.add('bg-emerald-100');
-                
-                const id = item.dataset.id;
-                const name = item.dataset.name;
-                onUserClick(id, name);
+                onUserClick(user.id, name);
             });
+            list.appendChild(item);
         });
     }
 
@@ -107,65 +112,71 @@ export default class InternalChatModule {
         this.container.querySelector('#team-chat-header').classList.remove('hidden');
         this.container.querySelector('#team-chat-history').classList.remove('hidden');
         this.container.querySelector('#team-chat-input-area').classList.remove('hidden');
-        this.container.querySelector('#active-chat-name').textContent = `Chat với: ${name}`;
+        this.container.querySelector('#active-chat-name').textContent = name === 'Toàn hệ thống' ? 'Thông báo toàn hệ thống' : `Chat với: ${name}`;
         this.container.querySelector('#team-chat-history').innerHTML = ''; // Clear history
     }
 
     renderMessages(messages, currentUserId) {
         const history = this.container.querySelector('#team-chat-history');
-        history.innerHTML = messages.map(m => {
-            const isMe = m.sender_id === currentUserId;
-            let timeString = '';
-            if (m.created_at) {
-                let dateStr = m.created_at;
-                if (!dateStr.includes('Z') && !dateStr.includes('+')) {
-                    dateStr = dateStr.replace(' ', 'T') + 'Z';
-                }
-                timeString = new Date(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-            }
-            return `
-                <div class="flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'} mb-2">
-                    <div class="${isMe ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-800'} px-3 py-2 rounded-2xl ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'} shadow-sm max-w-[85%]">
-                        ${m.content}
-                    </div>
-                    ${timeString ? `<span class="text-[10px] text-slate-400 px-1">${timeString}</span>` : ''}
-                </div>
-            `;
-        }).join('');
+        history.replaceChildren();
+        messages.forEach((message) => history.appendChild(this.createMessageNode(message, message.sender_id === currentUserId)));
         history.scrollTop = history.scrollHeight;
     }
 
-    appendMessage(message, isMe = true, createdAt = new Date()) {
-        const history = this.container.querySelector('#team-chat-history');
-        let timeString = '';
-        if (createdAt) {
-            let dateStr = typeof createdAt === 'string' ? createdAt : createdAt.toISOString();
-            if (!dateStr.includes('Z') && !dateStr.includes('+')) {
-                dateStr = dateStr.replace(' ', 'T') + 'Z';
-            }
-            timeString = new Date(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    createMessageNode(message, isMe = false) {
+        const wrapper = document.createElement('div');
+        wrapper.className = `flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'} mb-2`;
+        const bubble = document.createElement('div');
+        bubble.className = `${isMe ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-800'} px-3 py-2 rounded-2xl ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'} shadow-sm max-w-[85%] break-words`;
+        if (message.sender_name && !isMe) {
+            const sender = document.createElement('div');
+            sender.className = 'text-[10px] font-bold opacity-75 mb-1';
+            sender.textContent = message.sender_name;
+            bubble.appendChild(sender);
         }
-        const msgHtml = `
-            <div class="flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'} mb-2">
-                <div class="${isMe ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-800'} px-3 py-2 rounded-2xl ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'} shadow-sm max-w-[85%]">
-                    ${message}
-                </div>
-                ${timeString ? `<span class="text-[10px] text-slate-400 px-1">${timeString}</span>` : ''}
-            </div>
-        `;
-        history.insertAdjacentHTML('beforeend', msgHtml);
+        if (message.content) {
+            const text = document.createElement('div');
+            text.textContent = message.content;
+            bubble.appendChild(text);
+        }
+        if (message.image_url) {
+            const image = document.createElement('img');
+            image.src = message.image_url;
+            image.alt = 'Ảnh đính kèm trong chat';
+            image.loading = 'lazy';
+            image.className = 'mt-1 max-w-full max-h-52 rounded-lg object-contain';
+            bubble.appendChild(image);
+        }
+        wrapper.appendChild(bubble);
+        if (message.created_at) {
+            let dateStr = message.created_at;
+            if (!dateStr.includes('Z') && !dateStr.includes('+')) dateStr = dateStr.replace(' ', 'T') + 'Z';
+            const time = document.createElement('span');
+            time.className = 'text-[10px] text-slate-400 px-1';
+            time.textContent = new Date(dateStr).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+            wrapper.appendChild(time);
+        }
+        return wrapper;
+    }
+
+    appendMessage(message, isMe = true) {
+        const history = this.container.querySelector('#team-chat-history');
+        history.appendChild(this.createMessageNode(message, isMe));
         history.scrollTop = history.scrollHeight;
     }
 
     bindSendMessage(handler) {
         const form = this.container.querySelector('#team-chat-form');
         const input = this.container.querySelector('#team-chat-input');
+        const imageInput = this.container.querySelector('#team-chat-image');
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             const text = input.value.trim();
-            if (!text) return;
-            handler(text);
+            const image = imageInput.files?.[0] || null;
+            if (!text && !image) return;
+            handler(text, image);
             input.value = '';
+            imageInput.value = '';
         });
     }
 }

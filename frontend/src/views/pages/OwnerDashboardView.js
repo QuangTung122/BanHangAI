@@ -7,7 +7,7 @@ export default class OwnerDashboardView {
         const fmt = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
         
         let html = `
-            <div class="h-full flex flex-col gap-6 relative">
+            <div class="flex flex-col gap-6 relative pb-10">
                 <!-- 3 Thẻ Chỉ Số Quan Trọng -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-5 shrink-0">
                     <!-- Doanh thu -->
@@ -119,6 +119,15 @@ export default class OwnerDashboardView {
                     </div>
                 </div>
 
+                <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <div><h3 class="text-base font-black text-slate-900">Nhu cầu khách hàng từ Bot</h3><p class="text-xs text-slate-500 mt-1">Tổng hợp 90 ngày gần nhất · chỉ lưu nhu cầu đã được khách xác nhận</p></div>
+                        <span class="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">Dữ liệu tư vấn</span>
+                    </div>
+                    <p id="bot-review-insights" class="mb-4 text-sm font-semibold text-slate-600"></p>
+                    <div id="bot-demand-insights" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"><p class="text-sm text-slate-500">Đang tải dữ liệu nhu cầu...</p></div>
+                </section>
+
                 <!-- AI Insight Banner -->
                 <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl shadow-md p-6 shrink-0 flex flex-col md:flex-row items-center justify-between border border-slate-800 relative overflow-hidden">
                     <div class="flex items-center gap-5 relative z-10 w-full md:w-auto">
@@ -143,10 +152,29 @@ export default class OwnerDashboardView {
                 </div>
                 <div id="ai-insight-result" class="hidden p-5 bg-white rounded-2xl border border-indigo-200 text-sm font-semibold text-slate-800 leading-relaxed shadow-sm">
                 </div>
+                </div>
             </div>
         `;
         
         this.container.innerHTML = html;
+    }
+
+    renderDemandInsights(data) {
+        const target = this.container?.querySelector('#bot-demand-insights');
+        if (!target) return;
+        const reviewTarget = this.container?.querySelector('#bot-review-insights');
+        const reviews = data?.reviews;
+        if (reviewTarget) reviewTarget.textContent = reviews?.review_count
+            ? `Đánh giá 90 ngày: ${Number(reviews.review_count)} lượt · trung bình ${Number(reviews.average_rating || 0).toFixed(1)}/5 · ${Number(reviews.positive_count || 0)} lượt từ 4 sao trở lên.`
+            : 'Chưa có đánh giá khách hàng trong 90 ngày gần nhất.';
+        const escape = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+        const groups = data?.by_category || [];
+        target.innerHTML = groups.length ? groups.map((group) => `
+            <article class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div class="flex items-start justify-between gap-3"><h4 class="font-black text-slate-800">${escape(group.category)}</h4><span class="rounded-full bg-indigo-100 px-2 py-1 text-xs font-black text-indigo-800">${Number(group.request_count) || 0} lượt</span></div>
+                <p class="mt-2 text-xs text-slate-600">Ngân sách thường gặp: ${Number(group.average_budget_min) ? Math.round(Number(group.average_budget_min)).toLocaleString('vi-VN') + '–' : ''}${Number(group.average_budget_max) ? Math.round(Number(group.average_budget_max)).toLocaleString('vi-VN') + ' ₫' : 'chưa cung cấp'}</p>
+                ${group.preferred_brands ? `<p class="mt-1 text-xs text-slate-600">Thương hiệu: ${escape(group.preferred_brands)}</p>` : ''}
+            </article>`).join('') : '<p class="text-sm text-slate-500">Chưa có nhu cầu mua sắm được khách xác nhận.</p>';
     }
 
     renderChart(chartData) {

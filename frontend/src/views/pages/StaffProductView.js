@@ -62,14 +62,15 @@ export default class StaffProductView {
                     <!-- Bảng dữ liệu -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
                         <!-- Toolbar -->
-                        <div class="p-3.5 border-b border-slate-200 flex items-center justify-between gap-3 bg-slate-50">
-                            <div class="flex items-center gap-2 w-full max-w-md">
+                        <div class="p-3.5 border-b border-slate-200 flex flex-col gap-3 bg-slate-50">
+                            <div class="flex items-center gap-2">
                                 <div class="relative w-full">
                                     <svg class="w-4 h-4 absolute left-3 top-2.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                                    <input type="text" id="search-product" placeholder="Tra cứu nhanh tên sản phẩm..." class="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 font-bold focus:outline-none focus:border-indigo-600 shadow-inner">
+                                    <input type="search" id="search-product" placeholder="Tên, mã SKU, mã sản phẩm, thương hiệu..." class="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 font-bold focus:outline-none focus:border-indigo-600 shadow-inner">
                                 </div>
+                                <button type="button" id="reset-product-filters" class="shrink-0 px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100">Xóa lọc</button>
                             </div>
-                            <div class="flex items-center gap-2 shrink-0">
+                            <div class="grid grid-cols-4 gap-2">
                                 <select id="filter-category" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 font-bold focus:outline-none focus:border-indigo-600">
                                     <option value="all">Mọi danh mục</option>
                                     ${catOptions}
@@ -80,6 +81,19 @@ export default class StaffProductView {
                                     <option value="low_stock">Sắp hết hàng</option>
                                     <option value="out_of_stock">Đã hết hàng (0)</option>
                                 </select>
+                                <input type="number" id="filter-price-min" min="0" placeholder="Giá từ (₫)" aria-label="Giá tối thiểu" class="min-w-0 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold">
+                                <input type="number" id="filter-price-max" min="0" placeholder="Giá đến (₫)" aria-label="Giá tối đa" class="min-w-0 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold">
+                                <input type="number" id="filter-stock-min" min="0" placeholder="Tồn từ" aria-label="Tồn kho tối thiểu" class="min-w-0 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold">
+                                <input type="number" id="filter-stock-max" min="0" placeholder="Tồn đến" aria-label="Tồn kho tối đa" class="min-w-0 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold">
+                                <select id="filter-sort" class="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 font-bold">
+                                    <option value="name_asc">Tên A → Z</option>
+                                    <option value="name_desc">Tên Z → A</option>
+                                    <option value="price_asc">Giá thấp → cao</option>
+                                    <option value="price_desc">Giá cao → thấp</option>
+                                    <option value="stock_asc">Tồn thấp → cao</option>
+                                    <option value="stock_desc">Tồn cao → thấp</option>
+                                </select>
+                                <div id="product-filter-count" class="col-span-3 flex items-center text-xs font-semibold text-slate-600">Hiển thị ${products.length} / ${products.length} sản phẩm</div>
                             </div>
                         </div>
 
@@ -152,7 +166,7 @@ export default class StaffProductView {
                     <td class="p-3">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 bg-white rounded-lg border border-slate-200 overflow-hidden flex-shrink-0 p-1">
-                                <img src="${p.image_url || 'assets/images/logo-system.png'}" alt="" class="w-full h-full object-contain">
+                                <img src="${p.image_url || 'assets/images/logo-system.png'}" onerror="this.onerror=null;this.src='assets/images/logo-system.png'" alt="Ảnh ${p.name}" class="w-full h-full object-contain">
                             </div>
                             <div>
                                 <div class="font-bold text-slate-900 text-sm line-clamp-1">${p.name}</div>
@@ -189,7 +203,7 @@ export default class StaffProductView {
             <div class="flex-1 overflow-auto p-5 flex flex-col custom-scrollbar">
                 <!-- Image -->
                 <div class="w-full bg-white rounded-xl p-4 border border-slate-200 flex items-center justify-center shrink-0 mb-4 relative">
-                    <img src="${product.image_url || 'assets/images/logo-system.png'}" alt="${product.name}" class="w-44 h-44 object-contain">
+                    <img src="${product.image_url || 'assets/images/logo-system.png'}" onerror="this.onerror=null;this.src='assets/images/logo-system.png'" alt="${product.name}" class="w-44 h-44 object-contain">
                     <div class="absolute top-3 left-3">
                         ${statusBadge}
                     </div>
@@ -226,6 +240,12 @@ export default class StaffProductView {
 
     updateTable(products) {
         document.getElementById('product-table-body').innerHTML = this.renderRows(products);
+        const count = document.getElementById('product-filter-count');
+        if (count) count.textContent = `Hiển thị ${products.length} / ${this.totalProducts} sản phẩm`;
+    }
+
+    setTotalProducts(total) {
+        this.totalProducts = total;
     }
 
     highlightRow(productId) {

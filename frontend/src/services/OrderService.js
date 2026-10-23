@@ -9,7 +9,19 @@ export default class OrderService {
         return await ApiClient.get(url);
     }
 
+    async getPendingBotOrders() {
+        return await ApiClient.get('/orders/bot-pending');
+    }
+
     async getMyStats() {
         return await ApiClient.get('/orders/my-stats');
+    }
+
+    async confirmBotOrder(orderId) {
+        return await ApiClient.post(`/orders/${encodeURIComponent(orderId)}/confirm-bot`, {});
+    }
+
+    async confirmOrderPayment(orderId) {
+        return await ApiClient.post(`/orders/${encodeURIComponent(orderId)}/confirm-payment`, {});
     }
 }

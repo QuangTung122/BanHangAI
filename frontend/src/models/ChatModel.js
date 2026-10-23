@@ -24,9 +24,9 @@ export default class ChatModel {
         return this.messages;
     }
 
-    async sendMessage(content) {
+    async sendMessage(content, imageFile = null) {
         if (!this.activePartnerId) throw new Error("Chưa chọn người chat");
-        const { data } = await ChatService.sendMessage(this.activePartnerId, content);
+        const { data } = await ChatService.sendMessage(this.activePartnerId, content, imageFile);
         if (data && data.success) {
             this.messages.push(data.data);
             return data.data;

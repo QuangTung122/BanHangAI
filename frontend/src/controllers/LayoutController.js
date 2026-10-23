@@ -18,10 +18,9 @@ export default class LayoutController {
         // Render bộ khung giao diện
         this.view.render(user);
 
-        // Khởi tạo Chat Module (Hiển thị cục chat ở góc dưới)
-        this.chatController = new ChatController();
+        // Cục Chat AI mặc định đã bị gỡ bỏ, sẽ chuyển vào Dashboard
 
-        // Khởi tạo Internal Team Chat (Góc phải dưới, cạnh nút chuông/chat)
+        // Khởi tạo Internal Team Chat (Góc trái dưới)
         import('./InternalChatController.js').then(module => {
             const InternalChatController = module.default;
             this.internalChatController = new InternalChatController();
@@ -49,6 +48,7 @@ export default class LayoutController {
 
         // Khởi tạo Notification Bell & Dropdown
         this.initNotificationSystem();
+        this.initBotSupportNotifications(user.role);
     }
 
     async initNotificationSystem() {
@@ -68,6 +68,9 @@ export default class LayoutController {
             btnBell.addEventListener('click', () => {
                 dropdown.classList.toggle('hidden');
                 if (!dropdown.classList.contains('hidden')) {
+                    if ('Notification' in window && Notification.permission === 'default') {
+                        Notification.requestPermission().catch(() => {});
+                    }
                     this.renderNotifications(list, badge, btnMarkAll);
                 }
             });
@@ -91,7 +94,8 @@ export default class LayoutController {
             // Click vào từng thông báo để đọc
             list.addEventListener('click', async (e) => {
                 const notiItem = e.target.closest('.noti-item');
-                if (notiItem && notiItem.dataset.unread === 'true') {
+                if (!notiItem) return;
+                if (notiItem.dataset.unread === 'true') {
                     const id = notiItem.dataset.id;
                     await this.notiModel.markAsRead(id);
                     notiItem.dataset.unread = 'false';
@@ -103,21 +107,74 @@ export default class LayoutController {
                 }
             });
 
-            // Fetch lần đầu và Polling mỗi 30 giây
+            // Ghi nhận thông báo hiện có để chỉ phát âm báo cho thông báo mới.
             await this.notiModel.fetchNotifications();
             this.updateBadge(badge, this.notiModel.unreadCount);
+            const seenIds = new Set(this.notiModel.notifications.map((item) => Number(item.id)));
 
             setInterval(async () => {
                 await this.notiModel.fetchNotifications();
                 this.updateBadge(badge, this.notiModel.unreadCount);
+                const arriving = this.notiModel.notifications.filter((item) => !seenIds.has(Number(item.id)));
+                this.notiModel.notifications.forEach((item) => seenIds.add(Number(item.id)));
+                if (arriving.length) {
+                    const latest = arriving[0];
+                    if ('Notification' in window && Notification.permission === 'granted') {
+                        new Notification(latest.title || 'Thông báo từ cửa hàng', { body: latest.message || '', tag: `banhangai-${latest.id}` });
+                    }
+                    try {
+                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        const oscillator = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+                        oscillator.connect(gain);
+                        gain.connect(audioContext.destination);
+                        oscillator.frequency.value = 880;
+                        gain.gain.setValueAtTime(0.12, audioContext.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.22);
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.22);
+                        oscillator.onended = () => audioContext.close();
+                    } catch (error) {
+                        // Âm báo tùy thuộc hỗ trợ của trình duyệt.
+                    }
+                }
                 if (!dropdown.classList.contains('hidden')) {
                     this.renderNotifications(list, badge, btnMarkAll);
                 }
-            }, 30000);
+            }, 5000);
 
         } catch (error) {
             console.error('Lỗi khởi tạo Notification:', error);
         }
+    }
+
+    async initBotSupportNotifications(role) {
+        if (!['staff', 'owner'].includes(role)) return;
+        const badge = document.querySelector('#menu-bot-support [data-bot-support-badge]');
+        let previousTotal = null;
+        const refreshSummary = async () => {
+            try {
+                const { default: ApiClient } = await import('../core/ApiClient.js');
+                const response = await ApiClient.get('/bot/support/notifications/summary');
+                if (!response.data?.success) return;
+                const summary = response.data.data || {};
+                const total = Number(summary.total) || 0;
+                if (badge) {
+                    badge.textContent = total > 9 ? '9+' : String(total);
+                    badge.classList.toggle('hidden', total < 1);
+                    badge.classList.toggle('flex', total > 0);
+                }
+                if (previousTotal !== null && total > previousTotal && window.showToast) {
+                    const increase = total - previousTotal;
+                    window.showToast(`Có ${increase} yêu cầu hoặc tin nhắn mới trong khu vực hỗ trợ Bot.`, 'info');
+                }
+                previousTotal = total;
+            } catch (error) {
+                console.error('Lỗi tải thông báo hỗ trợ Bot:', error);
+            }
+        };
+        await refreshSummary();
+        this.botSupportNotificationInterval = setInterval(refreshSummary, 5000);
     }
 
     updateBadge(badge, count) {
@@ -142,6 +199,13 @@ export default class LayoutController {
 
         list.innerHTML = notis.map(n => {
             const isUnread = n.is_read === 0;
+            const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[character]);
             const bgClass = isUnread ? 'bg-indigo-50/50 hover:bg-indigo-50' : 'hover:bg-slate-50';
             const dotHtml = isUnread ? `<div class="w-2 h-2 bg-indigo-600 rounded-full unread-dot mt-1.5 shrink-0"></div>` : '';
             
@@ -163,7 +227,8 @@ export default class LayoutController {
                         </svg>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm text-slate-800 ${isUnread ? 'font-semibold' : 'font-medium'} leading-tight">${n.message}</p>
+                        <p class="text-sm text-slate-900 ${isUnread ? 'font-bold' : 'font-semibold'} leading-tight">${escapeHtml(n.title || 'Thông báo')}</p>
+                        <p class="text-xs text-slate-700 mt-1 leading-snug">${escapeHtml(n.message || '')}</p>
                         <p class="text-xs text-slate-500 mt-1">${time} - ${date}</p>
                     </div>
                     ${dotHtml}
@@ -367,7 +432,7 @@ export default class LayoutController {
                 const StaffInstallmentController = module.default;
                 this.childController = new StaffInstallmentController();
             }).catch(err => console.error(err));
-        } else if (['menu-staff-return-warranty', 'menu-owner-return-warranty', 'menu-admin-return-warranty'].includes(menuId)) {
+        } else if (['menu-staff-return-warranty', 'menu-owner-return-warranty'].includes(menuId)) {
             import('./StaffReturnWarrantyController.js').then(module => {
                 const StaffReturnWarrantyController = module.default;
                 this.childController = new StaffReturnWarrantyController();
@@ -406,6 +471,11 @@ export default class LayoutController {
             import('./UserSettingsController.js').then(module => {
                 const UserSettingsController = module.default;
                 this.childController = new UserSettingsController();
+            }).catch(err => console.error(err));
+        } else if (menuId === 'menu-bot-support') {
+            import('./BotSupportController.js').then(module => {
+                const BotSupportController = module.default;
+                this.childController = new BotSupportController();
             }).catch(err => console.error(err));
         } else {
             contentArea.innerHTML = `

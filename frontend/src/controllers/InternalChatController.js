@@ -53,13 +53,14 @@ export default class InternalChatController {
         }
     }
 
-    async handleSendMessage(text) {
+    async handleSendMessage(text, imageFile = null) {
         try {
             // Optimistic update
-            this.view.appendMessage(text, true);
-            await this.model.sendMessage(text);
+            this.view.appendMessage({ content: text, image_url: imageFile ? URL.createObjectURL(imageFile) : null }, true);
+            await this.model.sendMessage(text, imageFile);
         } catch (error) {
             console.error("Lỗi gửi tin nhắn", error);
+            alert(error.message || 'Không gửi được tin nhắn.');
         }
     }
 }

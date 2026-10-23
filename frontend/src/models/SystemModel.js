@@ -5,6 +5,7 @@ export default class SystemModel {
         this.configs = {
             ollama_host: '',
             ai_model: '',
+            ai_model_mode: 'auto',
             ai_max_tokens: '4096',
             ai_system_prompt: '',
             ai_temperature: '0.7',

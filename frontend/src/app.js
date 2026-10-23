@@ -1,18 +1,25 @@
 import AuthController from './controllers/AuthController.js?v=211';
 import AuthModel from './models/AuthModel.js?v=209';
 import LayoutController from './controllers/LayoutController.js?v=209';
+import ChatController from './controllers/ChatController.js';
 
 class App {
     constructor() {
         this.authModel = new AuthModel();
         this.currentController = null;
+        this.publicChatController = null;
     }
 
     init() {
         console.log('Hệ thống E-Com AI đang khởi động...');
         
-        window.addEventListener('auth-success', () => this.bootMasterLayout());
+        window.addEventListener('auth-success', () => {
+            this.publicChatController?.destroy();
+            this.publicChatController = null;
+            this.bootMasterLayout();
+        });
         window.addEventListener('auth-logout', () => {
+            localStorage.removeItem('bot_token');
             window.location.reload(); // Reload toàn trang để về trang bìa cho sạch
         });
 
@@ -20,6 +27,7 @@ class App {
             this.bootMasterLayout();
         } else {
             this.bindLandingPage();
+            this.publicChatController = new ChatController();
         }
     }
 

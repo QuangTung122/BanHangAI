@@ -17,3 +17,9 @@
 ## 🔒 Quy tắc Code
 - **Không bao giờ** commit file `.env` chứa khóa bí mật lên Git.
 - **Transaction:** Mọi giao dịch thay đổi dòng tiền (Cashflow) và Tồn kho (Stock) phải sử dụng DB Transaction (BEGIN -> COMMIT / ROLLBACK) để chống đua lệnh (Race Condition).
+
+## Xác minh số điện thoại Bot
+
+Đăng ký Bot dùng OTP SMS trước khi liên kết số điện thoại với hồ sơ khách. Cấu hình `SMS_GATEWAY_URL`, `SMS_GATEWAY_TOKEN` và `BOT_OTP_SECRET` trong `.env`; gateway cần nhận `POST` JSON gồm `{ "to": "09xxxxxxxx", "message": "..." }`, xác thực bằng Bearer token và trả HTTP 2xx khi nhận gửi. Dùng HTTPS ở môi trường triển khai. Khi thiếu cấu hình, đăng ký bị từ chối an toàn.
+
+Không gửi CCCD qua chat. Bot chỉ hướng dẫn khách hoàn tất hồ sơ trả góp qua kênh chính thức của đối tác tài chính. Đơn bot giữ tồn tối đa 30 phút, giới hạn hai đơn chờ trên mỗi khách và tự giải phóng tồn khi hết hạn.

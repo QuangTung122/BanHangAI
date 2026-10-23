@@ -38,10 +38,19 @@ export default class AdminSystemView {
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Mô hình Gemini</label>
                             <select id="cfg-gemini-model" class="w-full px-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-800 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-sm transition-all cursor-pointer">
-                                <option value="gemini-3.8-flash" ${configs.gemini_model === 'gemini-3.8-flash' || configs.ai_model === 'gemini-3.8-flash' ? 'selected' : ''}>gemini-3.8-flash (Bản mới nhất - Siêu mượt)</option>
-                                <option value="gemini-3.7-flash" ${configs.gemini_model === 'gemini-3.7-flash' || configs.ai_model === 'gemini-3.7-flash' ? 'selected' : ''}>gemini-3.7-flash (Ổn định)</option>
-                                <option value="gemini-3.6-flash" ${configs.gemini_model === 'gemini-3.6-flash' || configs.ai_model === 'gemini-3.6-flash' ? 'selected' : ''}>gemini-3.6-flash (Phiên bản cũ)</option>
+                                <option value="gemini-3.8-flash" ${!configs.gemini_model && !configs.ai_model || configs.gemini_model === 'gemini-3.8-flash' || configs.ai_model === 'gemini-3.8-flash' ? 'selected' : ''}>gemini-3.8-flash (Khuyến nghị)</option>
+                                <option value="gemini-3.6-flash" ${configs.gemini_model === 'gemini-3.6-flash' || configs.ai_model === 'gemini-3.6-flash' ? 'selected' : ''}>gemini-3.6-flash (Dự phòng)</option>
+                                <option value="gemini-3.1-flash-lite" ${configs.gemini_model === 'gemini-3.1-flash-lite' || configs.ai_model === 'gemini-3.1-flash-lite' ? 'selected' : ''}>gemini-3.1-flash-lite (Tiết kiệm)</option>
                             </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Chế độ chọn mô hình</label>
+                            <div class="inline-flex rounded-xl border border-slate-300 bg-white p-1 shadow-sm">
+                                <button type="button" data-ai-model-mode="auto" aria-pressed="${(configs.ai_model_mode || 'auto') === 'auto'}" class="px-4 py-2 rounded-lg text-sm font-black transition-colors ${(configs.ai_model_mode || 'auto') === 'auto' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}">Auto</button>
+                                <button type="button" data-ai-model-mode="manual" aria-pressed="${configs.ai_model_mode === 'manual'}" class="px-4 py-2 rounded-lg text-sm font-black transition-colors ${configs.ai_model_mode === 'manual' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}">Thủ công</button>
+                            </div>
+                            <p class="mt-2 text-xs font-medium text-slate-600">Auto thử model Gemini dự phòng khi model đã chọn lỗi hoặc quá tải. Thủ công chỉ gọi model đã chọn.</p>
+                            <p id="ai-runtime-model" class="mt-1 text-xs font-bold text-indigo-700">${configs.ai_last_model ? `Model gần nhất: ${configs.ai_last_model}${configs.ai_last_model_reason === 'failover' ? ' (tự động chuyển)' : ''}` : 'Chưa có lượt gọi AI nào sau lần lưu cấu hình.'}</p>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase mb-2">API Key</label>

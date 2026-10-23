@@ -15,12 +15,24 @@ export default class OwnerDashboardController {
                 this.view.render(this.dashboardData);
                 this.initChart();
                 this.bindEvents();
+                this.loadDemandInsights();
             } else {
                 this.view.renderError('Không thể tải dữ liệu thống kê.');
             }
         } catch (error) {
             console.error(error);
             this.view.renderError('Lỗi kết nối đến máy chủ.');
+        }
+    }
+
+    async loadDemandInsights() {
+        try {
+            const { default: ApiClient } = await import('../core/ApiClient.js');
+            const response = await ApiClient.get('/bot/support/insights');
+            if (response.data?.success) this.view.renderDemandInsights(response.data.data);
+        } catch (error) {
+            console.warn('Không tải được phân tích nhu cầu từ Bot:', error.message);
+            this.view.renderDemandInsights({ by_category: [] });
         }
     }
 
@@ -131,5 +143,8 @@ export default class OwnerDashboardController {
 
     destroy() {
         // Cleanup if needed
+        if (this.chatController && typeof this.chatController.destroy === 'function') {
+            this.chatController.destroy();
+        }
     }
 }

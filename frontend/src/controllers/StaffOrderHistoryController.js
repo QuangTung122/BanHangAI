@@ -14,13 +14,22 @@ export default class StaffOrderHistoryController {
 
     async init() {
         try {
+            await this.orderModel.fetchPendingBotOrders();
+        } catch (error) {
+            console.error('Không thể tải hàng đợi đơn Bot:', error);
+        }
+        try {
             await this.orderModel.fetchOrders('full'); // Chỉ lấy đơn trả thẳng
         } catch (error) {
-            console.error('Không thể kết nối đến Backend Server:', error);
+            console.error('Không thể tải lịch sử đơn hàng:', error);
         }
 
-        this.view.render(this.orderModel.orders);
+        this.view.render(this.getHistoryOrders(), this.orderModel.pendingBotOrders);
         this.bindEvents();
+    }
+
+    getHistoryOrders() {
+        return this.orderModel.orders.filter((order) => !(order.status === 'pending' && order.bot_reservation_expires_at));
     }
 
     bindEvents() {
@@ -31,20 +40,33 @@ export default class StaffOrderHistoryController {
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
                 const keyword = e.target.value.toLowerCase().trim();
-                const filtered = this.orderModel.orders.filter(o => 
+                const filtered = this.getHistoryOrders().filter(o =>
                     (o.invoice_code && o.invoice_code.toLowerCase().includes(keyword)) ||
-                    (o.customer_phone && o.customer_phone.includes(keyword))
+                    (o.customer_phone && o.customer_phone.includes(keyword)) ||
+                    (o.customer_name && o.customer_name.toLowerCase().includes(keyword))
                 );
                 this.view.updateTable(filtered);
             });
         }
 
-        // Click xem chi tiết
+        // Click xem chi tiết & xác nhận
         container.addEventListener('click', (e) => {
+            const confirmOrder = e.target.closest('.btn-confirm-bot-order');
+            if (confirmOrder) {
+                void this.confirmBotOrder(confirmOrder);
+                return;
+            }
+
+            const confirmPaymentBtn = e.target.closest('.btn-confirm-payment') || e.target.closest('#btn-modal-confirm-payment');
+            if (confirmPaymentBtn) {
+                void this.confirmOrderPayment(confirmPaymentBtn);
+                return;
+            }
+
             const btnView = e.target.closest('.btn-view-invoice');
             if (btnView) {
                 const id = parseInt(btnView.dataset.id);
-                const order = this.orderModel.orders.find(o => o.id === id);
+                const order = [...this.orderModel.orders, ...this.orderModel.pendingBotOrders].find(o => Number(o.id) === id);
                 if (order) {
                     this.activeOrder = order;
                     this.view.showModal(order);
@@ -66,6 +88,84 @@ export default class StaffOrderHistoryController {
                 }
             }
         });
+    }
+
+    async confirmBotOrder(button) {
+        const orderId = Number(button.dataset.id);
+        const order = [...this.orderModel.orders, ...this.orderModel.pendingBotOrders].find((item) => Number(item.id) === orderId);
+        if (!order || !window.confirm(`Xác nhận đơn #${orderId} của ${order.customer_name || 'khách hàng'}? Đơn sẽ chuyển sang đang chuẩn bị và khách nhận thông báo qua Bot. Thao tác này chưa xác nhận đã thu tiền.`)) return;
+
+        button.disabled = true;
+        button.textContent = 'Đang xác nhận...';
+        try {
+            const result = await this.orderModel.confirmBotOrder(orderId);
+            if (!result.data?.success) throw new Error(result.data?.message || 'Không xác nhận được đơn hàng.');
+            try {
+                await this.orderModel.fetchOrders('full');
+            } catch (refreshError) {
+                console.error('Đơn đã xác nhận nhưng chưa tải lại lịch sử được:', refreshError);
+                const confirmedOrder = this.orderModel.orders.find((item) => Number(item.id) === orderId) || order;
+                confirmedOrder.status = 'processing';
+                confirmedOrder.invoice_code = result.data.data?.invoice_code || confirmedOrder.invoice_code;
+                if (!this.orderModel.orders.some((item) => Number(item.id) === orderId)) this.orderModel.orders.unshift(confirmedOrder);
+            }
+            try {
+                await this.orderModel.fetchPendingBotOrders();
+            } catch (refreshError) {
+                console.error('Đơn đã xác nhận nhưng chưa tải lại hàng đợi Bot được:', refreshError);
+                this.orderModel.pendingBotOrders = this.orderModel.pendingBotOrders.filter((item) => Number(item.id) !== orderId);
+            }
+            const keyword = this.view.container.querySelector('#search-order')?.value.toLowerCase().trim() || '';
+            const filtered = this.getHistoryOrders().filter((item) =>
+                (item.invoice_code && item.invoice_code.toLowerCase().includes(keyword)) ||
+                (item.customer_phone && item.customer_phone.includes(keyword)) ||
+                (item.customer_name && item.customer_name.toLowerCase().includes(keyword)));
+            this.view.updateTable(filtered);
+            this.view.updatePendingBotOrders(this.orderModel.pendingBotOrders);
+            window.alert(`Đã xác nhận đơn và tạo hóa đơn ${result.data.data?.invoice_code || ''}. Khách sẽ nhận thông báo trong Bot.`);
+        } catch (error) {
+            window.alert(error.message || 'Không xác nhận được đơn hàng.');
+            button.disabled = false;
+            button.textContent = 'Xác nhận đơn';
+        }
+    }
+
+    async confirmOrderPayment(button) {
+        const orderId = Number(button.dataset.id);
+        const order = [...this.orderModel.orders, ...this.orderModel.pendingBotOrders].find((item) => Number(item.id) === orderId);
+        if (!order) return;
+        const invoiceCode = order.invoice_code || `đơn #${orderId}`;
+        const total = this.view.formatMoney(order.total_amount);
+        if (!window.confirm(`Xác nhận đã thu ${total} cho ${invoiceCode} và hoàn tất đơn hàng? Thao tác này sẽ ghi nhận doanh thu vào Sổ quỹ và gửi hóa đơn hoàn tất cho khách.`)) return;
+
+        button.disabled = true;
+        const originalText = button.textContent;
+        button.textContent = 'Đang xử lý...';
+        try {
+            const result = await this.orderModel.confirmOrderPayment(orderId);
+            if (!result.data?.success) throw new Error(result.data?.message || 'Không thể xác nhận thanh toán.');
+            await this.orderModel.fetchOrders('full');
+            const keyword = this.view.container.querySelector('#search-order')?.value.toLowerCase().trim() || '';
+            const filtered = this.getHistoryOrders().filter((item) =>
+                (item.invoice_code && item.invoice_code.toLowerCase().includes(keyword)) ||
+                (item.customer_phone && item.customer_phone.includes(keyword)) ||
+                (item.customer_name && item.customer_name.toLowerCase().includes(keyword)));
+            this.view.updateTable(filtered);
+            if (this.activeOrder && Number(this.activeOrder.id) === orderId) {
+                const updated = this.orderModel.orders.find(o => Number(o.id) === orderId);
+                if (updated) {
+                    this.activeOrder = updated;
+                    this.view.showModal(updated);
+                } else {
+                    this.view.hideModal();
+                }
+            }
+            window.alert(`Đã xác nhận thanh toán ${total} cho hóa đơn ${result.data.data?.invoice_code || invoiceCode}. Đơn hàng chuyển sang Hoàn tất.`);
+        } catch (error) {
+            window.alert(error.message || 'Không thể xác nhận thanh toán.');
+            button.disabled = false;
+            button.textContent = originalText;
+        }
     }
 
     printReceipt(order) {
@@ -96,7 +196,7 @@ export default class StaffOrderHistoryController {
         }
 
         let itemsHtml = '';
-        order.items.forEach(item => {
+        (order.items || []).forEach(item => {
             itemsHtml += `
                 <tr>
                     <td style="padding: 4px 0;">${item.product_name}</td>
@@ -159,6 +259,11 @@ export default class StaffOrderHistoryController {
 
                 <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 5px;">
                     <table style="width: 100%; font-size: 14px;">
+                        ${order.shipping_fee ? `
+                        <tr>
+                            <td>Phí giao hàng:</td>
+                            <td style="text-align: right;">${this.view.formatMoney(order.shipping_fee)}</td>
+                        </tr>` : ''}
                         <tr>
                             <td><strong>TỔNG CỘNG:</strong></td>
                             <td style="text-align: right;"><strong>${this.view.formatMoney(order.total_amount)}</strong></td>

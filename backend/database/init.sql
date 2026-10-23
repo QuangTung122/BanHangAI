@@ -135,6 +135,14 @@ CREATE TABLE orders (
     down_payment INTEGER NOT NULL DEFAULT 0,
     financed_amount INTEGER,
     payment_method TEXT DEFAULT 'cash',
+    shipping_method TEXT NOT NULL DEFAULT 'standard',
+    shipping_fee INTEGER NOT NULL DEFAULT 0,
+    shipping_carrier TEXT,
+    tracking_code TEXT,
+    estimated_delivery_at DATETIME,
+    payment_proof_image TEXT,
+    ai_receipt_check_json TEXT,
+    bot_reservation_expires_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE SET NULL
@@ -169,6 +177,11 @@ CREATE TABLE returns (
     refund_amount REAL DEFAULT 0,
     exchange_product_id INTEGER,
     notes TEXT,
+    return_delivery_method TEXT NOT NULL DEFAULT 'store_dropoff',
+    customer_tracking_code TEXT,
+    evidence_images_json TEXT,
+    ai_vision_assessment TEXT,
+    return_shipping_tracking TEXT,
     created_by INTEGER NOT NULL,
     is_active INTEGER DEFAULT 1,
     FOREIGN KEY(order_id) REFERENCES orders(id),
@@ -218,6 +231,11 @@ CREATE TABLE warranty_claims (
     issue_code TEXT,
     service_provider TEXT DEFAULT 'Hãng/TTBH ủy quyền (mô phỏng)',
     service_reference TEXT,
+    return_delivery_method TEXT NOT NULL DEFAULT 'store_dropoff',
+    customer_tracking_code TEXT,
+    evidence_images_json TEXT,
+    ai_vision_assessment TEXT,
+    return_shipping_tracking TEXT,
     claimed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','in_review','approved','repairing','repaired','rejected','completed','cancelled')),
     approved_by INTEGER,
@@ -327,6 +345,7 @@ CREATE TABLE messages (
     sender_id INTEGER,
     receiver_id INTEGER,
     content TEXT NOT NULL,
+    image_url TEXT,
     is_read BOOLEAN DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -358,8 +377,7 @@ INSERT INTO users (username, password_hash, full_name, email, phone, role) VALUE
 INSERT INTO categories (name, slug, description, is_active) VALUES 
 ('Tai nghe', 'tai-nghe', 'Tai nghe nhạc chất lượng cao', 1),
 ('Điện thoại', 'dien-thoai', 'Điện thoại thông minh', 1),
-('Phụ kiện', 'phu-kien', 'Sạc, cáp, ốp lưng', 1),
-('Đồng hồ thông minh', 'dong-ho', 'Smartwatch đo sức khỏe', 1);
+('Phụ kiện', 'phu-kien', 'Sạc, cáp, ốp lưng', 1);
 
 -- Products (15 sample items)
 INSERT INTO products (category_id, name, slug, description, price, stock_quantity, is_active) VALUES 
@@ -374,10 +392,7 @@ INSERT INTO products (category_id, name, slug, description, price, stock_quantit
 (3, 'Cáp sạc Anker Type-C', 'cap-anker-type-c', 'Bền bỉ, sạc nhanh.', 350000, 100, 1),
 (3, 'Sạc dự phòng Xiaomi 10000mAh', 'sac-du-phong-xiaomi-10000', 'Gọn nhẹ, tiện lợi.', 450000, 30, 1),
 (3, 'Ốp lưng Spigen iPhone 15', 'op-spigen-ip15', 'Chống sốc tiêu chuẩn quân đội.', 400000, 45, 1),
-(3, 'Củ sạc Ugreen 65W GaN', 'cu-sac-ugreen-65w', 'Sạc nhanh đa thiết bị.', 650000, 25, 1),
-(4, 'Apple Watch Series 9', 'apple-watch-s9', 'Đo nhịp tim, màn hình sáng.', 9500000, 18, 1),
-(4, 'Samsung Galaxy Watch 6', 'galaxy-watch-6', 'Theo dõi giấc ngủ tốt hơn.', 6500000, 14, 1),
-(4, 'Garmin Forerunner 265', 'garmin-265', 'Chuyên dụng chạy bộ.', 11000000, 6, 1);
+(3, 'Củ sạc Ugreen 65W GaN', 'cu-sac-ugreen-65w', 'Sạc nhanh đa thiết bị.', 650000, 25, 1);
 
 -- System Configs
 INSERT INTO system_configs (key, value) VALUES

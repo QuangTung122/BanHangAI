@@ -1,16 +1,81 @@
 export default class ChatService {
-    static async streamChat(message, history, onChunk, onDone, onError) {
-        try {
-            const token = localStorage.getItem('token');
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-            if (token) headers['Authorization'] = `Bearer ${token}`;
+    static async requestHumanHelp(context = '') {
+        const token = localStorage.getItem('bot_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const response = await fetch('/api/bot/handoff', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ context })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Không gửi được yêu cầu hỗ trợ');
+        return data;
+    }
 
-            const response = await fetch('/api/chat/stream', {
+    static async getSupportMessages(requestId, accessKey, after = 0) {
+        const response = await fetch(`/api/bot/handoff/${encodeURIComponent(requestId)}/messages?after=${after}`, {
+            headers: { 'X-Support-Key': accessKey }
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Không tải được tin nhắn hỗ trợ');
+        return data;
+    }
+
+    static async sendSupportMessage(requestId, accessKey, content, image = null) {
+        if (image) {
+            const body = new FormData();
+            body.append('content', content || '');
+            body.append('image', image, image.name);
+            const response = await fetch(`/api/bot/handoff/${encodeURIComponent(requestId)}/messages`, {
+                method: 'POST',
+                headers: { 'X-Support-Key': accessKey },
+                body
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Không gửi được tin nhắn hỗ trợ');
+            return data;
+        }
+        const response = await fetch(`/api/bot/handoff/${encodeURIComponent(requestId)}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Support-Key': accessKey },
+            body: JSON.stringify({ content })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Không gửi được tin nhắn hỗ trợ');
+        return data;
+    }
+
+    static async closeSupportSession(requestId, accessKey) {
+        const response = await fetch(`/api/bot/handoff/${encodeURIComponent(requestId)}/close`, {
+            method: 'POST',
+            headers: { 'X-Support-Key': accessKey }
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Không thể kết thúc phiên hỗ trợ');
+        return data;
+    }
+
+    static async streamChat(message, history, onChunk, onDone, onError, onPending, image = null) {
+        try {
+            const token = localStorage.getItem('bot_token'); // Use bot_token specifically if you want, or just 'token'
+            const headers = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            let body;
+            if (image) {
+                body = new FormData();
+                body.append('message', message);
+                body.append('history', JSON.stringify(history));
+                body.append('image', image, image.name);
+            } else {
+                headers['Content-Type'] = 'application/json';
+                body = JSON.stringify({ message, history });
+            }
+
+            const response = await fetch('/api/bot/stream', {
                 method: 'POST',
                 headers: headers,
-                body: JSON.stringify({ message, history })
+                body
             });
 
             if (!response.ok) {
@@ -19,7 +84,7 @@ export default class ChatService {
                     const errorData = await response.json();
                     if (errorData.message) errorMsg = errorData.message;
                 } catch(e) {}
-                throw new Error(errorMsg);
+                throw new Error(`${response.status} ${response.statusText}: ${errorMsg}`);
             }
 
             const reader = response.body.getReader();
@@ -51,6 +116,7 @@ export default class ChatService {
                             } else if (data.content) {
                                 onChunk(data.content);
                             }
+                            if (data.pending) onPending?.(data.pending);
                         } catch (e) {
                             // ignore partial JSON parse errors
                         }
@@ -61,6 +127,87 @@ export default class ChatService {
         } catch (error) {
             onError(error.message);
         }
+    }
+
+    static async confirmCustomerAction(actionId) {
+        const response = await fetch(`/api/bot/actions/${encodeURIComponent(actionId)}/confirm`, { method: 'POST' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Không xác nhận được thao tác.');
+        return data;
+    }
+
+    static async cancelCustomerAction(actionId) {
+        const response = await fetch(`/api/bot/actions/${encodeURIComponent(actionId)}/cancel`, { method: 'POST' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Không hủy được thao tác.');
+        return data;
+    }
+
+    static async botLogout() {
+        const response = await fetch('/api/bot/logout', { method: 'POST' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Không thể đăng xuất.');
+        return data;
+    }
+
+    // --- BOT AUTH API ---
+    static async botLogin(username, password) {
+        const response = await fetch('/api/bot/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.message || 'Đăng nhập thất bại');
+        }
+        return response.json();
+    }
+
+    static async requestBotRegistrationOtp(phone) {
+        const response = await fetch('/api/bot/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Không gửi được mã xác minh');
+        return data;
+    }
+
+    static async botRegister(details) {
+        const response = await fetch('/api/bot/register/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(details)
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || 'Đăng ký thất bại');
+        }
+        return data;
+    }
+
+    static async botProfile() {
+        const token = localStorage.getItem('bot_token');
+        if (!token) throw new Error('Not logged in');
+        const response = await fetch('/api/bot/profile', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.message || 'Lỗi lấy thông tin bot');
+        }
+        return response.json();
+    }
+
+    static async getCustomerUpdates() {
+        const token = localStorage.getItem('bot_token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const response = await fetch('/api/bot/updates', { headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Không tải được thông báo Bot.');
+        return data;
     }
 
     // --- INTERNAL CHAT API ---
@@ -74,8 +221,15 @@ export default class ChatService {
         return ApiClient.get(`/chat/history/${partnerId}`);
     }
 
-    static async sendMessage(receiverId, content) {
+    static async sendMessage(receiverId, content, imageFile = null) {
         const ApiClient = (await import('../core/ApiClient.js')).default;
+        if (imageFile) {
+            const formData = new FormData();
+            formData.append('receiverId', receiverId);
+            formData.append('content', content || '');
+            formData.append('image', imageFile);
+            return ApiClient.postFormData('/chat/message', formData);
+        }
         return ApiClient.post('/chat/message', { receiverId, content });
     }
 }

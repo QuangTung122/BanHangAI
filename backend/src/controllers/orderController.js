@@ -1,4 +1,6 @@
 import * as db from '../services/db.js';
+import { logAction } from './auditController.js';
+import { expireBotReservations } from '../services/botReservationService.js';
 
 const PAYMENT_METHODS = new Set(['cash', 'transfer', 'card']);
 const FINANCE_PARTNERS = new Set(['Home Credit (mô phỏng)', 'FE CREDIT (mô phỏng)', 'Ngân hàng liên kết (mô phỏng)']);
@@ -235,9 +237,141 @@ export const createOrder = async (req, res) => {
     }
 };
 
-export const getOrders = async (req, res) => {
+export const confirmBotOrder = async (req, res) => {
     try {
-        const { type } = req.query; // 'full' or 'installment'
+        if (!['staff', 'owner', 'admin'].includes(req.user?.role)) {
+            throw requestError('Bạn không có quyền xác nhận đơn hàng.', 403);
+        }
+        const orderId = Number(req.params.id);
+        if (!Number.isSafeInteger(orderId) || orderId < 1) throw requestError('Mã đơn hàng không hợp lệ.');
+
+        let confirmed;
+        await db.transaction(async () => {
+            const order = await db.get('SELECT * FROM orders WHERE id = ?', [orderId]);
+            if (!order) throw requestError('Không tìm thấy đơn hàng.', 404);
+            if (order.status !== 'pending' || !order.bot_reservation_expires_at) {
+                throw requestError('Đơn này không còn ở trạng thái chờ xác nhận qua Bot.', 409);
+            }
+            if (new Date(`${String(order.bot_reservation_expires_at).replace(' ', 'T')}Z`) <= new Date()) {
+                throw requestError('Đơn đã hết thời gian giữ hàng. Khách cần tạo lại đơn.', 409);
+            }
+
+            const items = await db.query(
+                `SELECT oi.product_name, oi.quantity, oi.unit_price, COALESCE(oi.warranty_months, 0) AS warranty_months
+                 FROM order_items oi WHERE oi.order_id = ? ORDER BY oi.id`, [orderId]);
+            if (!items.length) throw requestError('Đơn hàng chưa có sản phẩm.', 409);
+
+            const changed = await db.run(
+                `UPDATE orders SET status = 'processing', user_id = ?, bot_reservation_expires_at = NULL
+                 WHERE id = ? AND status = 'pending' AND bot_reservation_expires_at > CURRENT_TIMESTAMP`,
+                [req.user.id, orderId]);
+            if (changed.changes !== 1) throw requestError('Đơn vừa được nhân viên khác xử lý. Hãy tải lại danh sách.', 409);
+
+            const invoiceCode = createInvoiceCode(orderId, new Date(`${String(order.created_at).replace(' ', 'T')}Z`));
+            const customerAccount = order.customer_id
+                ? await db.get('SELECT id FROM customer_accounts WHERE customer_id = ? AND is_active = 1', [order.customer_id])
+                : null;
+            if (customerAccount) {
+                const lines = items.map((item) => `- ${item.quantity} × ${item.product_name}: ${new Intl.NumberFormat('vi-VN').format(item.quantity * item.unit_price)}đ`).join('\n');
+                const message = `Đơn hàng #${orderId} đã được cửa hàng xác nhận. Hóa đơn ${invoiceCode}:\n${lines}\nTổng cộng: ${new Intl.NumberFormat('vi-VN').format(order.total_amount)}đ. Đơn đang được chuẩn bị; khoản thanh toán sẽ được xác nhận riêng.`;
+                await db.run(
+                    'INSERT INTO bot_customer_notifications (customer_account_id, order_id, title, message) VALUES (?, ?, ?, ?)',
+                    [customerAccount.id, orderId, `Đơn đã xác nhận · ${invoiceCode}`, message]);
+            }
+            confirmed = { order_id: orderId, invoice_code: invoiceCode, total_amount: order.total_amount, customer_account_id: customerAccount?.id || null };
+        });
+
+        await logAction(req.user.id, 'bot_order_confirmed', 'Nhân viên xác nhận đơn đặt qua Bot', confirmed);
+        res.json({
+            success: true,
+            message: 'Đã xác nhận đơn hàng và tạo hóa đơn.',
+            data: confirmed
+        });
+    } catch (error) {
+        console.error('Confirm Bot order failed:', error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.statusCode ? error.message : 'Không thể xác nhận đơn hàng.',
+            data: null
+        });
+    }
+};
+
+export const confirmOrderPayment = async (req, res) => {
+    try {
+        if (!['staff', 'owner', 'admin'].includes(req.user?.role)) {
+            throw requestError('Bạn không có quyền xác nhận thanh toán đơn hàng.', 403);
+        }
+        const orderId = Number(req.params.id);
+        if (!Number.isSafeInteger(orderId) || orderId < 1) throw requestError('Mã đơn hàng không hợp lệ.');
+
+        let confirmed;
+        await db.transaction(async () => {
+            const order = await db.get('SELECT * FROM orders WHERE id = ?', [orderId]);
+            if (!order) throw requestError('Không tìm thấy đơn hàng.', 404);
+            if (!['pending', 'processing', 'shipped'].includes(order.status) || order.payment_type !== 'full') {
+                throw requestError('Chỉ xác nhận thanh toán cho đơn hàng trả một lần đang chờ xử lý.', 409);
+            }
+            const existingPaid = await db.get(
+                "SELECT id FROM transactions WHERE reference_id = ? AND type = 'income' AND source = 'auto' AND category = 'Bán hàng'",
+                [orderId]
+            );
+            if (existingPaid) throw requestError('Đơn hàng này đã được ghi nhận thanh toán.', 409);
+
+            const items = await db.query(
+                `SELECT oi.product_name, oi.quantity, oi.unit_price, COALESCE(oi.warranty_months, 0) AS warranty_months
+                 FROM order_items oi WHERE oi.order_id = ? ORDER BY oi.id`, [orderId]);
+
+            const invoiceCode = createInvoiceCode(orderId, new Date(`${String(order.created_at).replace(' ', 'T')}Z`));
+
+            await db.run(
+                `UPDATE orders SET status = 'delivered', bot_reservation_expires_at = NULL, user_id = COALESCE(user_id, ?)
+                 WHERE id = ?`,
+                [req.user.id, orderId]
+            );
+
+            await db.run(
+                `INSERT INTO transactions (type, amount, category, description, reference_id, user_id, payment_method, source, invoice_id)
+                 VALUES ('income', ?, 'Bán hàng', ?, ?, ?, ?, 'auto', ?)`,
+                [order.total_amount, `Bán hàng hóa đơn ${invoiceCode}`, order.id, req.user.id, order.payment_method || 'cash', invoiceCode]
+            );
+
+            const customerAccount = order.customer_id
+                ? await db.get('SELECT id FROM customer_accounts WHERE customer_id = ? AND is_active = 1', [order.customer_id])
+                : null;
+            if (customerAccount) {
+                const lines = items.map((item) => `- ${item.quantity} × ${item.product_name}: ${new Intl.NumberFormat('vi-VN').format(item.quantity * item.unit_price)}đ`).join('\n');
+                const paymentLabel = { cash: 'Tiền mặt', transfer: 'Chuyển khoản', card: 'Thẻ' }[order.payment_method] || order.payment_method || 'Tiền mặt';
+                const message = `🧾 Hóa đơn ${invoiceCode} đã thanh toán & hoàn tất.\nĐơn hàng #${order.id}\n${lines}\nPhí giao hàng: ${new Intl.NumberFormat('vi-VN').format(order.shipping_fee || 0)}đ\nTổng thanh toán: ${new Intl.NumberFormat('vi-VN').format(order.total_amount)}đ\nPhương thức: ${paymentLabel}\nCửa hàng đã xác nhận thanh toán thành công. Cảm ơn bạn đã mua hàng!`;
+                await db.run(
+                    'INSERT INTO bot_customer_notifications (customer_account_id, order_id, title, message) VALUES (?, ?, ?, ?)',
+                    [customerAccount.id, orderId, `Hóa đơn ${invoiceCode} đã thanh toán`, message]
+                );
+            }
+            confirmed = { order_id: orderId, invoice_code: invoiceCode, total_amount: order.total_amount, status: 'delivered', customer_account_id: customerAccount?.id || null };
+        });
+
+        await logAction(req.user.id, 'order_payment_confirmed', 'Nhân viên xác nhận thanh toán đơn hàng', confirmed);
+        res.json({
+            success: true,
+            message: 'Đã xác nhận thanh toán và hoàn tất đơn hàng.',
+            data: confirmed
+        });
+    } catch (error) {
+        console.error('Confirm order payment failed:', error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.statusCode ? error.message : 'Không thể xác nhận thanh toán đơn hàng.',
+            data: null
+        });
+    }
+};
+
+export const getOrders = async (req, res, options = {}) => {
+    try {
+        const type = options.type || req.query.type; // 'full' or 'installment'
+        const botPendingOnly = options.botPendingOnly === true || req.query.bot_pending === '1';
+        if (botPendingOnly) await expireBotReservations();
         let query = `
             SELECT o.*, COALESCE(u.full_name, u.username) as cashier_name,
                    (SELECT COUNT(*) FROM installment_payments ip WHERE ip.order_id = o.id) as paid_months,
@@ -251,11 +385,16 @@ export const getOrders = async (req, res) => {
             LEFT JOIN users u ON o.user_id = u.id 
         `;
         const params = [];
+        const conditions = [];
         if (type) {
-            query += ` WHERE o.payment_type = ? `;
+            conditions.push('o.payment_type = ?');
             params.push(type);
         }
-        query += ` ORDER BY o.created_at DESC LIMIT 100`; // Limit to last 100 for now
+        if (botPendingOnly) {
+            conditions.push("o.status = 'pending' AND o.bot_reservation_expires_at IS NOT NULL AND o.bot_reservation_expires_at > CURRENT_TIMESTAMP AND o.user_id IS NULL AND o.customer_id IS NOT NULL");
+        }
+        if (conditions.length) query += ` WHERE ${conditions.join(' AND ')} `;
+        query += ` ORDER BY o.created_at DESC${botPendingOnly ? '' : ' LIMIT 100'}`;
         
         const orders = await db.query(query, params);
         
@@ -298,7 +437,7 @@ export const getOrders = async (req, res) => {
         res.json({ success: true, data: orders });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ success: false, message: 'Lá»—i khi láº¥y danh sÃ¡ch Ä‘Æ¡n hÃ ng' });
+        res.status(500).json({ success: false, message: 'Lỗi khi lấy danh sách đơn hàng' });
     }
 };
 

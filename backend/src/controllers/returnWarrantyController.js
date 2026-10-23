@@ -10,6 +10,34 @@ const generateInvoiceCode = (orderId, createdAtStr) => {
             return `INV-${yymmdd}-${String(orderId).padStart(4, '0')}`;
         };
 
+const getTicketStatusHistory = async (id, type) => {
+    const isWarranty = type === 'warranty';
+    const actionKey = isWarranty ? 'warranty_claim_id' : 'return_id';
+    const createAction = isWarranty ? 'warranty_claim_created' : 'return_request_created';
+    const updateAction = isWarranty ? 'warranty_claim_updated' : 'return_request_approved';
+    const rows = await db.query(`
+        SELECT l.id, l.action_type, l.action_desc, l.details, l.created_at,
+               COALESCE(u.full_name, u.username, 'Người dùng') AS actor_name
+        FROM audit_logs l
+        LEFT JOIN users u ON u.id = l.user_id
+        WHERE l.action_type IN (?, ?)
+          AND json_valid(l.details) = 1
+          AND CAST(json_extract(l.details, '$.${actionKey}') AS INTEGER) = ?
+        ORDER BY l.created_at, l.id
+    `, [createAction, updateAction, Number(id)]);
+
+    return rows.map((row) => {
+        let details = {};
+        try { details = JSON.parse(row.details || '{}'); } catch { /* Ignore malformed legacy audit details. */ }
+        return {
+            status: details.status || (row.action_type === createAction ? 'pending' : null),
+            description: row.action_desc,
+            actor_name: row.actor_name,
+            created_at: row.created_at
+        };
+    }).filter((entry) => entry.status);
+};
+
 export const createReturnRequest = async (req, res) => {
     try {
         const {
@@ -210,6 +238,7 @@ export const getReturnRequests = async (req, res) => {
         for (const item of returns) {
             item.invoice_code = generateInvoiceCode(item.order_id, item.order_created_at);
             item.items = await db.query(`SELECT * FROM return_items WHERE return_id = ?`, [item.id]);
+            item.status_history = await getTicketStatusHistory(item.id, 'return');
         }
 
         res.json({
@@ -237,8 +266,8 @@ export const approveReturnRequest = async (req, res) => {
                 message: 'Trạng thái phê duyệt không hợp lệ'
             });
         }
-        if (['approved', 'rejected'].includes(status) && !['owner', 'admin'].includes(req.user.role)) {
-            return res.status(403).json({ success: false, message: 'Chỉ chủ cửa hàng hoặc admin được duyệt/từ chối đổi trả', data: null });
+        if (['approved', 'rejected'].includes(status) && req.user.role !== 'owner') {
+            return res.status(403).json({ success: false, message: 'Chỉ chủ cửa hàng được duyệt/từ chối đổi trả', data: null });
         }
         const amount = Number(refund_amount || 0);
         if (!Number.isSafeInteger(amount) || amount < 0 || !['none', 'refund', 'collect'].includes(action)) {
@@ -269,7 +298,7 @@ export const approveReturnRequest = async (req, res) => {
                 return;
             }
             if (status === 'completed' && request.status !== 'approved') {
-                const error = new Error('Phiếu đổi trả cần được chủ cửa hàng/admin duyệt trước khi hoàn tiền hoặc đổi hàng');
+                const error = new Error('Phiếu đổi trả cần được chủ cửa hàng duyệt trước khi hoàn tiền hoặc đổi hàng');
                 error.statusCode = 409;
                 throw error;
             }
@@ -537,6 +566,7 @@ export const getWarrantyClaims = async (req, res) => {
         const claims = await db.query(sql, params);
         for (const item of claims) {
             item.invoice_code = generateInvoiceCode(item.order_id, item.order_created_at);
+            item.status_history = await getTicketStatusHistory(item.id, 'warranty');
         }
         res.json({ success: true, data: claims });
     } catch (error) {
@@ -560,8 +590,8 @@ export const updateWarrantyClaimStatus = async (req, res) => {
                 message: 'Trạng thái bảo hành không hợp lệ'
             });
         }
-        if (['approved', 'rejected'].includes(status) && !['owner', 'admin'].includes(req.user.role)) {
-            return res.status(403).json({ success: false, message: 'Chỉ chủ cửa hàng hoặc admin được duyệt/từ chối bảo hành', data: null });
+        if (['approved', 'rejected'].includes(status) && req.user.role !== 'owner') {
+            return res.status(403).json({ success: false, message: 'Chỉ chủ cửa hàng được duyệt/từ chối bảo hành', data: null });
         }
         const fee = Number(fee_amount || 0);
         if (!Number.isSafeInteger(fee) || fee < 0) {
