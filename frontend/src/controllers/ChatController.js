@@ -1,6 +1,62 @@
 import ChatModule from '../views/layouts/ChatModule.js';
 import ChatService from '../services/ChatService.js';
 
+const mojibakeMarkers = /(?:Ã.|Â.|Ä.|Æ.|á[º»]|â€)/;
+const windows1252Bytes = new Map(Array.from(
+    '\u20ac\u0081\u201a\u0192\u201e\u2026\u2020\u2021\u02c6\u2030\u0160\u2039\u0152\u008d\u017d\u008f\u0090\u2018\u2019\u201c\u201d\u2022\u2013\u2014\u02dc\u2122\u0161\u203a\u0153\u009d\u017e\u0178',
+    (character, index) => [character, index + 0x80]
+));
+const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
+
+export const repairMojibake = (value) => {
+    let text = String(value || '');
+    for (let pass = 0; pass < 2 && mojibakeMarkers.test(text); pass += 1) {
+        let repaired = '';
+        let changed = false;
+        const characters = Array.from(text);
+        for (let index = 0; index < characters.length;) {
+            const codePoint = characters[index].codePointAt(0);
+            const byte = codePoint <= 0xff
+                ? codePoint
+                : windows1252Bytes.get(characters[index]);
+            if (byte === undefined) {
+                repaired += characters[index];
+                index += 1;
+                continue;
+            }
+
+            const start = index;
+            const bytes = [];
+            while (index < characters.length) {
+                const character = characters[index];
+                const point = character.codePointAt(0);
+                const nextByte = point <= 0xff ? point : windows1252Bytes.get(character);
+                if (nextByte === undefined) break;
+                bytes.push(nextByte);
+                index += 1;
+            }
+
+            const segment = characters.slice(start, index).join('');
+            if (mojibakeMarkers.test(segment)) {
+                try {
+                    const decoded = utf8Decoder.decode(new Uint8Array(bytes));
+                    if (decoded !== segment) {
+                        repaired += decoded;
+                        changed = true;
+                        continue;
+                    }
+                } catch {
+                    // Keep text unchanged when it is not a valid mis-decoded UTF-8 sequence.
+                }
+            }
+            repaired += segment;
+        }
+        if (!changed) break;
+        text = repaired;
+    }
+    return text;
+};
+
 export default class ChatController {
     constructor(parentElement = null) {
         this.view = new ChatModule(parentElement);
@@ -50,7 +106,7 @@ export default class ChatController {
                 try {
                     res = await ChatService.botProfile();
                 } catch (e) {
-                    // Token háº¿t háº¡n / tÃ i khoáº£n bá»‹ khÃ³a => coi nhÆ° Ä‘Ã£ Ä‘Äƒng xuáº¥t
+                    // Token hết hạn / tài khoản bị khóa => coi như đã đăng xuất
                     localStorage.removeItem('bot_token');
                     res = await fetch('/api/bot/profile').then(r => r.json());
                 }
@@ -63,7 +119,7 @@ export default class ChatController {
             this.availableCommands = res.data?.commands || [];
             this.view.setCommandMeta(this.availableCommands);
         } catch (e) {
-            console.error('Lá»—i táº£i danh sÃ¡ch lá»‡nh:', e);
+            console.error('Lỗi tải danh sách lệnh:', e);
         }
         this.currentUser = user;
         this.startCustomerUpdates(user);
@@ -346,7 +402,7 @@ export default class ChatController {
             form.querySelector('[data-register-code]').classList.remove('hidden');
             form.querySelector('[data-register-verify]').classList.remove('hidden');
         } catch (error) {
-            status.textContent = error.message;
+            status.textContent = repairMojibake(error.message);
         } finally {
             button.disabled = false;
         }
@@ -371,7 +427,7 @@ export default class ChatController {
             await this.loadProfile();
             setTimeout(() => this.handleSendMessage('/batdau'), 500);
         } catch (error) {
-            status.textContent = error.message;
+            status.textContent = repairMojibake(error.message);
         } finally {
             button.disabled = false;
         }
@@ -626,4 +682,3 @@ export default class ChatController {
         }
     }
 }
-

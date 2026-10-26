@@ -17,7 +17,7 @@ const BOT_TOKEN_TTL = '12h';
 const rateBuckets = new Map();
 const demoRegistrationEnabled = process.env.NODE_ENV !== 'production';
 
-/** Giá»›i háº¡n táº§n suáº¥t Ä‘Æ¡n giáº£n theo khÃ³a (bá»™ nhá»›). Tráº£ vá» true náº¿u vÆ°á»£t giá»›i háº¡n. */
+/** Giới hạn tần suất đơn giản theo khóa (bộ nhớ). Trả về true nếu vượt giới hạn. */
 const isRateLimited = (key, limit, windowMs) => {
     const now = Date.now();
     const bucket = (rateBuckets.get(key) || []).filter((time) => now - time < windowMs);
@@ -46,7 +46,7 @@ const fail = (res, status, message) => res.status(status).json({ success: false,
 
 export const requestHumanHelp = async (req, res) => {
     if (isRateLimited(`handoff:${req.ip}`, 3, 10 * 60 * 1000)) {
-        return fail(res, 429, 'Báº¡n Ä‘Ã£ gá»­i yÃªu cáº§u há»— trá»£ gáº§n Ä‘Ã¢y. Vui lÃ²ng chá» cá»­a hÃ ng pháº£n há»“i.');
+        return fail(res, 429, 'Bạn đã gửi yêu cầu hỗ trợ gần đây. Vui lòng chờ cửa hàng phản hồi.');
     }
     return createBotSupportRequest(req, res);
 };
@@ -54,32 +54,32 @@ export const requestHumanHelp = async (req, res) => {
 export const registerCustomer = async (req, res) => {
     try {
         if (demoRegistrationEnabled) {
-            return fail(res, 400, 'Báº£n demo khÃ´ng cáº§n OTP. HÃ£y gá»­i trá»±c tiáº¿p biá»ƒu máº«u táº¡o tÃ i khoáº£n.');
+            return fail(res, 400, 'Bản demo không cần OTP. Hãy gửi trực tiếp biểu mẫu tạo tài khoản.');
         }
         const phone = String(req.body?.phone || '').trim();
-        if (!/^\d{10}$/.test(phone)) return fail(res, 400, 'Sá»‘ Ä‘iá»‡n thoáº¡i pháº£i gá»“m 10 chá»¯ sá»‘.');
+        if (!/^\d{10}$/.test(phone)) return fail(res, 400, 'Số điện thoại phải gồm 10 chữ số.');
         if (isRateLimited(`register:${req.ip}`, 5, 10 * 60 * 1000) || isRateLimited(`register-phone:${phone}`, 3, 10 * 60 * 60 * 1000)) {
-            return fail(res, 429, 'Báº¡n Ä‘Ã£ yÃªu cáº§u mÃ£ xÃ¡c minh quÃ¡ nhiá»u láº§n. Vui lÃ²ng thá»­ láº¡i sau.');
+            return fail(res, 429, 'Bạn đã yêu cầu mã xác minh quá nhiều lần. Vui lòng thử lại sau.');
         }
 
         const gatewayUrl = process.env.SMS_GATEWAY_URL;
         const gatewayToken = process.env.SMS_GATEWAY_TOKEN;
         const otpSecret = process.env.BOT_OTP_SECRET;
         if (!otpSecret || otpSecret.length < 32) {
-            return fail(res, 503, 'TÃ­nh nÄƒng Ä‘Äƒng kÃ½ Ä‘ang chá» cáº¥u hÃ¬nh khÃ³a OTP báº£o máº­t. Vui lÃ²ng liÃªn há»‡ cá»­a hÃ ng.');
+            return fail(res, 503, 'Tính năng đăng ký đang chờ cấu hình khóa OTP bảo mật. Vui lòng liên hệ cửa hàng.');
         }
         if (!gatewayUrl || !gatewayToken) {
-            return fail(res, 503, 'TÃ­nh nÄƒng Ä‘Äƒng kÃ½ Ä‘ang chá» cáº¥u hÃ¬nh cá»•ng gá»­i SMS báº£o máº­t. Vui lÃ²ng liÃªn há»‡ cá»­a hÃ ng.');
+            return fail(res, 503, 'Tính năng đăng ký đang chờ cấu hình cổng gửi SMS bảo mật. Vui lòng liên hệ cửa hàng.');
         }
         let parsedGatewayUrl;
-        try { parsedGatewayUrl = new URL(gatewayUrl); } catch { return fail(res, 503, 'Cá»•ng gá»­i SMS chÆ°a Ä‘Æ°á»£c cáº¥u hÃ¬nh há»£p lá»‡.'); }
+        try { parsedGatewayUrl = new URL(gatewayUrl); } catch { return fail(res, 503, 'Cổng gửi SMS chưa được cấu hình hợp lệ.'); }
         if (parsedGatewayUrl.protocol !== 'https:' && process.env.NODE_ENV !== 'development') {
-            return fail(res, 503, 'Cá»•ng gá»­i SMS cáº§n sá»­ dá»¥ng HTTPS.');
+            return fail(res, 503, 'Cổng gửi SMS cần sử dụng HTTPS.');
         }
 
         const existingChallenge = await db.get(
             "SELECT phone FROM bot_phone_verifications WHERE phone = ? AND last_sent_at > datetime('now', '-60 seconds')", [phone]);
-        if (existingChallenge) return fail(res, 429, 'Vui lÃ²ng chá» 60 giÃ¢y trÆ°á»›c khi yÃªu cáº§u mÃ£ má»›i.');
+        if (existingChallenge) return fail(res, 429, 'Vui lòng chờ 60 giây trước khi yêu cầu mã mới.');
 
         const ipHash = crypto.createHmac('sha256', otpSecret).update(String(req.ip || 'unknown')).digest('hex');
         await db.transaction(async () => {
@@ -88,7 +88,7 @@ export const registerCustomer = async (req, res) => {
             const ipHourCount = await db.get("SELECT COUNT(*) AS total FROM bot_otp_send_log WHERE ip_hash = ? AND created_at >= datetime('now', '-1 hour')", [ipHash]);
             const ipDayCount = await db.get("SELECT COUNT(*) AS total FROM bot_otp_send_log WHERE ip_hash = ? AND created_at >= datetime('now', '-1 day')", [ipHash]);
             if (phoneCount.total >= 5 || ipHourCount.total >= 5 || ipDayCount.total >= 15) {
-                throw Object.assign(new Error('ÄÃ£ vÆ°á»£t sá»‘ láº§n yÃªu cáº§u mÃ£ xÃ¡c minh cho phÃ©p. Vui lÃ²ng thá»­ láº¡i sau.'), { statusCode: 429 });
+                throw Object.assign(new Error('Đã vượt số lần yêu cầu mã xác minh cho phép. Vui lòng thử lại sau.'), { statusCode: 429 });
             }
             await db.run('INSERT INTO bot_otp_send_log (phone, ip_hash) VALUES (?, ?)', [phone, ipHash]);
         });
@@ -108,18 +108,18 @@ export const registerCustomer = async (req, res) => {
         } finally { clearTimeout(timeout); }
         if (!smsResponse.ok) {
             console.error('Bot SMS gateway rejected verification message:', smsResponse.status);
-            return fail(res, 502, 'ChÆ°a gá»­i Ä‘Æ°á»£c mÃ£ xÃ¡c minh. Vui lÃ²ng thá»­ láº¡i sau.');
+            return fail(res, 502, 'Chưa gửi được mã xác minh. Vui lòng thử lại sau.');
         }
         await db.run(
             `INSERT INTO bot_phone_verifications (phone, otp_hash, expires_at, attempts, last_sent_at)
              VALUES (?, ?, datetime('now', '+5 minutes'), 0, CURRENT_TIMESTAMP)
              ON CONFLICT(phone) DO UPDATE SET otp_hash = excluded.otp_hash, expires_at = excluded.expires_at,
                attempts = 0, last_sent_at = CURRENT_TIMESTAMP`, [phone, otpHash]);
-        return res.status(202).json({ success: true, message: 'Náº¿u gá»­i Ä‘Æ°á»£c SMS, mÃ£ xÃ¡c minh sáº½ Ä‘áº¿n sá»‘ Ä‘iá»‡n thoáº¡i cá»§a báº¡n.' });
+        return res.status(202).json({ success: true, message: 'Nếu gửi được SMS, mã xác minh sẽ đến số điện thoại của bạn.' });
     } catch (error) {
         if (error.statusCode) return fail(res, error.statusCode, error.message);
         console.error('Bot register error:', error);
-        return fail(res, 500, 'ChÆ°a thá»ƒ gá»­i mÃ£ xÃ¡c minh lÃºc nÃ y.');
+        return fail(res, 500, 'Chưa thể gửi mã xác minh lúc này.');
     }
 };
 
@@ -134,43 +134,43 @@ export const verifyCustomerRegistration = async (req, res) => {
         const code = String(req.body?.code || '').trim();
         const requiresOtp = !demoRegistrationEnabled;
         if ((phone && !/^\d{10}$/.test(phone)) || (requiresOtp && (!/^\d{10}$/.test(phone) || !/^\d{6}$/.test(code)))) {
-            return fail(res, 400, 'Sá»‘ Ä‘iá»‡n thoáº¡i hoáº·c mÃ£ xÃ¡c minh khÃ´ng há»£p lá»‡.');
+            return fail(res, 400, 'Số điện thoại hoặc mã xác minh không hợp lệ.');
         }
-        if (!/^[a-zA-Z0-9_.]{3,30}$/.test(username)) return fail(res, 400, 'TÃªn Ä‘Äƒng nháº­p 3-30 kÃ½ tá»±, chá»‰ gá»“m chá»¯, sá»‘, dáº¥u cháº¥m hoáº·c gáº¡ch dÆ°á»›i.');
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) return fail(res, 400, 'Vui lÃ²ng nháº­p Ä‘á»‹a chá»‰ email há»£p lá»‡.');
-        if (address.length < 10 || address.length > 250) return fail(res, 400, 'Äá»‹a chá»‰ cáº§n tá»« 10 Ä‘áº¿n 250 kÃ½ tá»±.');
+        if (!/^[a-zA-Z0-9_.]{3,30}$/.test(username)) return fail(res, 400, 'Tên đăng nhập 3-30 ký tự, chỉ gồm chữ, số, dấu chấm hoặc gạch dưới.');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) return fail(res, 400, 'Vui lòng nhập địa chỉ email hợp lệ.');
+        if (address.length < 10 || address.length > 250) return fail(res, 400, 'Địa chỉ cần từ 10 đến 250 ký tự.');
         const minimumPasswordLength = demoRegistrationEnabled ? 6 : 10;
         if (password.length < minimumPasswordLength || password.length > 72) {
-            return fail(res, 400, `Máº­t kháº©u cáº§n tá»« ${minimumPasswordLength} Ä‘áº¿n 72 kÃ½ tá»±.`);
+            return fail(res, 400, `Mật khẩu cần từ ${minimumPasswordLength} đến 72 ký tự.`);
         }
-        if (fullName.length < 2 || fullName.length > 120) return fail(res, 400, 'Vui lÃ²ng nháº­p há» tÃªn há»£p lá»‡.');
+        if (fullName.length < 2 || fullName.length > 120) return fail(res, 400, 'Vui lòng nhập họ tên hợp lệ.');
         const registrationLimitKey = demoRegistrationEnabled ? `demo-register:${req.ip}` : `verify-register:${req.ip}:${phone}`;
         if (isRateLimited(registrationLimitKey, demoRegistrationEnabled ? 12 : 8, 10 * 60 * 1000)) {
             return fail(res, 429, demoRegistrationEnabled
-                ? 'Báº¡n Ä‘Ã£ táº¡o quÃ¡ nhiá»u tÃ i khoáº£n demo. Vui lÃ²ng thá»­ láº¡i sau.'
-                : 'Báº¡n nháº­p mÃ£ sai quÃ¡ nhiá»u láº§n. Vui lÃ²ng yÃªu cáº§u mÃ£ má»›i.');
+                ? 'Bạn đã tạo quá nhiều tài khoản demo. Vui lòng thử lại sau.'
+                : 'Bạn nhập mã sai quá nhiều lần. Vui lòng yêu cầu mã mới.');
         }
 
         let challenge = null;
         if (requiresOtp) {
             challenge = await db.get('SELECT otp_hash, expires_at, attempts FROM bot_phone_verifications WHERE phone = ?', [phone]);
             if (!challenge || new Date(`${challenge.expires_at.replace(' ', 'T')}Z`).getTime() < Date.now() || challenge.attempts >= 5) {
-                return fail(res, 400, 'MÃ£ xÃ¡c minh Ä‘Ã£ háº¿t háº¡n hoáº·c khÃ´ng cÃ²n hiá»‡u lá»±c. HÃ£y yÃªu cáº§u mÃ£ má»›i.');
+                return fail(res, 400, 'Mã xác minh đã hết hạn hoặc không còn hiệu lực. Hãy yêu cầu mã mới.');
             }
             const otpSecret = process.env.BOT_OTP_SECRET;
-            if (!otpSecret) return fail(res, 503, 'TÃ­nh nÄƒng Ä‘Äƒng kÃ½ Ä‘ang chá» cáº¥u hÃ¬nh báº£o máº­t.');
+            if (!otpSecret) return fail(res, 503, 'Tính năng đăng ký đang chờ cấu hình bảo mật.');
             const suppliedHash = crypto.createHmac('sha256', otpSecret).update(`${phone}:${code}`).digest('hex');
             const expected = Buffer.from(challenge.otp_hash, 'hex');
             const supplied = Buffer.from(suppliedHash, 'hex');
             if (expected.length !== supplied.length || !crypto.timingSafeEqual(expected, supplied)) {
                 await db.run('UPDATE bot_phone_verifications SET attempts = attempts + 1 WHERE phone = ?', [phone]);
-                return fail(res, 400, 'MÃ£ xÃ¡c minh khÃ´ng chÃ­nh xÃ¡c.');
+                return fail(res, 400, 'Mã xác minh không chính xác.');
             }
         }
 
         const duplicate = await db.get(
             'SELECT 1 AS found FROM users WHERE username = ? UNION SELECT 1 FROM customer_accounts WHERE username = ?', [username, username]);
-        if (duplicate) return fail(res, 409, 'TÃªn Ä‘Äƒng nháº­p Ä‘Ã£ tá»“n táº¡i.');
+        if (duplicate) return fail(res, 409, 'Tên đăng nhập đã tồn tại.');
         const passwordHash = await bcrypt.hash(password, 12);
         let account;
         await db.transaction(async () => {
@@ -178,14 +178,14 @@ export const verifyCustomerRegistration = async (req, res) => {
                 const currentChallenge = await db.get(
                     'SELECT otp_hash, expires_at, attempts FROM bot_phone_verifications WHERE phone = ? AND expires_at > CURRENT_TIMESTAMP', [phone]);
                 if (!currentChallenge || currentChallenge.otp_hash !== challenge.otp_hash || currentChallenge.attempts >= 5) {
-                    throw Object.assign(new Error('MÃ£ xÃ¡c minh Ä‘Ã£ Ä‘Æ°á»£c sá»­ dá»¥ng hoáº·c khÃ´ng cÃ²n hiá»‡u lá»±c.'), { statusCode: 400 });
+                    throw Object.assign(new Error('Mã xác minh đã được sử dụng hoặc không còn hiệu lực.'), { statusCode: 400 });
                 }
                 await db.run('DELETE FROM bot_phone_verifications WHERE phone = ?', [phone]);
             }
             let customer = phone ? await db.get('SELECT id, full_name FROM customers WHERE phone = ?', [phone]) : null;
             if (customer) {
                 const linked = await db.get('SELECT id FROM customer_accounts WHERE customer_id = ?', [customer.id]);
-                if (linked) throw Object.assign(new Error('Sá»‘ Ä‘iá»‡n thoáº¡i nÃ y Ä‘Ã£ Ä‘Æ°á»£c liÃªn káº¿t vá»›i tÃ i khoáº£n khÃ¡c.'), { statusCode: 409 });
+                if (linked) throw Object.assign(new Error('Số điện thoại này đã được liên kết với tài khoản khác.'), { statusCode: 409 });
                 await db.run('UPDATE customers SET email = COALESCE(NULLIF(email, ?), ?), address = COALESCE(NULLIF(address, ?), ?) WHERE id = ?', ['', email, '', address, customer.id]);
             } else {
                 const created = await db.run('INSERT INTO customers (full_name, phone, email, address) VALUES (?, ?, ?, ?)', [fullName, phone || null, email, address]);
@@ -196,14 +196,14 @@ export const verifyCustomerRegistration = async (req, res) => {
             account = { id: inserted.lastID, customer_id: customer.id, full_name: customer.full_name };
         });
 
-        await logAction(null, 'AUTH', demoRegistrationEnabled ? 'KhÃ¡ch hÃ ng táº¡o tÃ i khoáº£n Bot demo' : 'KhÃ¡ch hÃ ng Ä‘Äƒng kÃ½ Bot sau khi xÃ¡c minh sá»‘ Ä‘iá»‡n thoáº¡i', { username, customer_id: account.customer_id });
+        await logAction(null, 'AUTH', demoRegistrationEnabled ? 'Khách hàng tạo tài khoản Bot demo' : 'Khách hàng đăng ký Bot sau khi xác minh số điện thoại', { username, customer_id: account.customer_id });
         const token = signBotToken({ id: account.id, username, role: 'customer', customer_id: account.customer_id });
         setCustomerSession(req, res, token);
-        return res.status(201).json({ success: true, message: 'ÄÄƒng kÃ½ thÃ nh cÃ´ng', data: { token, user: { id: account.id, username, full_name: account.full_name, role: 'customer' } } });
+        return res.status(201).json({ success: true, message: 'Đăng ký thành công', data: { token, user: { id: account.id, username, full_name: account.full_name, role: 'customer' } } });
     } catch (error) {
         if (error.statusCode) return fail(res, error.statusCode, error.message);
         console.error('Bot registration verification error:', error);
-        return fail(res, 500, 'ChÆ°a thá»ƒ hoÃ n táº¥t Ä‘Äƒng kÃ½ lÃºc nÃ y.');
+        return fail(res, 500, 'Chưa thể hoàn tất đăng ký lúc này.');
     }
 };
 
@@ -211,52 +211,52 @@ export const loginBot = async (req, res) => {
     try {
         const username = String(req.body?.username || '').trim();
         const password = String(req.body?.password || '');
-        if (!username || !password) return fail(res, 400, 'Thiáº¿u tÃªn Ä‘Äƒng nháº­p hoáº·c máº­t kháº©u.');
+        if (!username || !password) return fail(res, 400, 'Thiếu tên đăng nhập hoặc mật khẩu.');
         if (isRateLimited(`login:${req.ip}:${username.toLowerCase()}`, 8, 5 * 60 * 1000)) {
-            return fail(res, 429, 'ÄÄƒng nháº­p sai quÃ¡ nhiá»u láº§n, vui lÃ²ng thá»­ láº¡i sau 5 phÃºt.');
+            return fail(res, 429, 'Đăng nhập sai quá nhiều lần, vui lòng thử lại sau 5 phút.');
         }
 
         const account = await db.get(
             `SELECT a.*, c.full_name FROM customer_accounts a JOIN customers c ON c.id = a.customer_id WHERE a.username = ?`, [username]);
         if (!account || !(await bcrypt.compare(password, account.password_hash))) {
-            await logAction(null, 'AUTH', 'ÄÄƒng nháº­p Bot tháº¥t báº¡i', { username });
-            return fail(res, 401, 'Sai tÃªn Ä‘Äƒng nháº­p hoáº·c máº­t kháº©u.');
+            await logAction(null, 'AUTH', 'Đăng nhập Bot thất bại', { username });
+            return fail(res, 401, 'Sai tên đăng nhập hoặc mật khẩu.');
         }
-        if (!account.is_active) return fail(res, 403, 'TÃ i khoáº£n Ä‘Ã£ bá»‹ khÃ³a, liÃªn há»‡ cá»­a hÃ ng Ä‘á»ƒ Ä‘Æ°á»£c xá»­ lÃ½.');
+        if (!account.is_active) return fail(res, 403, 'Tài khoản đã bị khóa, liên hệ cửa hàng để được xử lý.');
 
-        await logAction(null, 'AUTH', 'KhÃ¡ch hÃ ng Ä‘Äƒng nháº­p Bot thÃ nh cÃ´ng', { username, customer_id: account.customer_id });
+        await logAction(null, 'AUTH', 'Khách hàng đăng nhập Bot thành công', { username, customer_id: account.customer_id });
         const token = signBotToken({ id: account.id, username, role: 'customer', customer_id: account.customer_id });
         setCustomerSession(req, res, token);
         return res.json({
             success: true,
-            message: 'ÄÄƒng nháº­p thÃ nh cÃ´ng',
+            message: 'Đăng nhập thành công',
             data: { token, user: { id: account.id, username, full_name: account.full_name, role: 'customer' } }
         });
     } catch (error) {
         console.error('Bot login error:', error);
-        return fail(res, 500, 'Lá»—i há»‡ thá»‘ng mÃ¡y chá»§');
+        return fail(res, 500, 'Lỗi hệ thống máy chủ');
     }
 };
 
 export const logoutBot = (req, res) => {
     clearCustomerSession(req, res);
-    return res.json({ success: true, message: 'ÄÃ£ Ä‘Äƒng xuáº¥t.' });
+    return res.json({ success: true, message: 'Đã đăng xuất.' });
 };
 
 export const confirmCustomerAction = async (req, res) => {
-    if (req.botUser?.role !== 'customer') return fail(res, 403, 'Chá»‰ khÃ¡ch hÃ ng Ä‘Äƒng nháº­p má»›i xÃ¡c nháº­n thao tÃ¡c táº¡i Ä‘Ã¢y.');
+    if (req.botUser?.role !== 'customer') return fail(res, 403, 'Chỉ khách hàng đăng nhập mới xác nhận thao tác tại đây.');
     const actionId = String(req.params.id || '');
-    if (!/^[a-f0-9]{6}$/i.test(actionId)) return fail(res, 400, 'MÃ£ xÃ¡c nháº­n khÃ´ng há»£p lá»‡.');
+    if (!/^[a-f0-9]{6}$/i.test(actionId)) return fail(res, 400, 'Mã xác nhận không hợp lệ.');
     const result = await executePendingAction(req.botUser, actionId);
     return res.status(result.ok ? 200 : 409).json({ success: result.ok, message: result.message, data: null });
 };
 
 export const cancelCustomerAction = (req, res) => {
-    if (req.botUser?.role !== 'customer') return fail(res, 403, 'Chá»‰ khÃ¡ch hÃ ng Ä‘Äƒng nháº­p má»›i há»§y thao tÃ¡c táº¡i Ä‘Ã¢y.');
+    if (req.botUser?.role !== 'customer') return fail(res, 403, 'Chỉ khách hàng đăng nhập mới hủy thao tác tại đây.');
     const action = peekPendingAction(req.botUser);
-    if (!action || action.id !== String(req.params.id || '')) return fail(res, 409, 'Thao tÃ¡c Ä‘Ã£ háº¿t háº¡n hoáº·c khÃ´ng cÃ²n chá» xÃ¡c nháº­n.');
+    if (!action || action.id !== String(req.params.id || '')) return fail(res, 409, 'Thao tác đã hết hạn hoặc không còn chờ xác nhận.');
     cancelPendingAction(req.botUser);
-    return res.json({ success: true, message: 'ÄÃ£ há»§y thao tÃ¡c Ä‘ang chá».', data: null });
+    return res.json({ success: true, message: 'Đã hủy thao tác đang chờ.', data: null });
 };
 
 export const getBotProfile = (req, res) => {
@@ -272,7 +272,7 @@ export const getBotProfile = (req, res) => {
 };
 
 export const getCustomerUpdates = async (req, res) => {
-    if (req.botUser?.role !== 'customer') return fail(res, 403, 'Chá»‰ tÃ i khoáº£n khÃ¡ch hÃ ng má»›i xem Ä‘Æ°á»£c thÃ´ng bÃ¡o Ä‘Æ¡n hÃ ng.');
+    if (req.botUser?.role !== 'customer') return fail(res, 403, 'Chỉ tài khoản khách hàng mới xem được thông báo đơn hàng.');
     try {
         const updates = await db.query(
             `SELECT id, title, message, order_id, created_at,
@@ -289,7 +289,7 @@ export const getCustomerUpdates = async (req, res) => {
         return res.json({ success: true, data: updates });
     } catch (error) {
         console.error('Get customer bot updates failed:', error);
-        return fail(res, 500, 'KhÃ´ng táº£i Ä‘Æ°á»£c thÃ´ng bÃ¡o Ä‘Æ¡n hÃ ng.');
+        return fail(res, 500, 'Không tải được thông báo đơn hàng.');
     }
 };
 
@@ -322,41 +322,41 @@ export const getCustomerInvoiceImage = async (req, res) => {
             `SELECT COALESCE(oi.product_name, p.name) AS name, oi.quantity, oi.unit_price
              FROM order_items oi LEFT JOIN products p ON p.id = oi.product_id
              WHERE oi.order_id = ? ORDER BY oi.id`, [orderId]);
-        if (!items.length) return fail(res, 404, 'KhÃ´ng tÃ¬m tháº¥y sáº£n pháº©m trÃªn hÃ³a Ä‘Æ¡n.');
+        if (!items.length) return fail(res, 404, 'Không tìm thấy sản phẩm trên hóa đơn.');
 
         const invoiceCode = `INV-${new Date(`${String(order.created_at).replace(' ', 'T')}Z`).toISOString().slice(2, 10).replace(/-/g, '')}-${String(order.id).padStart(4, '0')}`;
-        const money = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value) || 0)}Ä‘`;
+        const money = (value) => `${new Intl.NumberFormat('vi-VN').format(Number(value) || 0)}đ`;
         const height = 410 + items.length * 54;
         const itemRows = items.map((item, index) => {
             const y = 268 + index * 54;
             const lineTotal = Number(item.quantity) * Number(item.unit_price);
-            return `<text x="42" y="${y}" class="item">${escapeXml(item.name)}</text><text x="42" y="${y + 22}" class="muted">${Number(item.quantity)} Ã— ${money(item.unit_price)}</text><text x="598" y="${y + 8}" text-anchor="end" class="amount">${money(lineTotal)}</text><line x1="42" y1="${y + 36}" x2="598" y2="${y + 36}" class="rule"/>`;
+            return `<text x="42" y="${y}" class="item">${escapeXml(item.name)}</text><text x="42" y="${y + 22}" class="muted">${Number(item.quantity)} × ${money(item.unit_price)}</text><text x="598" y="${y + 8}" text-anchor="end" class="amount">${money(lineTotal)}</text><line x1="42" y1="${y + 36}" x2="598" y2="${y + 36}" class="rule"/>`;
         }).join('');
         const shippingY = 286 + items.length * 54;
         const totalY = shippingY + 28;
         const date = new Date(`${String(order.created_at).replace(' ', 'T')}Z`).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-        const paymentMethod = { cash: 'Tiá»n máº·t', transfer: 'Chuyá»ƒn khoáº£n', card: 'Tháº»' }[order.payment_method] || 'ChÆ°a chá»n';
-        const paymentStatus = order.has_payment ? 'ÄÃƒ THANH TOÃN' : 'CHá»œ THANH TOÃN';
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="${height}" viewBox="0 0 640 ${height}" role="img" aria-labelledby="title desc"><title id="title">HÃ³a Ä‘Æ¡n ${escapeXml(invoiceCode)}</title><desc id="desc">ÄÆ¡n hÃ ng Ä‘Ã£ Ä‘Æ°á»£c cá»­a hÃ ng xÃ¡c nháº­n, ${escapeXml(paymentStatus.toLowerCase())}.</desc><rect width="640" height="${height}" rx="24" fill="#f1f5f9"/><rect x="16" y="16" width="608" height="${height - 32}" rx="18" fill="#fff"/><rect x="16" y="16" width="608" height="12" rx="6" fill="#4f46e5"/><text x="42" y="72" class="brand">HTH SMART SALES</text><text x="42" y="112" class="heading">HÃ“A ÄÆ N BÃN HÃ€NG</text><text x="42" y="145" class="muted">MÃ£ hÃ³a Ä‘Æ¡n: ${escapeXml(invoiceCode)}</text><text x="42" y="171" class="muted">NgÃ y táº¡o: ${escapeXml(date)}</text><text x="42" y="197" class="muted">KhÃ¡ch hÃ ng: ${escapeXml(order.customer_name || 'KhÃ¡ch hÃ ng')}</text><rect x="42" y="216" width="556" height="30" rx="8" fill="#eef2ff"/><text x="54" y="236" class="status">ÄÆ N ÄÃƒ ÄÆ¯á»¢C XÃC NHáº¬N Â· ${escapeXml(paymentStatus)} Â· ${escapeXml(paymentMethod.toUpperCase())}</text>${itemRows}<text x="42" y="${shippingY}" class="muted">PhÃ­ giao hÃ ng</text><text x="598" y="${shippingY}" text-anchor="end" class="amount">${money(order.shipping_fee)}</text><text x="42" y="${totalY}" class="total-label">Tá»”NG Cá»˜NG</text><text x="598" y="${totalY}" text-anchor="end" class="total">${money(order.total_amount)}</text><text x="42" y="${totalY + 40}" class="footer">Cáº£m Æ¡n báº¡n Ä‘Ã£ mua sáº¯m táº¡i cá»­a hÃ ng.</text><style>text{font-family:Arial,'DejaVu Sans',sans-serif;fill:#0f172a}.brand{font-size:14px;font-weight:700;letter-spacing:2px;fill:#4f46e5}.heading{font-size:25px;font-weight:800}.muted{font-size:13px;fill:#64748b}.status{font-size:11px;font-weight:700;fill:#4338ca}.item{font-size:15px;font-weight:700}.amount{font-size:14px;font-weight:700}.rule{stroke:#e2e8f0}.total-label{font-size:14px;font-weight:800;fill:#334155}.total{font-size:21px;font-weight:800;fill:#4f46e5}.footer{font-size:13px;fill:#64748b}</style></svg>`;
+        const paymentMethod = { cash: 'Tiền mặt', transfer: 'Chuyển khoản', card: 'Thẻ' }[order.payment_method] || 'Chưa chọn';
+        const paymentStatus = order.has_payment ? 'ĐÃ THANH TOÁN' : 'CHỜ THANH TOÁN';
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="${height}" viewBox="0 0 640 ${height}" role="img" aria-labelledby="title desc"><title id="title">Hóa đơn ${escapeXml(invoiceCode)}</title><desc id="desc">Đơn hàng đã được cửa hàng xác nhận, ${escapeXml(paymentStatus.toLowerCase())}.</desc><rect width="640" height="${height}" rx="24" fill="#f1f5f9"/><rect x="16" y="16" width="608" height="${height - 32}" rx="18" fill="#fff"/><rect x="16" y="16" width="608" height="12" rx="6" fill="#4f46e5"/><text x="42" y="72" class="brand">HTH SMART SALES</text><text x="42" y="112" class="heading">HÓA ĐƠN BÁN HÀNG</text><text x="42" y="145" class="muted">Mã hóa đơn: ${escapeXml(invoiceCode)}</text><text x="42" y="171" class="muted">Ngày tạo: ${escapeXml(date)}</text><text x="42" y="197" class="muted">Khách hàng: ${escapeXml(order.customer_name || 'Khách hàng')}</text><rect x="42" y="216" width="556" height="30" rx="8" fill="#eef2ff"/><text x="54" y="236" class="status">ĐƠN ĐÃ ĐƯỢC XÁC NHẬN · ${escapeXml(paymentStatus)} · ${escapeXml(paymentMethod.toUpperCase())}</text>${itemRows}<text x="42" y="${shippingY}" class="muted">Phí giao hàng</text><text x="598" y="${shippingY}" text-anchor="end" class="amount">${money(order.shipping_fee)}</text><text x="42" y="${totalY}" class="total-label">TỔNG CỘNG</text><text x="598" y="${totalY}" text-anchor="end" class="total">${money(order.total_amount)}</text><text x="42" y="${totalY + 40}" class="footer">Cảm ơn bạn đã mua sắm tại cửa hàng.</text><style>text{font-family:Arial,'DejaVu Sans',sans-serif;fill:#0f172a}.brand{font-size:14px;font-weight:700;letter-spacing:2px;fill:#4f46e5}.heading{font-size:25px;font-weight:800}.muted{font-size:13px;fill:#64748b}.status{font-size:11px;font-weight:700;fill:#4338ca}.item{font-size:15px;font-weight:700}.amount{font-size:14px;font-weight:700}.rule{stroke:#e2e8f0}.total-label{font-size:14px;font-weight:800;fill:#334155}.total{font-size:21px;font-weight:800;fill:#4f46e5}.footer{font-size:13px;fill:#64748b}</style></svg>`;
         res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
         res.setHeader('Content-Disposition', `inline; filename="${invoiceCode}.svg"`);
         res.setHeader('Cache-Control', 'private, no-store');
         return res.status(200).send(svg);
     } catch (error) {
         console.error('Get customer invoice image failed:', error);
-        return fail(res, 500, 'KhÃ´ng táº£i Ä‘Æ°á»£c áº£nh hÃ³a Ä‘Æ¡n.');
+        return fail(res, 500, 'Không tải được ảnh hóa đơn.');
     }
 };
 
 const broadcastSystemMessage = async (message) => db.transaction(async () => {
     const employeeResult = await db.run(
         `INSERT INTO notifications (user_id, title, message, type, related_id)
-         SELECT id, 'ThÃ´ng bÃ¡o há»‡ thá»‘ng', ?, 'system', NULL FROM users WHERE is_active = 1`,
+         SELECT id, 'Thông báo hệ thống', ?, 'system', NULL FROM users WHERE is_active = 1`,
         [message]
     );
     const customerResult = await db.run(
         `INSERT INTO bot_customer_notifications (customer_account_id, order_id, title, message)
-         SELECT id, NULL, 'ThÃ´ng bÃ¡o há»‡ thá»‘ng', ? FROM customer_accounts WHERE is_active = 1`,
+         SELECT id, NULL, 'Thông báo hệ thống', ? FROM customer_accounts WHERE is_active = 1`,
         [message]
     );
     return { employees: employeeResult.changes || 0, customers: customerResult.changes || 0 };
@@ -365,16 +365,16 @@ const broadcastSystemMessage = async (message) => db.transaction(async () => {
 const friendlyAiError = (error, role) => {
     const text = [error?.message, error?.status, error?.statusText, error?.code].filter(Boolean).join(' ');
     if (/\b503\b|UNAVAILABLE|overload|temporarily unavailable|deadline exceeded/i.test(text)) {
-        return 'Dá»‹ch vá»¥ AI Ä‘ang táº¡m thá»i quÃ¡ táº£i (503). Dá»¯ liá»‡u Ä‘Æ¡n hÃ ng vÃ  sáº£n pháº©m váº«n an toÃ n; vui lÃ²ng thá»­ láº¡i sau Ã­t phÃºt hoáº·c nhá» nhÃ¢n viÃªn há»— trá»£.';
+        return 'Dịch vụ AI đang tạm thời quá tải (503). Dữ liệu đơn hàng và sản phẩm vẫn an toàn; vui lòng thử lại sau ít phút hoặc nhờ nhân viên hỗ trợ.';
     }
     if (!['guest', 'customer'].includes(role)) {
-        if (/GEMINI_API_KEY|API key/i.test(text)) return 'Bot chÆ°a Ä‘Æ°á»£c cáº¥u hÃ¬nh khÃ³a Gemini. Vui lÃ²ng liÃªn há»‡ quáº£n trá»‹ viÃªn.';
-        if (/429|quota|RESOURCE_EXHAUSTED/i.test(text)) return 'Gemini Ä‘ang quÃ¡ táº£i hoáº·c háº¿t háº¡n má»©c, vui lÃ²ng thá»­ láº¡i sau Ã­t phÃºt.';
-        return 'Bot táº¡m thá»i khÃ´ng pháº£n há»“i Ä‘Æ°á»£c, vui lÃ²ng thá»­ láº¡i sau.';
+        if (/GEMINI_API_KEY|API key/i.test(text)) return 'Bot chưa được cấu hình khóa Gemini. Vui lòng liên hệ quản trị viên.';
+        if (/429|quota|RESOURCE_EXHAUSTED/i.test(text)) return 'Gemini đang quá tải hoặc hết hạn mức, vui lòng thử lại sau ít phút.';
+        return 'Bot tạm thời không phản hồi được, vui lòng thử lại sau.';
     }
-    if (/429|quota|RESOURCE_EXHAUSTED/i.test(text)) return 'Hiá»‡n tÃ´i Ä‘ang quÃ¡ táº£i, báº¡n dÃ¹ng cÃ¡c nÃºt bÃªn dÆ°á»›i hoáº·c chá» nhÃ¢n viÃªn há»— trá»£ nhÃ©.';
-    if (/GEMINI_API_KEY|API key/i.test(text)) return 'Hiá»‡n tÃ´i chÆ°a thá»ƒ tráº£ lá»i tá»± do. Báº¡n cÃ³ thá»ƒ dÃ¹ng cÃ¡c nÃºt bÃªn dÆ°á»›i hoáº·c gáº·p nhÃ¢n viÃªn há»— trá»£.';
-    return 'Hiá»‡n tÃ´i chÆ°a thá»ƒ xá»­ lÃ½ cÃ¢u há»i nÃ y. Báº¡n thá»­ láº¡i hoáº·c dÃ¹ng cÃ¡c nÃºt bÃªn dÆ°á»›i Ä‘á»ƒ Ä‘Æ°á»£c há»— trá»£.';
+    if (/429|quota|RESOURCE_EXHAUSTED/i.test(text)) return 'Hiện tôi đang quá tải, bạn dùng các nút bên dưới hoặc chờ nhân viên hỗ trợ nhé.';
+    if (/GEMINI_API_KEY|API key/i.test(text)) return 'Hiện tôi chưa thể trả lời tự do. Bạn có thể dùng các nút bên dưới hoặc gặp nhân viên hỗ trợ.';
+    return 'Hiện tôi chưa thể xử lý câu hỏi này. Bạn thử lại hoặc dùng các nút bên dưới để được hỗ trợ.';
 };
 
 const sanitizeHistory = (history) => (Array.isArray(history) ? history : [])
@@ -382,23 +382,23 @@ const sanitizeHistory = (history) => (Array.isArray(history) ? history : [])
     .filter((entry) => ['user', 'assistant'].includes(entry?.role) && typeof entry?.content === 'string' && entry.content.trim())
     .map((entry) => ({ role: entry.role, content: redactPhone(redactCccd(entry.content)).slice(0, 1200) }));
 
-const redactCccd = (value) => String(value).replace(/(?<!\d)(?:\d[\s.-]?){11}\d(?!\d)/g, '[Ä‘Ã£ áº©n CCCD]');
-const redactPhone = (value) => String(value).replace(/(?<!\d)(?:\+?84|0)\d{9}(?!\d)/g, '[Ä‘Ã£ áº©n sá»‘ Ä‘iá»‡n thoáº¡i]');
+const redactCccd = (value) => String(value).replace(/(?<!\d)(?:\d[\s.-]?){11}\d(?!\d)/g, '[đã ẩn CCCD]');
+const redactPhone = (value) => String(value).replace(/(?<!\d)(?:\+?84|0)\d{9}(?!\d)/g, '[đã ẩn số điện thoại]');
 
 export const streamBot = async (req, res) => {
     const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
     const attachment = req.file && ['image/jpeg', 'image/png', 'image/webp'].includes(req.file.mimetype)
         ? { mimeType: req.file.mimetype, data: req.file.buffer.toString('base64') }
         : null;
-    const effectiveMessage = message || (attachment ? 'HÃ£y xem áº£nh tÃ´i gá»­i vÃ  giÃºp tÃ´i Ä‘á»c thÃ´ng tin trÃªn Ä‘Ã³.' : '');
+    const effectiveMessage = message || (attachment ? 'Hãy xem ảnh tôi gửi và giúp tôi đọc thông tin trên đó.' : '');
     if (!effectiveMessage || effectiveMessage.length > 2000) {
-        return fail(res, 400, 'Tin nháº¯n pháº£i cÃ³ ná»™i dung vÃ  khÃ´ng vÆ°á»£t quÃ¡ 2.000 kÃ½ tá»±.');
+        return fail(res, 400, 'Tin nhắn phải có nội dung và không vượt quá 2.000 ký tự.');
     }
     if (redactCccd(effectiveMessage) !== effectiveMessage) {
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
-        res.write(`data: ${JSON.stringify({ content: 'KhÃ´ng gá»­i CCCD hoáº·c áº£nh giáº¥y tá» trong chat. Vá»›i há»“ sÆ¡ tráº£ gÃ³p, hÃ£y nháº­p thÃ´ng tin trá»±c tiáº¿p trÃªn kÃªnh chÃ­nh thá»©c cá»§a Ä‘á»‘i tÃ¡c tÃ i chÃ­nh hoáº·c liÃªn há»‡ nhÃ¢n viÃªn.' })}\n\n`);
+        res.write(`data: ${JSON.stringify({ content: 'Không gửi CCCD hoặc ảnh giấy tờ trong chat. Với hồ sơ trả góp, hãy nhập thông tin trực tiếp trên kênh chính thức của đối tác tài chính hoặc liên hệ nhân viên.' })}\n\n`);
         res.write('data: [DONE]\n\n');
         return res.end();
     }
@@ -406,14 +406,14 @@ export const streamBot = async (req, res) => {
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
-        res.write(`data: ${JSON.stringify({ content: 'KhÃ´ng gá»­i sá»‘ Ä‘iá»‡n thoáº¡i trong chat. HÃ£y dÃ¹ng biá»ƒu máº«u Ä‘Äƒng kÃ½ Ä‘á»ƒ xÃ¡c minh sá»‘ hoáº·c liÃªn há»‡ nhÃ¢n viÃªn náº¿u cáº§n cáº­p nháº­t thÃ´ng tin.' })}\n\n`);
+        res.write(`data: ${JSON.stringify({ content: 'Không gửi số điện thoại trong chat. Hãy dùng biểu mẫu đăng ký để xác minh số hoặc liên hệ nhân viên nếu cần cập nhật thông tin.' })}\n\n`);
         res.write('data: [DONE]\n\n');
         return res.end();
     }
-    const user = req.botUser || { id: `guest:${req.ip}`, username: 'guest', full_name: 'KhÃ¡ch', role: 'guest' };
+    const user = req.botUser || { id: `guest:${req.ip}`, username: 'guest', full_name: 'Khách', role: 'guest' };
     const limiterKey = req.botUser ? `${user.role}:${user.id}` : `guest:${req.ip}`;
     if (isRateLimited(`chat:${limiterKey}`, 30, 60 * 1000)) {
-        return fail(res, 429, 'Báº¡n nháº¯n quÃ¡ nhanh, vui lÃ²ng chá» má»™t chÃºt.');
+        return fail(res, 429, 'Bạn nhắn quá nhanh, vui lòng chờ một chút.');
     }
 
     res.setHeader('Content-Type', 'text/event-stream');
@@ -429,7 +429,7 @@ export const streamBot = async (req, res) => {
         if (message.startsWith('/') && !attachment) {
             const command = parseCommand(message);
             if (!command) {
-                send({ content: 'CÃº phÃ¡p lá»‡nh chÆ°a Ä‘Ãºng. GÃµ /trogiup Ä‘á»ƒ xem danh sÃ¡ch lá»‡nh.' });
+                send({ content: 'Cú pháp lệnh chưa đúng. Gõ /trogiup để xem danh sách lệnh.' });
                 return finish();
             }
             const resolved = resolveCommand({ ...command, user });
@@ -439,26 +439,26 @@ export const streamBot = async (req, res) => {
             }
             if (resolved.type === 'broadcast') {
                 const delivered = await broadcastSystemMessage(resolved.message);
-                await logAction(user.id, 'BOT', 'Gá»­i thÃ´ng bÃ¡o há»‡ thá»‘ng qua Bot', delivered);
-                send({ content: `âœ… ÄÃ£ gá»­i thÃ´ng bÃ¡o Ä‘áº¿n ${delivered.employees} tÃ i khoáº£n nhÃ¢n viÃªn/quáº£n trá»‹ vÃ  ${delivered.customers} tÃ i khoáº£n khÃ¡ch hÃ ng.` });
+                await logAction(user.id, 'BOT', 'Gửi thông báo hệ thống qua Bot', delivered);
+                send({ content: `✅ Đã gửi thông báo đến ${delivered.employees} tài khoản nhân viên/quản trị và ${delivered.customers} tài khoản khách hàng.` });
                 return finish();
             }
             if (resolved.type === 'confirm') {
                 if (user.role === 'customer') {
-                    send({ content: 'Äá»ƒ an toÃ n, hÃ£y báº¥m nÃºt xÃ¡c nháº­n trÃªn tháº» tÃ³m táº¯t Ä‘Æ¡n hÃ ng.' });
+                    send({ content: 'Để an toàn, hãy bấm nút xác nhận trên thẻ tóm tắt đơn hàng.' });
                     return finish();
                 }
                 const result = await executePendingAction(user);
-                send({ content: `${result.ok ? 'âœ…' : 'âš ï¸'} ${result.message}`, ...(result.ok ? { executed: true } : {}) });
+                send({ content: `${result.ok ? '✅' : '⚠️'} ${result.message}`, ...(result.ok ? { executed: true } : {}) });
                 return finish();
             }
             if (resolved.type === 'cancel') {
                 if (user.role === 'customer') {
-                    send({ content: 'HÃ£y dÃ¹ng nÃºt Há»§y trÃªn tháº» thao tÃ¡c Ä‘ang chá».' });
+                    send({ content: 'Hãy dùng nút Hủy trên thẻ thao tác đang chờ.' });
                     return finish();
                 }
                 const cancelled = cancelPendingAction(user);
-                send({ content: cancelled ? 'ÄÃ£ há»§y thao tÃ¡c Ä‘ang chá».' : 'KhÃ´ng cÃ³ thao tÃ¡c nÃ o Ä‘ang chá» Ä‘á»ƒ há»§y.' });
+                send({ content: cancelled ? 'Đã hủy thao tác đang chờ.' : 'Không có thao tác nào đang chờ để hủy.' });
                 return finish();
             }
             const quick = await runQuickCommand({ ...command, name: resolved.commandName || command.name, user });
