@@ -22,16 +22,19 @@ async function runTests() {
     let passed = 0;
     let failed = 0;
 
+    // Lấy ID sản phẩm thực tế có trong DB
+    const sampleProducts = await db.query('SELECT id, price FROM products WHERE is_active = 1 AND stock_quantity > 0 LIMIT 2');
+    const prod1 = sampleProducts[0] || { id: 1, price: 1000000 };
+    const prod2 = sampleProducts[1] || prod1;
+
     // Chuẩn bị dữ liệu mock
     const mockUserId = 1;
 
-    // Test Case 1: Lỗi giỏ hàng trống (Mô phỏng validate từ controller, dù hiện tại controller không check items.length, ta thử xem)
+    // Test Case 1: Lỗi giỏ hàng trống
     try {
         const req1 = { body: { items: [], total_amount: 0 }, user: { id: mockUserId } };
         const res1 = new MockRes();
         
-        // Wait, controller tries to loop over items. If empty, it might succeed or fail. Let's see.
-        // Actually, orderController doesn't validate empty items, but let's test it.
         await createOrder(req1, res1);
         if (res1.statusCode === 201) {
             console.log("❌ POS-UI-01: Thanh toán khi giỏ hàng trống -> FAIL (Controller không báo lỗi, tạo đơn rỗng)");
@@ -49,8 +52,8 @@ async function runTests() {
     try {
         const req2 = { 
             body: { 
-                items: [{ product_id: 1, quantity: 1, unit_price: 1000 }], 
-                total_amount: 1000,
+                items: [{ product_id: prod1.id, quantity: 1, unit_price: prod1.price || 1000000 }], 
+                total_amount: prod1.price || 1000000,
                 payment_type: 'full',
                 payment_method: 'cash',
                 customer_name: 'Test Khach',
@@ -77,15 +80,18 @@ async function runTests() {
     try {
         const req3 = { 
             body: { 
-                items: [{ product_id: 2, quantity: 1, unit_price: 5000 }], 
-                total_amount: 5000,
+                items: [{ product_id: prod2.id, quantity: 1, unit_price: prod2.price || 5000000 }], 
+                total_amount: prod2.price || 5000000,
                 payment_type: 'installment',
                 payment_method: 'transfer',
                 customer_name: 'Test Khach 2',
                 customer_phone: '0901234567',
                 customer_cccd: '012345678912',
                 installment_term: 6,
-                monthly_fee: 1000
+                finance_partner: 'Home Credit (mô phỏng)',
+                finance_application_code: 'TEST-APP-001',
+                down_payment: 1000000,
+                monthly_fee: 700000
             }, 
             user: { id: mockUserId } 
         };

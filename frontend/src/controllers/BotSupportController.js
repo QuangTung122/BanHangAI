@@ -13,29 +13,41 @@ export default class BotSupportController {
 
     renderShell() {
         this.root.innerHTML = `
-            <div class="h-full min-h-[520px] grid grid-cols-1 lg:grid-cols-[330px_1fr] gap-4">
-                <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                    <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-                        <div><h2 class="font-black text-slate-900">Hỗ trợ khách từ Bot</h2><p class="text-xs text-slate-500 mt-1">Yêu cầu mới sẽ hiện tự động</p></div>
-                        <button data-refresh class="text-sm text-indigo-600 font-bold hover:underline">Tải lại</button>
+            <div class="h-full min-h-[520px] grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5 p-1 max-w-[1600px] mx-auto w-full">
+                <!-- Cột trái: Danh sách yêu cầu -->
+                <section class="bg-white rounded-2xl border border-[#e7eaf2] shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 border-b border-[#e7eaf2] bg-[#fafbfd] flex items-center justify-between">
+                        <div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-[#5745f5] animate-ping"></span>
+                                <h2 class="font-black text-sm text-[#182033]">Khách Hàng Cần Hỗ Trợ</h2>
+                            </div>
+                            <p class="text-[11px] text-[#7b8499] mt-0.5">Yêu cầu từ bot tư vấn tự động</p>
+                        </div>
+                        <button data-refresh class="text-xs text-[#5745f5] font-bold hover:underline cursor-pointer">Tải lại</button>
                     </div>
-                    <div data-request-list class="flex-1 overflow-y-auto divide-y divide-slate-100"></div>
+                    <div data-request-list class="flex-1 overflow-y-auto divide-y divide-[#e7eaf2]"></div>
                 </section>
-                <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                    <header data-chat-header class="p-4 border-b border-slate-100 flex items-center justify-between">
-                        <div><h2 data-chat-title class="font-black text-slate-900">Chọn yêu cầu hỗ trợ</h2><p data-chat-subtitle class="text-xs text-slate-500 mt-1">Bạn có thể trao đổi trực tiếp với khách tại đây.</p></div>
+
+                <!-- Cột phải: Khung hội thoại trực tiếp -->
+                <section class="bg-white rounded-2xl border border-[#e7eaf2] shadow-sm overflow-hidden flex flex-col">
+                    <header data-chat-header class="p-4 border-b border-[#e7eaf2] bg-[#fafbfd] flex items-center justify-between">
+                        <div>
+                            <h2 data-chat-title class="font-black text-sm text-[#182033]">Chọn yêu cầu hỗ trợ</h2>
+                            <p data-chat-subtitle class="text-[11px] text-[#7b8499] mt-0.5">Bạn có thể trao đổi trực tiếp và gửi ảnh cho khách tại đây.</p>
+                        </div>
                         <div class="flex items-center gap-2">
-                            <button data-decline class="hidden rounded-lg bg-rose-50 hover:bg-rose-100 px-3 py-2 text-xs font-bold text-rose-700">Từ chối</button>
-                            <button data-accept class="hidden rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 py-2 text-xs font-bold text-white">Nhận phiên</button>
-                            <button data-close class="hidden rounded-lg bg-slate-100 hover:bg-rose-50 px-3 py-2 text-xs font-bold text-slate-700 hover:text-rose-700">Kết thúc phiên</button>
+                            <button data-decline class="hidden rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-700 transition-colors cursor-pointer">Từ chối</button>
+                            <button data-accept class="hidden rounded-xl bg-[#149c79] hover:bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white transition-colors cursor-pointer shadow-sm">Nhận phiên</button>
+                            <button data-close class="hidden rounded-xl bg-[#f5f6fa] hover:bg-rose-50 border border-[#e7eaf2] px-3 py-1.5 text-xs font-bold text-[#182033] hover:text-rose-700 transition-colors cursor-pointer">Kết thúc phiên</button>
                         </div>
                     </header>
-                    <div data-chat-messages class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50"></div>
-                    <form data-chat-form class="hidden p-3 border-t border-slate-100 flex gap-2">
-                        <button type="button" data-attach class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-indigo-50" title="Gửi ảnh JPG, PNG hoặc WEBP, tối đa 5 MB">Ảnh</button>
+                    <div data-chat-messages class="flex-1 overflow-y-auto p-4 space-y-3 bg-[#fafbfd]"></div>
+                    <form data-chat-form class="hidden p-3 border-t border-[#e7eaf2] flex gap-2 bg-white">
+                        <button type="button" data-attach class="rounded-xl bg-[#f5f6fa] border border-[#e7eaf2] px-3 py-2 text-xs font-bold text-[#182033] hover:bg-[#f0edff] hover:text-[#5745f5] transition-colors cursor-pointer" title="Gửi ảnh JPG, PNG hoặc WEBP, tối đa 5 MB">Ảnh</button>
                         <input data-chat-image type="file" accept="image/jpeg,image/png,image/webp" class="hidden">
-                        <input data-chat-input maxlength="1000" class="flex-1 rounded-xl border border-slate-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100" placeholder="Nhập tin nhắn cho khách..." autocomplete="off">
-                        <button class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-700">Gửi</button>
+                        <input data-chat-input maxlength="1000" class="flex-1 rounded-xl border border-[#e7eaf2] px-4 py-2 text-xs text-[#182033] font-medium focus:outline-none focus:border-[#5745f5] focus:ring-2 focus:ring-[#5745f5]/15 transition-all" placeholder="Nhập tin nhắn cho khách..." autocomplete="off">
+                        <button class="rounded-xl bg-[#5745f5] hover:bg-[#4736e8] px-5 py-2 text-xs font-bold text-white transition-colors shadow-sm shadow-[#5745f5]/20 cursor-pointer">Gửi</button>
                     </form>
                 </section>
             </div>`;
@@ -89,16 +101,22 @@ export default class BotSupportController {
     renderRequests() {
         const list = this.root.querySelector('[data-request-list]');
         if (!this.requests.length) {
-            list.innerHTML = '<div class="p-8 text-center text-sm text-slate-400">Chưa có yêu cầu hỗ trợ nào.</div>';
+            list.innerHTML = '<div class="p-8 text-center text-xs text-[#7b8499]">Chưa có yêu cầu hỗ trợ nào từ khách.</div>';
             return;
         }
         list.innerHTML = this.requests.map((request) => {
             const active = Number(request.id) === this.selectedRequestId;
             const status = request.status === 'open' ? 'Chờ nhân viên nhận' : request.status === 'in_progress' ? `Đang trao đổi${request.assigned_staff_name ? ` · ${this.escape(request.assigned_staff_name)}` : ''}` : request.decision === 'declined' ? 'Đã từ chối' : 'Đã đóng';
-            return `<button data-request-id="${Number(request.id)}" class="w-full text-left p-4 hover:bg-indigo-50 ${active ? 'bg-indigo-50' : ''}">
-                <div class="flex items-center justify-between gap-2"><span class="font-bold text-sm text-slate-800 truncate">${this.escape(request.customer_name || 'Khách vãng lai')}</span><span class="text-[10px] font-bold text-indigo-600">#${Number(request.id)}</span></div>
-                <p class="text-xs text-slate-500 truncate mt-1">${this.escape(request.last_message || '')}</p>
-                <div class="flex justify-between mt-2 text-[10px] text-slate-400"><span>${status}${request.last_sender_type === 'customer' ? ' · Khách vừa nhắn' : ''}</span><span>${this.escape(request.updated_at || '')}</span></div>
+            return `<button data-request-id="${Number(request.id)}" class="w-full text-left p-3.5 hover:bg-[#f8f9fc] transition-colors cursor-pointer ${active ? 'bg-[#f0edff] border-l-4 border-l-[#5745f5]' : ''}">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="font-bold text-xs text-[#182033] truncate">${this.escape(request.customer_name || 'Khách vãng lai')}</span>
+                    <span class="text-[10px] font-mono font-bold text-[#5745f5]">#${Number(request.id)}</span>
+                </div>
+                <p class="text-[11px] text-[#7b8499] truncate mt-1">${this.escape(request.last_message || 'Không có tin nhắn gần đây')}</p>
+                <div class="flex justify-between mt-2 text-[10px] text-[#7b8499]">
+                    <span class="font-medium">${status}${request.last_sender_type === 'customer' ? ' · <b class="text-[#5745f5]">Khách vừa nhắn</b>' : ''}</span>
+                    <span class="font-mono">${this.escape(request.updated_at || '')}</span>
+                </div>
             </button>`;
         }).join('');
     }
@@ -108,7 +126,7 @@ export default class BotSupportController {
         const request = this.requests.find((entry) => Number(entry.id) === id);
         this.root.querySelector('[data-chat-title]').textContent = `${request?.customer_name || 'Khách'} · Yêu cầu #${id}`;
         this.updateSelectedControls(request);
-        this.root.querySelector('[data-chat-messages]').innerHTML = '<div class="text-sm text-slate-400">Đang tải hội thoại...</div>';
+        this.root.querySelector('[data-chat-messages]').innerHTML = '<div class="text-xs text-[#7b8499] p-2">Đang tải hội thoại...</div>';
         await this.loadMessages(id, true);
         this.renderRequests();
     }
@@ -158,9 +176,17 @@ export default class BotSupportController {
             history.innerHTML = messages.map((message) => {
                 const isStaff = message.sender_type === 'staff';
                 const isSystem = message.sender_type === 'system';
-                const image = message.image_url ? `<img src="${this.escape(message.image_url)}" alt="Ảnh đính kèm" loading="lazy" class="mt-2 max-h-64 max-w-full rounded-lg object-contain" onerror="this.remove()">` : '';
-                return `<div class="flex ${isStaff ? 'justify-end' : 'justify-start'}"><div class="max-w-[80%] rounded-2xl px-3 py-2 text-sm ${isStaff ? 'bg-indigo-600 text-white' : isSystem ? 'bg-amber-50 text-amber-800' : 'bg-white border border-slate-200 text-slate-800'}"><div class="text-[10px] font-bold opacity-70 mb-1">${isStaff ? 'Nhân viên' : isSystem ? 'Hệ thống' : 'Khách'}</div>${message.content ? `<div class="whitespace-pre-wrap break-words">${this.escape(message.content)}</div>` : ''}${image}</div></div>`;
-            }).join('') || '<div class="text-sm text-slate-400">Chưa có tin nhắn.</div>';
+                const image = message.image_url ? `<img src="${this.escape(message.image_url)}" alt="Ảnh đính kèm" loading="lazy" class="mt-2 max-h-64 max-w-full rounded-xl object-contain border border-black/10" onerror="this.remove()">` : '';
+                return `
+                    <div class="flex ${isStaff ? 'justify-end' : 'justify-start'}">
+                        <div class="max-w-[80%] rounded-2xl px-3.5 py-2.5 text-xs shadow-sm ${isStaff ? 'bg-[#5745f5] text-white' : isSystem ? 'bg-amber-50 text-amber-900 border border-amber-200' : 'bg-white border border-[#e7eaf2] text-[#182033]'}">
+                            <div class="text-[10px] font-bold opacity-75 mb-1">${isStaff ? 'Nhân viên bán hàng' : isSystem ? 'Hệ thống AI' : 'Khách hàng'}</div>
+                            ${message.content ? `<div class="whitespace-pre-wrap break-words leading-relaxed">${this.escape(message.content)}</div>` : ''}
+                            ${image}
+                        </div>
+                    </div>
+                `;
+            }).join('') || '<div class="text-xs text-[#7b8499] text-center py-4">Chưa có tin nhắn trong phiên này.</div>';
             history.scrollTop = history.scrollHeight;
         }
     }
