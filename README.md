@@ -19,6 +19,7 @@
 - [Kiến trúc & Công nghệ (Tech Stack)](#-kiến-trúc--công-nghệ-tech-stack)
 - [Cấu trúc Thư mục Dự án](#-cấu-trúc-thư-mục-dự-án)
 - [Hướng dẫn Khởi chạy Nhanh (Quick Start)](#-hướng-dẫn-khởi-chạy-nhanh-quick-start)
+- [Cấu hình Biến Môi trường Nâng cao](#️-cấu-hình-biến-môi-trường-nâng-cao-tùy-chọn)
 - [Tài khoản Demo Hệ thống](#-tài-khoản-demo-hệ-thống)
 - [Kiểm thử Tự động (Automated Tests)](#-kiểm-thử-tự-động-automated-tests)
 - [Kỷ luật Kiến trúc & Đóng góp](#-kỷ-luật-kiến-trúc--đóng-góp)
@@ -79,7 +80,7 @@ Dự án phân quyền độc lập, chặt chẽ cho 4 vai trò chính:
 | **6** | **Quản Lý Dòng Tiền & Sổ Quỹ** | `Owner` | Phân loại dòng tiền (Tiền mặt tại quầy, Tài khoản ngân hàng, Quẹt thẻ POS), lập phiếu Thu/Chi, lọc theo kỳ kế toán. |
 | **7** | **Thống Kê & Báo Cáo Doanh Thu** | `Owner` | KPI doanh thu tổng quan, biểu đồ tăng trưởng doanh số theo khoảng ngày, bảng xếp hạng Top sản phẩm bán chạy. |
 | **8** | **Chấm Công & Quản Lý Nhân Sự** | `Staff` / `Owner` | Check-in/Check-out thời gian thực, bảng công theo tháng, tự động tính giờ chuẩn & giờ tăng ca (OT), tính lương tạm tính, xuất Excel. |
-| **9** | **Live Chat Hỗ Trợ Khách Từ Bot** | `Staff` / `Owner` | Nhận phiên hỗ trợ khi khách cần gặp nhân viên tư vấn, gửi tin nhắn và hình ảnh đính kèm, hoàn tất hoặc từ chối phiên. |
+| **9** | **Live Chat Hỗ Trợ Khách Từ Bot** | `Staff` | Nhận phiên hỗ trợ khi khách cần gặp nhân viên tư vấn, gửi tin nhắn và hình ảnh đính kèm, hoàn tất hoặc từ chối phiên. |
 | **10**| **Team Chat Nội Bộ** | `Tất cả` | Khung chat nội bộ tức thì giữa các nhân sự hoặc phát thông báo chung toàn cửa hàng, hỗ trợ gửi ảnh minh họa. |
 | **11**| **Quản Trị Hệ Thống & Kiểm Toán** | `Admin` | Quản lý tài khoản, phân quyền vai trò, mở/khóa user, đặt lại mật khẩu nhanh, nhật ký Audit Logs lưu vết payload JSON, cấu hình AI. |
 
@@ -165,45 +166,52 @@ BanHangAI/
 - **Trình quản lý gói:** `npm` đi kèm Node.js.
 - Một trình duyệt web hiện đại (Chrome, Edge, Firefox).
 
-### 2. Cài đặt Backend
+### 2. Khởi động Máy chủ Backend (Cổng 5000)
 Mở Terminal tại thư mục gốc của dự án:
 
 ```bash
 # Di chuyển vào thư mục backend
 cd backend
 
-# Cài đặt các gói phụ thuộc
+# Cài đặt các gói phụ thuộc (chỉ cần chạy lần đầu)
 npm install
 
-# Tạo file cấu hình môi trường từ mẫu
-cp .env.example .env
-```
-
-Mở file `.env` vừa tạo và cập nhật các khóa cần thiết:
-```env
-JWT_SECRET=your_super_secret_jwt_key_here
-GEMINI_API_KEY=your_gemini_api_key_from_aistudio
-BOT_OTP_MODE=demo
-```
-
-### 3. Khởi động Máy chủ Backend (Cổng 5000)
-```bash
-# Chạy ở chế độ production
+# Khởi chạy máy chủ (sử dụng cấu hình mặc định sẵn có)
 npm start
 
 # Hoặc chạy ở chế độ phát triển (tự động reload khi sửa mã)
 npm run dev
 ```
-> Backend API sẽ sẵn sàng lắng nghe tại: `http://localhost:5000`
+> Backend API sẽ sẵn sàng lắng nghe tại: `http://localhost:5000`  
+> 💡 *Hệ thống tích hợp cơ chế Zero-Config: File `backend/.env` đã có sẵn cấu hình mặc định để khởi chạy ngay mà không bắt buộc phải đăng ký key AI bên ngoài.*
 
-### 4. Khởi động Giao diện Frontend (Cổng 5500)
+### 3. Khởi động Giao diện Frontend (Cổng 5500)
 Mở một cửa sổ Terminal mới:
 
 ```bash
-# Khởi chạy máy chủ tĩnh phục vụ frontend (dùng npx serve hoặc extension Live Server)
+# Khởi chạy máy chủ tĩnh phục vụ frontend (dùng npx serve hoặc Live Server)
 npx serve frontend -l 5500
 ```
 > Truy cập ứng dụng tại trình duyệt: **`http://localhost:5500`**
+
+---
+
+### ⚙️ Cấu hình Biến Môi trường Nâng cao (Tùy chọn)
+
+File cấu hình đặt tại: `backend/.env` (tham khảo mẫu tại `backend/.env.example`). Nếu bạn muốn tùy biến khóa bảo mật hoặc tích hợp Google Gemini Cloud:
+
+| Biến môi trường | Bắt buộc | Giá trị mặc định / Fallback | Mục đích & Mô tả chi tiết |
+|:---|:---:|:---|:---|
+| `JWT_SECRET` | Không | `fallback_secret_banhangai` | Khóa bí mật ký token xác thực người dùng. Khuyến nghị thay đổi khi deploy production. |
+| `GEMINI_API_KEY` | Không | *(Để trống)* | Khóa API Google Gemini từ [Google AI Studio](https://aistudio.google.com/). Nếu để trống, hệ thống tự động ưu tiên động cơ **Ollama Local** (miễn phí, offline) hoặc chạy chế độ cơ bản. |
+| `BOT_OTP_MODE` | Không | `demo` | Chế độ xác thực OTP cho Bot khách hàng: `demo` (tự động duyệt) hoặc `sms` (yêu cầu gửi qua SMS Gateway). |
+| `SMS_GATEWAY_URL` | Không | *(Để trống)* | Địa chỉ webhook cổng gửi SMS khi chạy chế độ SMS. |
+| `SMS_GATEWAY_TOKEN` | Không | *(Để trống)* | Token xác thực gửi kèm webhook SMS Gateway. |
+| `BOT_OTP_SECRET` | Không | *(Để trống)* | Khóa bí mật riêng (tối thiểu 32 ký tự) dùng cho luồng OTP SMS. |
+
+> 📌 *Nếu cần sao chép file cấu hình mẫu:*
+> - **Windows (PowerShell / CMD):** `copy backend\.env.example backend\.env`
+> - **Linux / macOS:** `cp backend/.env.example backend/.env`
 
 ---
 

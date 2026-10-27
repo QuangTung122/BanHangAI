@@ -149,7 +149,7 @@ export default class LayoutController {
     }
 
     async initBotSupportNotifications(role) {
-        if (!['staff', 'owner'].includes(role)) return;
+        if (role !== 'staff') return;
         const badge = document.querySelector('#menu-bot-support [data-bot-support-badge]');
         let previousTotal = null;
         const refreshSummary = async () => {
@@ -473,6 +473,10 @@ export default class LayoutController {
                 this.childController = new UserSettingsController();
             }).catch(err => console.error(err));
         } else if (menuId === 'menu-bot-support') {
+            if (this.currentUser?.role !== 'staff') {
+                this.loadDefaultPage(this.currentUser?.role);
+                return;
+            }
             import('./BotSupportController.js').then(module => {
                 const BotSupportController = module.default;
                 this.childController = new BotSupportController();
