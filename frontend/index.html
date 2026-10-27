@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BanHangAI - Trợ Lý Thông Minh Doanh Nghiệp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: '#4f46e5', // Indigo 600
+                        primaryHover: '#4338ca', // Indigo 700
+                    },
+                    animation: {
+                        'blob': 'blob 7s infinite',
+                        'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
+                        'float': 'float 6s ease-in-out infinite',
+                        'shimmer': 'shimmer 2s linear infinite',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        },
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        shimmer: {
+                            'from': { backgroundPosition: '200% 0' },
+                            'to': { backgroundPosition: '-200% 0' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { scroll-behavior: smooth; }
+        .bg-grid-pattern {
+            background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .bento-card {
+            background: #ffffff;
+            border: 1px solid #f1f5f9;
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s ease;
+        }
+        .bento-card:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: translateY(-2px);
+        }
+        .typing-cursor::after {
+            content: '|';
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden relative font-['Plus_Jakarta_Sans']">
+    
+    <!-- Nền lưới -->
+    <div class="absolute inset-0 bg-grid-pattern z-0 opacity-30 pointer-events-none"></div>
+
+    <div id="app-root" class="w-full relative z-10 flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header id="main-header" class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm/50 transition-all duration-300 h-20 flex items-center">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+                <div class="flex justify-between items-center">
+                    <a href="#" class="flex items-center gap-2.5 group">
+                        <img src="assets/images/logo-system.png" alt="Logo" class="w-10 h-10 object-cover shadow-sm group-hover:shadow-indigo-500/30 transition-all rounded-lg">
+                        <span class="font-bold text-xl tracking-tight text-slate-900 group-hover:text-indigo-600 transition-colors">HTH Smart Sales</span>
+                    </a>
+                    <nav class="hidden md:flex space-x-8">
+                        <a href="#features" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">Tính năng</a>
+                        <a href="#how-it-works" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">Cách hoạt động</a>
+                        <a href="#demo" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">Demo</a>
+                    </nav>
+                    <div class="hidden md:flex items-center gap-3">
+                        <!-- ID được gán để app.js bắt sự kiện bật Modal Auth -->
+                        <button id="btn-nav-login" class="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">Đăng nhập</button>
+                        <button id="btn-nav-register" class="px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-500/30 transition-all duration-300">Đăng ký ngay</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-grow pt-32 pb-16">
+            <!-- Hero Section -->
+            <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-20">
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <!-- Left: Text -->
+                    <div class="text-left animate-fade-in-up">
+                        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs font-bold uppercase tracking-wider mb-6 shadow-sm">
+                            <span class="relative flex h-2 w-2">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                            </span>
+                            AI Core 4.0
+                        </div>
+                        <h1 class="text-5xl lg:text-7xl font-extrabold tracking-tight mb-6 text-slate-900 leading-[1.1]">
+                            Tự động hóa bán hàng <br/>
+                            <span class="italic text-indigo-600">bằng AI thông minh</span>
+                        </h1>
+                        <p class="text-lg text-slate-600 mb-8 max-w-xl leading-relaxed font-medium">
+                            Nền tảng quản lý bán hàng (POS) thế hệ mới. Tự động chốt đơn, phân tích dữ liệu và tối ưu doanh thu với sức mạnh của trí tuệ nhân tạo.
+                        </p>
+                        <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                            <button id="btn-hero-login" class="px-8 py-4 rounded-lg bg-slate-900 text-white font-bold text-sm shadow-xl hover:bg-indigo-600 hover:shadow-indigo-500/30 transition-all duration-300 flex justify-center items-center gap-2">
+                                Bắt đầu sử dụng miễn phí
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-4 text-sm font-medium text-slate-500">
+                            <div class="flex -space-x-2">
+                                <img class="w-8 h-8 rounded-full border-2 border-white" src="https://i.pravatar.cc/100?img=1" alt="User">
+                                <img class="w-8 h-8 rounded-full border-2 border-white" src="https://i.pravatar.cc/100?img=2" alt="User">
+                                <img class="w-8 h-8 rounded-full border-2 border-white" src="https://i.pravatar.cc/100?img=3" alt="User">
+                            </div>
+                            <p>Được tin dùng bởi <span class="text-indigo-600 font-bold">500+</span> doanh nghiệp</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Right: Dynamic Overlapping Mockup -->
+                    <div class="relative lg:ml-auto w-full max-w-lg h-[400px] animate-fade-in-up" style="animation-delay: 0.2s;">
+                        <div class="absolute inset-0 bg-indigo-500 rounded-full blur-3xl opacity-20 transform -translate-x-10 translate-y-10"></div>
+                        
+                        <!-- Base Layer: Chart Card -->
+                        <div class="absolute bottom-10 left-0 right-10 bento-card p-6 shadow-2xl z-10">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-sm font-bold text-slate-500 uppercase">Doanh thu tuần</h3>
+                                    <p class="text-2xl font-black text-slate-900">452,000,000đ</p>
+                                </div>
+                                <span class="bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded-lg">+12.5%</span>
+                            </div>
+                            <!-- Mock Chart lines -->
+                            <div class="h-24 flex items-end gap-2">
+                                <div class="w-full bg-indigo-100 rounded-t-sm h-[40%]"></div>
+                                <div class="w-full bg-indigo-100 rounded-t-sm h-[60%]"></div>
+                                <div class="w-full bg-indigo-100 rounded-t-sm h-[50%]"></div>
+                                <div class="w-full bg-indigo-500 rounded-t-sm h-[90%] relative">
+                                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-indigo-600 ring-4 ring-indigo-200"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Top Layer: AI Chat floating -->
+                        <div class="absolute top-10 right-0 w-72 bento-card p-4 shadow-xl z-20 animate-float border-l-4 border-l-purple-500">
+                            <div class="flex items-start gap-3">
+                                <img src="assets/images/logo-ai.png" alt="AI" class="w-10 h-10 rounded-full object-contain shadow-md shrink-0 border border-slate-100">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-900 mb-1">Trợ lý BanHangAI</p>
+                                    <p class="text-sm text-slate-600 leading-snug">Tôi đã tối ưu lại tệp khách hàng. Nhóm khách hàng trẻ đang mang lại mức tăng trưởng đột phá ngày hôm nay!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Social Proof -->
+            <section class="border-y border-slate-200/60 bg-white py-8 relative z-10">
+                <div class="max-w-7xl mx-auto px-4 text-center">
+                    <div class="flex flex-wrap justify-center gap-12 md:gap-24 items-center opacity-40 grayscale hover:grayscale-0 transition-all duration-500 font-black text-2xl tracking-tighter text-slate-800">
+                        <div>VINA<span class="text-indigo-600">SHOE</span></div>
+                        <div class="italic font-serif">TechGear</div>
+                        <div class="tracking-widest">BEAUTY.VN</div>
+                        <div>HOME<span class="font-light">DECOR</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features: Bento Grid -->
+            <section id="features" class="py-24 relative z-10 bg-slate-50">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center mb-16">
+                        <h2 class="text-3xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">Hạ tầng Công nghệ Đột phá</h2>
+                        <p class="text-slate-500 max-w-2xl mx-auto text-lg font-medium">Bố cục tính năng được thiết kế nguyên khối, giúp hệ thống vận hành trơn tru và bảo mật tuyệt đối.</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-[250px]">
+                        <!-- Lớn trái -->
+                        <div class="bento-card md:col-span-2 p-8 flex flex-col justify-between group overflow-hidden relative">
+                            <div class="relative z-10">
+                                <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mb-4">
+                                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                </div>
+                                <h3 class="text-2xl font-bold text-slate-900 mb-2">Tốc độ Xử lý Thời gian thực</h3>
+                                <p class="text-slate-500 max-w-md">Kiến trúc Cloud Native giúp phản hồi dưới 200ms. Đồng bộ dữ liệu POS và Kho hàng ngay lập tức.</p>
+                            </div>
+                            <div class="absolute -bottom-10 -right-10 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <svg class="w-64 h-64 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            </div>
+                        </div>
+                        
+                        <!-- Nhỏ phải trên (Dark theme) -->
+                        <div class="bento-card bg-slate-900 text-white p-8 flex flex-col justify-between">
+                            <div>
+                                <div class="w-12 h-12 bg-slate-800 text-emerald-400 rounded-lg flex items-center justify-center mb-4">
+                                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                </div>
+                                <h3 class="text-xl font-bold mb-2">Bảo mật Chuẩn Cấp cao</h3>
+                                <p class="text-slate-400 text-sm">Mã hóa End-to-End. Dữ liệu của bạn được cách ly hoàn toàn.</p>
+                            </div>
+                        </div>
+
+                        <!-- Nhỏ trái dưới -->
+                        <div class="bento-card p-8 flex flex-col justify-between">
+                            <div>
+                                <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mb-4">
+                                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+                                </div>
+                                <h3 class="text-xl font-bold text-slate-900 mb-2">AI Deep Learning</h3>
+                                <p class="text-slate-500 text-sm">Học hỏi từ mọi giao dịch để đưa ra gợi ý nhập hàng tối ưu.</p>
+                            </div>
+                        </div>
+
+                        <!-- Lớn phải dưới -->
+                        <div class="bento-card md:col-span-2 p-8 bg-indigo-50 border-indigo-100">
+                            <h3 class="text-2xl font-bold text-indigo-900 mb-4">Hệ sinh thái Quản lý Đa năng</h3>
+                            <div class="flex gap-4">
+                                <span class="bg-white px-4 py-2 rounded-lg font-semibold text-slate-700 shadow-sm">Bán hàng POS</span>
+                                <span class="bg-white px-4 py-2 rounded-lg font-semibold text-slate-700 shadow-sm">Quản lý Kho</span>
+                                <span class="bg-white px-4 py-2 rounded-lg font-semibold text-slate-700 shadow-sm">Chấm công</span>
+                                <span class="bg-white px-4 py-2 rounded-lg font-semibold text-slate-700 shadow-sm">Trả góp</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- How it works -->
+            <section id="how-it-works" class="py-20 bg-white">
+                <div class="max-w-7xl mx-auto px-4 text-center">
+                    <h2 class="text-3xl font-extrabold text-slate-900 mb-12">Chuyển đổi số chỉ trong 3 bước</h2>
+                    <div class="grid md:grid-cols-3 gap-8">
+                        <div>
+                            <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-xl font-black text-slate-800 mx-auto mb-4">1</div>
+                            <h4 class="font-bold text-lg mb-2 text-slate-900">Tạo tài khoản & Đăng nhập</h4>
+                            <p class="text-slate-500 text-sm">Hệ thống sẵn sàng sử dụng ngay lập tức mà không cần cài đặt phần mềm.</p>
+                        </div>
+                        <div>
+                            <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-xl font-black text-indigo-600 mx-auto mb-4">2</div>
+                            <h4 class="font-bold text-lg mb-2 text-slate-900">Thêm Sản phẩm & Nhân sự</h4>
+                            <p class="text-slate-500 text-sm">Tải lên danh sách sản phẩm, phân quyền Admin, Owner, Staff rõ ràng.</p>
+                        </div>
+                        <div>
+                            <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center text-xl font-black text-purple-600 mx-auto mb-4">3</div>
+                            <h4 class="font-bold text-lg mb-2 text-slate-900">Bán hàng & Nhận Báo cáo AI</h4>
+                            <p class="text-slate-500 text-sm">Sử dụng POS để chốt đơn, để AI lo phần tính toán và phân tích chiến lược.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Interactive Demo Section (Typing Effect) -->
+            <section id="demo" class="py-24 relative z-10 bg-slate-900">
+                <div class="max-w-3xl mx-auto px-4 relative z-10 text-center">
+                    <h2 class="text-3xl md:text-4xl font-extrabold text-white mb-4">Trải nghiệm sức mạnh của AI</h2>
+                    <p class="text-slate-400 mb-10 text-lg">Xem cách AI xử lý yêu cầu quản lý cửa hàng của bạn ngay lập tức.</p>
+                    
+                    <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-2xl text-left font-mono text-sm relative overflow-hidden">
+                        <!-- Mac OS window buttons -->
+                        <div class="flex gap-2 mb-4 pb-4 border-b border-slate-700">
+                            <div class="w-3 h-3 rounded-full bg-rose-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                            <div class="ml-4 text-slate-500 text-xs font-sans">AI Console</div>
+                        </div>
+                        
+                        <div class="min-h-[150px]">
+                            <div class="text-emerald-400 mb-2">
+                                <span class="text-slate-500">user@banhangai:~$</span> <span id="typing-text" class="typing-cursor"></span>
+                            </div>
+                            <div id="ai-response" class="text-slate-300 hidden opacity-0 transition-opacity duration-1000 mt-4 bg-slate-900/50 p-4 rounded-lg border-l-2 border-indigo-500">
+                                <span class="text-indigo-400 font-bold mb-1 block">AI Agent:</span>
+                                Đã tổng hợp dữ liệu doanh thu tuần. <br/>
+                                👉 Doanh thu: 452M VNĐ (+12% so với tuần trước). <br/>
+                                👉 Mặt hàng bán chạy nhất: Giày Sneaker X2. <br/>
+                                💡 Đề xuất: Nên nhập thêm hàng Giày Sneaker X2 cỡ 40,41 vì sắp cạn kho.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex flex-wrap justify-center gap-3">
+                        <button onclick="playTypingDemo('Phân tích doanh thu tuần này và đưa ra đề xuất nhập hàng')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-full text-sm font-medium border border-slate-700 transition-colors">
+                            Báo cáo doanh thu
+                        </button>
+                        <button onclick="playTypingDemo('Soạn một email xin lỗi khách hàng vì giao hàng trễ')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-full text-sm font-medium border border-slate-700 transition-colors">
+                            Soạn Email CSKH
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Final CTA -->
+            <section class="py-20 bg-gradient-to-br from-indigo-600 to-purple-700 text-white text-center px-4">
+                <h2 class="text-4xl font-black mb-6">Sẵn sàng đưa doanh thu của bạn lên tầm cao mới?</h2>
+                <p class="text-indigo-100 mb-10 text-lg max-w-2xl mx-auto">Tham gia cùng hàng trăm chủ shop đang sử dụng BanHangAI để tiết kiệm 40% thời gian quản lý mỗi ngày.</p>
+                <button onclick="document.getElementById('btn-nav-register').click()" class="px-10 py-4 bg-white text-indigo-700 rounded-lg font-black text-lg hover:shadow-2xl hover:scale-105 transition-all">Tạo Tài Khoản Miễn Phí Ngay</button>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t border-slate-200 mt-auto">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500">
+                    <div class="flex items-center gap-2 font-bold text-slate-900 text-lg">
+                        <img src="assets/images/logo-system.png" alt="Logo" class="w-6 h-6 object-contain rounded">
+                        BanHangAI
+                    </div>
+                    <p>&copy; 2024 E-Com AI. All rights reserved.</p>
+                    <div class="flex items-center gap-2 font-medium bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-100">
+                        <span class="relative flex h-2.5 w-2.5">
+                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                        Hệ thống hoạt động bình thường
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+    
+    <script>
+        // Header Scroll Effect
+        window.addEventListener('scroll', () => {
+            const header = document.getElementById('main-header');
+            if (window.scrollY > 20) {
+                header.classList.remove('h-20');
+                header.classList.add('h-16', 'shadow-sm');
+            } else {
+                header.classList.add('h-20');
+                header.classList.remove('h-16', 'shadow-sm');
+            }
+        });
+
+        // Typing Effect Demo
+        let typingTimeout;
+        function playTypingDemo(text) {
+            const typingEl = document.getElementById('typing-text');
+            const responseEl = document.getElementById('ai-response');
+            
+            clearTimeout(typingTimeout);
+            typingEl.textContent = '';
+            responseEl.classList.add('hidden');
+            responseEl.classList.remove('opacity-100');
+            
+            let i = 0;
+            function typeWriter() {
+                if (i < text.length) {
+                    typingEl.textContent += text.charAt(i);
+                    i++;
+                    typingTimeout = setTimeout(typeWriter, 40); // Tốc độ gõ
+                } else {
+                    typingEl.classList.remove('typing-cursor');
+                    setTimeout(() => {
+                        responseEl.classList.remove('hidden');
+                        setTimeout(() => responseEl.classList.add('opacity-100'), 50);
+                        typingEl.classList.add('typing-cursor');
+                    }, 500); // Trì hoãn AI rep
+                }
+            }
+            typeWriter();
+        }
+
+        // Auto play demo on load
+        setTimeout(() => playTypingDemo('Phân tích doanh thu tuần này và đưa ra đề xuất nhập hàng'), 1000);
+    </script>
+    <script type="module" src="./src/app.js?v=211"></script>
+</body>
+</html>
