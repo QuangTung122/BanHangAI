@@ -1,0 +1,30 @@
+# Node modules (bắt buộc loại trừ để container tự biên dịch native dependencies trên Linux)
+**/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Quản lý phiên bản Git
+.git
+.gitignore
+
+# SQLite temporary & lock files
+backend/database/*.db-journal
+backend/database/*.db-wal
+backend/database/*.db-shm
+
+# Cấu hình IDE & Hệ điều hành
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Tài liệu và báo cáo không dùng trong runtime container
+*.docx
+*.pdf
+prompts/
+ketqua/
+de_tai_01.md
+informember.md
