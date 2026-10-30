@@ -57,7 +57,7 @@ export const getPosRecommendations = async (req, res) => {
         const categoryTerms = getCategoryTerms(normalized);
         const products = await db.query(`
             SELECT p.id, p.name, p.description, p.price, p.discount_percent, p.stock_quantity,
-                   p.tags, c.name AS category_name
+                   p.image_url, p.tags, c.name AS category_name
             FROM products p LEFT JOIN categories c ON c.id = p.category_id
             WHERE p.is_active = 1 AND p.stock_quantity > 0 AND (? IS NULL OR p.price * (1 - COALESCE(p.discount_percent, 0) / 100.0) <= ?)
             ORDER BY p.stock_quantity DESC, p.name ASC LIMIT 100
@@ -96,7 +96,7 @@ export const getBundleSuggestions = async (req, res) => {
         if (!productIds.length) return res.json({ success: true, data: { products: [] } });
         const placeholders = productIds.map(() => '?').join(',');
         const rows = await db.query(`
-            SELECT p.id, p.name, p.price, p.discount_percent, p.stock_quantity, p.tags, c.name AS category_name,
+            SELECT p.id, p.name, p.price, p.discount_percent, p.stock_quantity, p.image_url, p.tags, c.name AS category_name,
                    COUNT(DISTINCT oi.order_id) AS together_count
             FROM order_items cart_item
             JOIN orders cart_order ON cart_order.id = cart_item.order_id AND cart_order.status <> 'cancelled'
@@ -118,7 +118,7 @@ export const getBundleSuggestions = async (req, res) => {
                     ? ['chuot', 'ban phim', 'tui', 'sac', 'tai nghe'] : ['sac', 'cap', 'tai nghe', 'chuot', 'op lung'];
             const existingIds = [...productIds, ...products.map((item) => item.id)];
             const excluded = existingIds.map(() => '?').join(',');
-            const accessoryCandidates = await db.query(`SELECT p.id, p.name, p.price, p.discount_percent, p.stock_quantity, p.tags, c.name AS category_name, 0 AS together_count FROM products p LEFT JOIN categories c ON c.id=p.category_id WHERE p.is_active=1 AND p.stock_quantity>0 AND p.id NOT IN (${excluded}) ORDER BY p.stock_quantity DESC,p.name LIMIT 100`, existingIds);
+            const accessoryCandidates = await db.query(`SELECT p.id, p.name, p.price, p.discount_percent, p.stock_quantity, p.image_url, p.tags, c.name AS category_name, 0 AS together_count FROM products p LEFT JOIN categories c ON c.id=p.category_id WHERE p.is_active=1 AND p.stock_quantity>0 AND p.id NOT IN (${excluded}) ORDER BY p.stock_quantity DESC,p.name LIMIT 100`, existingIds);
             const remaining = accessoryCandidates.map((product) => ({ ...product, match_score: accessoryPatterns.reduce((score, term) => score + (normalizeText(`${product.name} ${product.category_name || ''} ${product.tags || ''}`).includes(term) ? 1 : 0), 0) }))
                 .filter((product) => product.match_score > 0).sort((a, b) => b.match_score - a.match_score).slice(0, 4 - products.length);
             products = [...products, ...remaining];

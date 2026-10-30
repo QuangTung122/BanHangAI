@@ -279,7 +279,7 @@ export default class ChatController {
         );
     }
 
-    async requestHumanHelp() {
+    async requestHumanHelp(userIntent = '') {
         if (this.supportTicket) {
             this.view.updateBubbleText(this.view.appendAIBubble(), 'Bạn đang trong phiên hỗ trợ. Hãy nhắn nội dung cần trao đổi ngay tại đây; gõ `/thoat` khi muốn kết thúc phiên với nhân viên.');
             return;
@@ -287,7 +287,11 @@ export default class ChatController {
         const bubble = this.view.appendAIBubble();
         this.view.updateBubbleText(bubble, 'Đang gửi yêu cầu hỗ trợ...');
         try {
-            const context = this.history.slice(-8)
+            const contextEntries = [...this.history.slice(-8)];
+            if (userIntent && (!contextEntries.length || contextEntries[contextEntries.length - 1].content !== userIntent)) {
+                contextEntries.push({ role: 'user', content: userIntent });
+            }
+            const context = contextEntries
                 .filter((entry) => ['user', 'assistant'].includes(entry.role) && entry.content)
                 .map((entry) => `${entry.role === 'user' ? 'Khách' : 'Bot'}: ${entry.content}`)
                 .join('\n').slice(0, 1800);
@@ -538,7 +542,7 @@ export default class ChatController {
 
         const normalizedMessage = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
         if (/(gap nhan vien|noi chuyen voi nhan vien|ket noi voi nhan vien|lien he nhan vien|ho tro truc tiep)/.test(normalizedMessage)) {
-            await this.requestHumanHelp();
+            await this.requestHumanHelp(text);
             return;
         }
 

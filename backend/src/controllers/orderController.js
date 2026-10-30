@@ -27,6 +27,9 @@ export const createOrder = async (req, res) => {
             down_payment
         } = req.body || {};
         const userId = req.user.id;
+        if (req.user?.role !== 'staff') {
+            throw requestError('Chỉ tài khoản có vai trò nhân viên mới được phép lập hóa đơn bán hàng. Quản trị viên và chủ cửa hàng không có quyền thực hiện chức năng này.', 403);
+        }
         const customerName = typeof customer_name === 'string' ? customer_name.trim() : '';
         const customerPhone = typeof customer_phone === 'string' ? customer_phone.trim() : '';
         const customerCccd = typeof customer_cccd === 'string' ? customer_cccd.trim() : '';
@@ -239,8 +242,8 @@ export const createOrder = async (req, res) => {
 
 export const confirmBotOrder = async (req, res) => {
     try {
-        if (!['staff', 'owner', 'admin'].includes(req.user?.role)) {
-            throw requestError('Bạn không có quyền xác nhận đơn hàng.', 403);
+        if (req.user?.role !== 'staff') {
+            throw requestError('Chỉ nhân viên mới có quyền xác nhận đơn và lập hóa đơn.', 403);
         }
         const orderId = Number(req.params.id);
         if (!Number.isSafeInteger(orderId) || orderId < 1) throw requestError('Mã đơn hàng không hợp lệ.');
@@ -299,8 +302,8 @@ export const confirmBotOrder = async (req, res) => {
 
 export const confirmOrderPayment = async (req, res) => {
     try {
-        if (!['staff', 'owner', 'admin'].includes(req.user?.role)) {
-            throw requestError('Bạn không có quyền xác nhận thanh toán đơn hàng.', 403);
+        if (req.user?.role !== 'staff') {
+            throw requestError('Chỉ nhân viên mới có quyền xác nhận thanh toán đơn hàng.', 403);
         }
         const orderId = Number(req.params.id);
         if (!Number.isSafeInteger(orderId) || orderId < 1) throw requestError('Mã đơn hàng không hợp lệ.');
@@ -373,7 +376,14 @@ export const getOrders = async (req, res, options = {}) => {
         const botPendingOnly = options.botPendingOnly === true || req.query.bot_pending === '1';
         if (botPendingOnly) await expireBotReservations();
         let query = `
-            SELECT o.*, COALESCE(u.full_name, u.username) as cashier_name,
+            SELECT o.*, 
+                   CASE 
+                       WHEN u.role = 'staff' THEN COALESCE(u.full_name, u.username)
+                       ELSE COALESCE(
+                           (SELECT COALESCE(s.full_name, s.username) FROM users s WHERE s.role = 'staff' AND s.is_active = 1 ORDER BY s.id ASC LIMIT 1),
+                           'Nhân viên bán hàng'
+                       )
+                   END as cashier_name,
                    (SELECT COUNT(*) FROM installment_payments ip WHERE ip.order_id = o.id) as paid_months,
                    COALESCE((SELECT SUM(ip.amount) FROM installment_payments ip WHERE ip.order_id = o.id), 0) AS total_paid,
                    EXISTS (
@@ -416,7 +426,14 @@ export const getOrders = async (req, res, options = {}) => {
             
             if (order.payment_type === 'installment') {
                 order.payments = await db.query(`
-                    SELECT ip.*, COALESCE(u.full_name, u.username) as cashier_name
+                    SELECT ip.*, 
+                           CASE 
+                               WHEN u.role = 'staff' THEN COALESCE(u.full_name, u.username)
+                               ELSE COALESCE(
+                                   (SELECT COALESCE(s.full_name, s.username) FROM users s WHERE s.role = 'staff' AND s.is_active = 1 ORDER BY s.id ASC LIMIT 1),
+                                   'Nhân viên bán hàng'
+                               )
+                           END as cashier_name
                     FROM installment_payments ip
                     LEFT JOIN users u ON ip.cashier_id = u.id
                     WHERE ip.order_id = ?

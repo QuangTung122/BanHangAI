@@ -1,9 +1,13 @@
 export default class ChatService {
+    static getBaseUrl() {
+        return (window.location.port && window.location.port !== '5000') ? 'http://localhost:5000' : '';
+    }
+
     static async requestHumanHelp(context = '') {
         const token = localStorage.getItem('bot_token');
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers.Authorization = `Bearer ${token}`;
-        const response = await fetch('/api/bot/handoff', {
+        const response = await fetch(`${this.getBaseUrl()}/api/bot/handoff`, {
             method: 'POST',
             headers,
             body: JSON.stringify({ context })
@@ -14,7 +18,7 @@ export default class ChatService {
     }
 
     static async getSupportMessages(requestId, accessKey, after = 0) {
-        const response = await fetch(`/api/bot/handoff/${encodeURIComponent(requestId)}/messages?after=${after}`, {
+        const response = await fetch(`${this.getBaseUrl()}/api/bot/handoff/${encodeURIComponent(requestId)}/messages?after=${after}`, {
             headers: { 'X-Support-Key': accessKey }
         });
         const data = await response.json();
@@ -23,11 +27,12 @@ export default class ChatService {
     }
 
     static async sendSupportMessage(requestId, accessKey, content, image = null) {
+        const url = `${this.getBaseUrl()}/api/bot/handoff/${encodeURIComponent(requestId)}/messages`;
         if (image) {
             const body = new FormData();
             body.append('content', content || '');
             body.append('image', image, image.name);
-            const response = await fetch(`/api/bot/handoff/${encodeURIComponent(requestId)}/messages`, {
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'X-Support-Key': accessKey },
                 body
@@ -36,7 +41,7 @@ export default class ChatService {
             if (!response.ok) throw new Error(data.message || 'Không gửi được tin nhắn hỗ trợ');
             return data;
         }
-        const response = await fetch(`/api/bot/handoff/${encodeURIComponent(requestId)}/messages`, {
+        const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-Support-Key': accessKey },
             body: JSON.stringify({ content })
@@ -47,7 +52,7 @@ export default class ChatService {
     }
 
     static async closeSupportSession(requestId, accessKey) {
-        const response = await fetch(`/api/bot/handoff/${encodeURIComponent(requestId)}/close`, {
+        const response = await fetch(`${this.getBaseUrl()}/api/bot/handoff/${encodeURIComponent(requestId)}/close`, {
             method: 'POST',
             headers: { 'X-Support-Key': accessKey }
         });
@@ -72,7 +77,7 @@ export default class ChatService {
                 body = JSON.stringify({ message, history });
             }
 
-            const response = await fetch('/api/bot/stream', {
+            const response = await fetch(`${this.getBaseUrl()}/api/bot/stream`, {
                 method: 'POST',
                 headers: headers,
                 body
@@ -130,21 +135,21 @@ export default class ChatService {
     }
 
     static async confirmCustomerAction(actionId) {
-        const response = await fetch(`/api/bot/actions/${encodeURIComponent(actionId)}/confirm`, { method: 'POST' });
+        const response = await fetch(`${this.getBaseUrl()}/api/bot/actions/${encodeURIComponent(actionId)}/confirm`, { method: 'POST' });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Không xác nhận được thao tác.');
         return data;
     }
 
     static async cancelCustomerAction(actionId) {
-        const response = await fetch(`/api/bot/actions/${encodeURIComponent(actionId)}/cancel`, { method: 'POST' });
+        const response = await fetch(`${this.getBaseUrl()}/api/bot/actions/${encodeURIComponent(actionId)}/cancel`, { method: 'POST' });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Không hủy được thao tác.');
         return data;
     }
 
     static async botLogout() {
-        const response = await fetch('/api/bot/logout', { method: 'POST' });
+        const response = await fetch(`${this.getBaseUrl()}/api/bot/logout`, { method: 'POST' });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Không thể đăng xuất.');
         return data;
@@ -152,7 +157,7 @@ export default class ChatService {
 
     // --- BOT AUTH API ---
     static async botLogin(username, password) {
-        const response = await fetch('/api/bot/login', {
+        const response = await fetch(`${this.getBaseUrl()}/api/bot/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
@@ -165,7 +170,7 @@ export default class ChatService {
     }
 
     static async requestBotRegistrationOtp(phone) {
-        const response = await fetch('/api/bot/register', {
+        const response = await fetch(`${this.getBaseUrl()}/api/bot/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone })
@@ -176,7 +181,7 @@ export default class ChatService {
     }
 
     static async botRegister(details) {
-        const response = await fetch('/api/bot/register/verify', {
+        const response = await fetch(`${this.getBaseUrl()}/api/bot/register/verify`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(details)
@@ -191,7 +196,7 @@ export default class ChatService {
     static async botProfile() {
         const token = localStorage.getItem('bot_token');
         if (!token) throw new Error('Not logged in');
-        const response = await fetch('/api/bot/profile', {
+        const response = await fetch(`${this.getBaseUrl()}/api/bot/profile`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) {
@@ -204,7 +209,7 @@ export default class ChatService {
     static async getCustomerUpdates() {
         const token = localStorage.getItem('bot_token');
         const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const response = await fetch('/api/bot/updates', { headers });
+        const response = await fetch(`${this.getBaseUrl()}/api/bot/updates`, { headers });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Không tải được thông báo Bot.');
         return data;

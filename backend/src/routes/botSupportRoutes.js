@@ -4,7 +4,7 @@ import { uploadChatImage } from '../middlewares/chatImageUpload.js';
 import * as controller from '../controllers/botSupportController.js';
 
 const router = express.Router();
-const supportStaff = requireRole(['staff', 'owner']);
+const supportStaff = requireRole(['staff']);
 
 router.use(requireAuth);
 router.get('/insights', requireRole(['owner', 'admin']), controller.getDemandInsights);

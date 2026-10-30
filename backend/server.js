@@ -63,7 +63,11 @@ app.use('/uploads', express.static(uploadsPath));
 // Hỗ trợ SPA: Mọi đường dẫn không phải API sẽ được trỏ về index.html
 app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
-        res.sendFile(path.join(frontendPath, 'index.html'));
+        res.sendFile(path.join(frontendPath, 'index.html'), (err) => {
+            if (err && !res.headersSent) {
+                res.status(404).send('Frontend index.html không tồn tại.');
+            }
+        });
     } else {
         res.status(404).json({ success: false, message: 'API endpoint không tồn tại', data: null });
     }

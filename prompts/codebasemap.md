@@ -87,6 +87,7 @@ BanHangAI/
 │   │   │   ├── AdminSystemController.js
 │   │   │   ├── AdminUserController.js
 │   │   │   ├── AuthController.js
+│   │   │   ├── BotSupportController.js
 │   │   │   ├── ChatController.js
 │   │   │   ├── InternalChatController.js
 │   │   │   ├── LayoutController.js
