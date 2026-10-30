@@ -27,12 +27,63 @@ async function runTests() {
     const prod1 = sampleProducts[0] || { id: 1, price: 1000000 };
     const prod2 = sampleProducts[1] || prod1;
 
-    // Chuẩn bị dữ liệu mock
-    const mockUserId = 1;
+    // Chuẩn bị người dùng theo vai trò
+    const staffRow = await db.get("SELECT id FROM users WHERE role = 'staff' AND is_active = 1 LIMIT 1");
+    const mockStaffUser = { id: staffRow?.id || 3, role: 'staff' };
+    const mockAdminUser = { id: 1, role: 'admin' };
+    const mockOwnerUser = { id: 2, role: 'owner' };
 
-    // Test Case 1: Lỗi giỏ hàng trống
+    // Test Case 0A: Quản trị viên (admin) KHÔNG ĐƯỢC lập hóa đơn
     try {
-        const req1 = { body: { items: [], total_amount: 0 }, user: { id: mockUserId } };
+        const reqAdmin = { 
+            body: { 
+                items: [{ product_id: prod1.id, quantity: 1, unit_price: prod1.price || 1000000 }], 
+                total_amount: prod1.price || 1000000,
+                payment_type: 'full', payment_method: 'cash'
+            }, 
+            user: mockAdminUser 
+        };
+        const resAdmin = new MockRes();
+        await createOrder(reqAdmin, resAdmin);
+        if (resAdmin.statusCode === 403) {
+            console.log("✅ POS-AUTH-01: Chặn admin tạo hóa đơn (403) -> PASS");
+            passed++;
+        } else {
+            console.log("❌ POS-AUTH-01: Chặn admin tạo hóa đơn -> FAIL (Cho phép hoặc sai mã lỗi)", resAdmin.statusCode);
+            failed++;
+        }
+    } catch (e) {
+        console.log("✅ POS-AUTH-01: Chặn admin tạo hóa đơn (Ném lỗi: " + e.message + ") -> PASS");
+        passed++;
+    }
+
+    // Test Case 0B: Chủ cửa hàng (owner) KHÔNG ĐƯỢC lập hóa đơn
+    try {
+        const reqOwner = { 
+            body: { 
+                items: [{ product_id: prod1.id, quantity: 1, unit_price: prod1.price || 1000000 }], 
+                total_amount: prod1.price || 1000000,
+                payment_type: 'full', payment_method: 'cash'
+            }, 
+            user: mockOwnerUser 
+        };
+        const resOwner = new MockRes();
+        await createOrder(reqOwner, resOwner);
+        if (resOwner.statusCode === 403) {
+            console.log("✅ POS-AUTH-02: Chặn chủ cửa hàng tạo hóa đơn (403) -> PASS");
+            passed++;
+        } else {
+            console.log("❌ POS-AUTH-02: Chặn chủ cửa hàng tạo hóa đơn -> FAIL (Cho phép hoặc sai mã lỗi)", resOwner.statusCode);
+            failed++;
+        }
+    } catch (e) {
+        console.log("✅ POS-AUTH-02: Chặn chủ cửa hàng tạo hóa đơn (Ném lỗi: " + e.message + ") -> PASS");
+        passed++;
+    }
+
+    // Test Case 1: Lỗi giỏ hàng trống (với nhân viên hợp lệ)
+    try {
+        const req1 = { body: { items: [], total_amount: 0 }, user: mockStaffUser };
         const res1 = new MockRes();
         
         await createOrder(req1, res1);
@@ -48,7 +99,7 @@ async function runTests() {
         passed++;
     }
 
-    // Test Case 2: Đơn trả thẳng thành công
+    // Test Case 2: Đơn trả thẳng thành công (với vai trò staff)
     try {
         const req2 = { 
             body: { 
@@ -59,24 +110,24 @@ async function runTests() {
                 customer_name: 'Test Khach',
                 customer_phone: '0901234567'
             }, 
-            user: { id: mockUserId } 
+            user: mockStaffUser 
         };
         const res2 = new MockRes();
         await createOrder(req2, res2);
         
         if (res2.statusCode === 201 && res2.body.success) {
-            console.log("✅ POS-FULL-01: Bán đứt thành công -> PASS");
+            console.log("✅ POS-FULL-01: Bán đứt thành công bởi nhân viên -> PASS");
             passed++;
         } else {
-            console.log("❌ POS-FULL-01: Bán đứt thành công -> FAIL", res2.body);
+            console.log("❌ POS-FULL-01: Bán đứt thành công bởi nhân viên -> FAIL", res2.body);
             failed++;
         }
     } catch (e) {
-        console.log("❌ POS-FULL-01: Bán đứt thành công -> FAIL (Exception: " + e.message + ")");
+        console.log("❌ POS-FULL-01: Bán đứt thành công bởi nhân viên -> FAIL (Exception: " + e.message + ")");
         failed++;
     }
 
-    // Test Case 3: Đơn trả góp thành công
+    // Test Case 3: Đơn trả góp thành công (với vai trò staff)
     try {
         const req3 = { 
             body: { 
@@ -93,7 +144,7 @@ async function runTests() {
                 down_payment: 1000000,
                 monthly_fee: 700000
             }, 
-            user: { id: mockUserId } 
+            user: mockStaffUser 
         };
         const res3 = new MockRes();
         await createOrder(req3, res3);

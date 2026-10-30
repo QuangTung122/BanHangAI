@@ -144,11 +144,17 @@ export default class InternalChatModule {
             bubble.appendChild(text);
         }
         if (message.image_url) {
+            const backendOrigin = (window.location.port && window.location.port !== '5000') ? 'http://localhost:5000' : '';
+            const fullSrc = (message.image_url.startsWith('http://') || message.image_url.startsWith('https://') || message.image_url.startsWith('blob:') || message.image_url.startsWith('data:'))
+                ? message.image_url
+                : `${backendOrigin}${message.image_url.startsWith('/') ? '' : '/'}${message.image_url}`;
             const image = document.createElement('img');
-            image.src = message.image_url;
+            image.src = fullSrc;
             image.alt = 'Ảnh đính kèm trong chat';
             image.loading = 'lazy';
-            image.className = 'mt-1 max-w-full max-h-52 rounded-xl object-contain border border-black/10';
+            image.className = 'mt-1 max-w-full max-h-52 rounded-xl object-contain border border-black/10 cursor-pointer';
+            image.title = 'Bấm để mở ảnh kích thước đầy đủ';
+            image.addEventListener('click', () => window.open(fullSrc, '_blank', 'noopener,noreferrer'));
             bubble.appendChild(image);
         }
         wrapper.appendChild(bubble);

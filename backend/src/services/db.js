@@ -423,6 +423,19 @@ const initializeDatabase = async () => {
         WHERE im.product_id = p.id AND im.movement_type = 'opening' AND im.reference_type = 'migration'
       )
   `);
+
+  // Đảm bảo hóa đơn chỉ gắn với nhân viên thu ngân (staff).
+  // Chuyển các hóa đơn cũ có user_id là admin/owner về tài khoản nhân viên (staff).
+  await rawRun(`
+    UPDATE orders
+    SET user_id = (SELECT id FROM users WHERE role = 'staff' AND is_active = 1 ORDER BY id ASC LIMIT 1)
+    WHERE user_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner'))
+  `);
+  await rawRun(`
+    UPDATE transactions
+    SET user_id = (SELECT id FROM users WHERE role = 'staff' AND is_active = 1 ORDER BY id ASC LIMIT 1)
+    WHERE category IN ('Bán hàng', 'Thu tiền trả góp') AND user_id IN (SELECT id FROM users WHERE role IN ('admin', 'owner'))
+  `);
 };
 
 let databaseInitializationError = null;

@@ -239,6 +239,9 @@ const buildOrderTool = (user) => defineTool(
                 price_snapshot: Object.fromEntries(cart.lines.map((line) => [line.product_id, line.unit_price]))
             }, summary);
         }
+        if (user.role !== 'staff') {
+            return JSON.stringify({ loi: 'Chỉ nhân viên mới được lập hóa đơn. Quản trị viên và chủ cửa hàng không có quyền tạo đơn.' });
+        }
         return pendingResult(user, 'create_order_staff', {
             items, payment_method: method, customer_name: ten_khach, customer_phone: sdt_khach
         }, summary);
@@ -429,7 +432,7 @@ const buildStaffTools = (user) => {
             }
         )
     ];
-    if (['staff', 'owner'].includes(user.role)) {
+    if (user.role === 'staff') {
         tools.push(
             buildOrderTool(user),
             defineTool(

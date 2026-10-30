@@ -266,59 +266,140 @@ export default class StaffPOSView {
             `;
         }
 
-        return cartItems.map(item => `
+        return cartItems.map(item => {
+            const product = item.product || item;
+            const price = product.discount_percent 
+                ? product.price * (1 - product.discount_percent / 100) 
+                : product.price;
+            return `
             <div class="py-2.5 flex items-center justify-between gap-2 group">
                 <div class="flex items-center gap-2 min-w-0 flex-1">
                     <div class="w-8 h-8 rounded-lg bg-[#f5f6fa] border border-[#e7eaf2] overflow-hidden shrink-0 p-0.5 flex items-center justify-center">
-                        <img src="${item.image_url || 'assets/images/logo-system.png'}" onerror="this.onerror=null;this.src='assets/images/logo-system.png'" class="w-full h-full object-contain">
+                        <img src="${product.image_url || 'assets/images/logo-system.png'}" onerror="this.onerror=null;this.src='assets/images/logo-system.png'" class="w-full h-full object-contain">
                     </div>
                     <div class="min-w-0 flex-1">
-                        <h4 class="text-xs font-bold text-[#182033] truncate" title="${item.name}">${item.name}</h4>
-                        <div class="text-[11px] font-bold text-[#5745f5]">${this.formatMoney(item.price)}</div>
+                        <h4 class="text-xs font-bold text-[#182033] truncate" title="${product.name}">${product.name}</h4>
+                        <div class="text-[11px] font-bold text-[#5745f5]">${this.formatMoney(price)}</div>
                     </div>
                 </div>
 
                 <!-- Qty Control -->
                 <div class="flex items-center gap-1 shrink-0">
-                    <button class="btn-qty-minus w-5 h-5 rounded bg-[#f5f6fa] hover:bg-[#e7eaf2] text-[#182033] font-black text-xs flex items-center justify-center transition-colors cursor-pointer" data-id="${item.id}">-</button>
+                    <button class="btn-qty-minus w-5 h-5 rounded bg-[#f5f6fa] hover:bg-[#e7eaf2] text-[#182033] font-black text-xs flex items-center justify-center transition-colors cursor-pointer" data-id="${product.id}">-</button>
                     <span class="w-6 text-center text-xs font-black text-[#182033]">${item.quantity}</span>
-                    <button class="btn-qty-plus w-5 h-5 rounded bg-[#f5f6fa] hover:bg-[#e7eaf2] text-[#182033] font-black text-xs flex items-center justify-center transition-colors cursor-pointer" data-id="${item.id}">+</button>
-                    <button class="btn-remove-item ml-1 text-[#7b8499] hover:text-rose-600 transition-colors p-0.5 cursor-pointer" data-id="${item.id}" title="Xóa">
+                    <button class="btn-qty-plus w-5 h-5 rounded bg-[#f5f6fa] hover:bg-[#e7eaf2] text-[#182033] font-black text-xs flex items-center justify-center transition-colors cursor-pointer" data-id="${product.id}">+</button>
+                    <button class="btn-remove-item ml-1 text-[#7b8499] hover:text-rose-600 transition-colors p-0.5 cursor-pointer" data-id="${product.id}" title="Xóa">
                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     </button>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
-    renderBundleSuggestions(suggestions) {
+    renderBundleSuggestions(suggestions, loading = false) {
         const container = document.getElementById('pos-bundle-suggestions');
         if (!container) return;
 
-        if (!suggestions || suggestions.length === 0) {
+        if (!loading && (!suggestions || suggestions.length === 0)) {
             container.classList.add('hidden');
             container.innerHTML = '';
             return;
         }
 
         container.classList.remove('hidden');
+
+        if (loading) {
+            container.innerHTML = `
+                <div class="flex items-center gap-1.5 mb-1">
+                    <span class="text-[#5745f5] text-xs">✨</span>
+                    <span class="text-[11px] font-black text-[#5745f5] uppercase tracking-wider">Gợi ý mua kèm (AI)</span>
+                </div>
+                <p class="text-[11px] text-[#5745f5] animate-pulse">Đang tìm sản phẩm mua kèm…</p>
+            `;
+            return;
+        }
+
         container.innerHTML = `
             <div class="flex items-center gap-1.5 mb-2">
                 <span class="text-[#5745f5] text-xs">✨</span>
                 <span class="text-[11px] font-black text-[#5745f5] uppercase tracking-wider">Gợi ý mua kèm (AI)</span>
             </div>
             <div class="space-y-1.5">
-                ${suggestions.map(s => `
-                    <div class="flex items-center justify-between p-1.5 bg-white rounded-lg border border-[#e1dcff] text-xs">
-                        <span class="truncate font-semibold text-[#182033] pr-2">${s.name}</span>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <span class="font-bold text-[#5745f5]">${this.formatMoney(s.price)}</span>
-                            <button class="btn-add-cart px-2 py-0.5 rounded bg-[#5745f5] text-white font-bold text-[10px] hover:bg-[#4735e5] transition-colors cursor-pointer" data-id="${s.id}">+ Thêm</button>
+                ${suggestions.map(s => {
+                    const finalPrice = s.discount_percent 
+                        ? s.price * (1 - s.discount_percent / 100) 
+                        : s.price;
+                    return `
+                    <div class="flex items-center justify-between p-1.5 bg-white rounded-lg border border-[#e1dcff] text-xs gap-1.5">
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate font-semibold text-[#182033]" title="${s.name}">${s.name}</p>
+                            ${s.reason ? `<p class="text-[10px] text-[#7b8499] truncate">${s.reason} · Còn ${s.stock_quantity}</p>` : ''}
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <span class="font-bold text-[#5745f5]">${this.formatMoney(finalPrice)}</span>
+                            <button class="btn-bundle-add btn-ai-add-cart px-2 py-0.5 rounded bg-[#5745f5] text-white font-bold text-[10px] hover:bg-[#4735e5] transition-colors cursor-pointer" data-id="${s.id}">+ Thêm</button>
                         </div>
                     </div>
-                `).join('')}
+                    `;
+                }).join('')}
             </div>
         `;
+    }
+
+    renderPosRecommendations(data, loading = false) {
+        const target = document.getElementById('pos-ai-results');
+        if (!target) return;
+        target.classList.remove('hidden');
+        if (loading) {
+            target.innerHTML = '<div class="p-2.5 rounded-xl bg-white border border-[#e1dcff] text-[#5745f5] font-semibold animate-pulse">Đang tìm kiếm gợi ý phù hợp…</div>';
+            return;
+        }
+        const products = data?.products || [];
+        target.innerHTML = `
+            <div class="rounded-xl border border-[#e1dcff] bg-white p-2.5 space-y-2 shadow-xs">
+                <p class="text-xs text-[#182033] font-medium">${data?.explanation || 'Không có gợi ý.'}</p>
+                ${products.length ? `
+                    <div class="space-y-1.5 pt-1 border-t border-[#e7eaf2]">
+                        ${products.map(p => {
+                            const finalPrice = p.discount_percent 
+                                ? p.price * (1 - p.discount_percent / 100) 
+                                : p.price;
+                            return `
+                            <div class="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-[#f5f6fa] border border-[#e7eaf2]">
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-xs font-bold text-[#182033] truncate" title="${p.name}">${p.name}</p>
+                                    <p class="text-[10px] text-[#7b8499]">${p.match_reason || ''} · Còn ${p.stock_quantity}</p>
+                                </div>
+                                <div class="text-right shrink-0 flex items-center gap-2">
+                                    <span class="text-xs font-bold text-[#5745f5]">${this.formatMoney(finalPrice)}</span>
+                                    <button class="btn-ai-add-cart btn-bundle-add px-2 py-0.5 rounded bg-[#5745f5] text-white font-bold text-[10px] hover:bg-[#4735e5] transition-colors cursor-pointer" data-id="${p.id}">+ Thêm</button>
+                                </div>
+                            </div>
+                            `;
+                        }).join('')}
+                    </div>
+                ` : ''}
+                <p class="text-[10px] text-[#7b8499] pt-1 border-t border-[#e7eaf2]">
+                    ${data?.ai_used ? 'AI gợi ý theo nhu cầu tìm kiếm.' : 'Gợi ý từ dữ liệu hệ thống.'} Giá và tồn kho lấy từ CSDL.
+                </p>
+            </div>
+        `;
+    }
+
+    updateProductList(products) {
+        const list = document.getElementById('pos-product-list');
+        if (list) list.innerHTML = this.renderProductGrid(products);
+    }
+
+    updateActiveCategory(slug) {
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            if ((btn.dataset.slug || '') === slug) {
+                btn.className = 'cat-btn px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-150 bg-[#5745f5] text-white border border-[#5745f5] shadow-xs';
+            } else {
+                btn.className = 'cat-btn px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all duration-150 bg-white text-[#7b8499] border border-[#e7eaf2] hover:border-[#5745f5] hover:text-[#5745f5] hover:bg-[#f0edff]/50 shadow-xs';
+            }
+        });
     }
 
     updateCart(cartItems, total) {

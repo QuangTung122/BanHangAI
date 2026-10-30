@@ -155,7 +155,7 @@ export default class LayoutView {
 
         return menus.map(m => {
             return `
-            <a href="#${m.id}" id="${m.id}" class="sidebar-item group flex items-center px-2.5 py-2 rounded-lg text-xs font-semibold text-[#7b8499] hover:text-[#5745f5] hover:bg-[#f0edff] transition-all duration-150">
+            <a href="#${m.id}" id="${m.id}" data-title="${m.text}" class="sidebar-item group flex items-center px-2.5 py-2 rounded-lg text-xs font-semibold text-[#7b8499] hover:text-[#5745f5] hover:bg-[#f0edff] transition-all duration-150">
                 <svg class="w-4 h-4 mr-2 shrink-0 text-[#7b8499] group-hover:text-[#5745f5] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${m.icon}"/>
                 </svg>
@@ -204,7 +204,8 @@ export default class LayoutView {
         this.container.querySelectorAll('.sidebar-item').forEach(el => {
             el.addEventListener('click', (e) => {
                 e.preventDefault();
-                handler(el.id, el.innerText.trim());
+                const title = el.dataset.title || el.querySelector('.truncate')?.innerText?.trim() || el.innerText.trim();
+                handler(el.id, title);
             });
         });
     }

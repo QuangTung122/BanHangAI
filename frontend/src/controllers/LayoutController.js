@@ -6,6 +6,7 @@ export default class LayoutController {
     constructor() {
         this.authModel = new AuthModel();
         this.view = new LayoutView();
+        this.currentUser = this.authModel.user;
         this.chatController = null;
         
         this.init();
@@ -14,6 +15,7 @@ export default class LayoutController {
     init() {
         const user = this.authModel.user;
         if (!user) return; // Bảo vệ
+        this.currentUser = user;
 
         // Render bộ khung giao diện
         this.view.render(user);
@@ -402,6 +404,42 @@ export default class LayoutController {
         const contentArea = document.getElementById('content-area');
         contentArea.innerHTML = ''; // Clear cũ
 
+        const currentRole = this.currentUser?.role || this.authModel.user?.role;
+        const staffOnlyMenus = [
+            'menu-staff-pos',
+            'menu-staff-inventory',
+            'menu-staff-orders',
+            'menu-staff-installment',
+            'menu-staff-return-warranty',
+            'menu-staff-attendance',
+            'menu-bot-support'
+        ];
+        const adminOnlyMenus = [
+            'menu-admin-accounts',
+            'menu-admin-system',
+            'menu-admin-audit'
+        ];
+        const ownerOnlyMenus = [
+            'menu-owner-dashboard',
+            'menu-owner-cashflow',
+            'menu-owner-products',
+            'menu-owner-staff',
+            'menu-owner-return-warranty'
+        ];
+
+        if (staffOnlyMenus.includes(menuId) && currentRole !== 'staff') {
+            this.loadDefaultPage(currentRole);
+            return;
+        }
+        if (adminOnlyMenus.includes(menuId) && currentRole !== 'admin') {
+            this.loadDefaultPage(currentRole);
+            return;
+        }
+        if (ownerOnlyMenus.includes(menuId) && currentRole !== 'owner') {
+            this.loadDefaultPage(currentRole);
+            return;
+        }
+
         if (menuId === 'menu-admin-accounts') {
             import('./AdminUserController.js').then(module => {
                 const AdminUserController = module.default;
@@ -497,6 +535,12 @@ export default class LayoutController {
     }
 
     destroy() {
+        if (this.childController && typeof this.childController.destroy === 'function') {
+            this.childController.destroy();
+        }
+        if (this.botSupportNotificationInterval) {
+            clearInterval(this.botSupportNotificationInterval);
+        }
         if (this.view.container) {
             this.view.container.remove();
         }

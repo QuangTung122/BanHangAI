@@ -10,7 +10,9 @@ class MockRes {
 async function runTests() {
     console.log("=== BẮT ĐẦU KIỂM THỬ TỰ ĐỘNG MODULE TRẢ GÓP ===");
     let passed = 0; let failed = 0;
-    const mockUserId = 1;
+    const staffRow = await db.get("SELECT id FROM users WHERE role = 'staff' AND is_active = 1 LIMIT 1");
+    const mockUserId = staffRow?.id || 3;
+    const mockUser = { id: mockUserId, role: 'staff' };
 
     try {
         // Setup: Create a new installment order
@@ -21,7 +23,7 @@ async function runTests() {
                 customer_name: 'Test Khach', customer_phone: '0901234567', customer_cccd: '001099001234',
                 installment_term: 3, monthly_fee: 1000 
             }, 
-            user: { id: mockUserId } 
+            user: mockUser 
         };
         const createRes = new MockRes();
         await createOrder(createReq, createRes);

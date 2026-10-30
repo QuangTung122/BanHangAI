@@ -2,12 +2,14 @@ import StaffPOSView from '../views/pages/StaffPOSView.js';
 import ProductModel from '../models/ProductModel.js';
 import CartModel from '../models/CartModel.js';
 import ProductService from '../services/ProductService.js';
+import AuthModel from '../models/AuthModel.js';
 
 export default class StaffPOSController {
     constructor() {
         this.view = new StaffPOSView();
         this.productModel = new ProductModel();
         this.cartModel = new CartModel();
+        this.authModel = new AuthModel();
         
         this.currentCategory = '';
         this.currentSearch = '';
@@ -105,16 +107,24 @@ export default class StaffPOSController {
         }
 
         // Sự kiện trên Giỏ hàng (+, -, xóa, clear, checkout)
-        container.addEventListener('click', (e) => {
-            const suggestedAdd = e.target.closest('.btn-ai-add-cart, .btn-bundle-add');
+        container.addEventListener('click', async (e) => {
+            const suggestedAdd = e.target.closest('.btn-ai-add-cart, .btn-bundle-add, #pos-bundle-suggestions button');
             if (suggestedAdd) {
                 const productId = Number(suggestedAdd.dataset.id);
-                const product = this.productModel.products.find((item) => item.id === productId)
+                let product = this.productModel.products.find((item) => item.id === productId)
                     || this.suggestedProducts?.find((item) => item.id === productId);
+                if (!product && productId) {
+                    try {
+                        const res = await ProductService.getProducts('', '');
+                        const list = res.data?.data?.products || res.data?.data || [];
+                        product = list.find((item) => item.id === productId);
+                    } catch (_) {}
+                }
                 if (product) {
                     const result = this.cartModel.addItem(product, 1);
                     if (result.success) this.updateCart(); else alert(result.message);
                 }
+                return;
             }
             // Tăng
             const btnPlus = e.target.closest('.btn-qty-plus');
@@ -347,6 +357,7 @@ export default class StaffPOSController {
         
         const doc = iframe.contentWindow.document;
         doc.open();
+        const cashierName = this.authModel.user?.full_name || this.authModel.user?.username || 'Nhân viên bán hàng';
         
         // Generate VietQR URL if Bank Transfer is selected
         let qrHtml = '';
@@ -440,6 +451,7 @@ export default class StaffPOSController {
                     <h2 style="margin-top: 15px;">HÓA ĐƠN BÁN HÀNG</h2>
                     <p>Mã HĐ: ${invoiceCode}</p>
                     <p>Ngày: ${dateStr}</p>
+                    <p>Thu ngân: ${cashierName}</p>
                 </div>
                 
                 ${instHtml}

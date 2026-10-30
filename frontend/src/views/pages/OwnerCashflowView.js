@@ -263,21 +263,29 @@ export default class OwnerCashflowView {
 
             <!-- Modal Chi tiết Hóa đơn / Giao dịch -->
             <div id="modal-invoice-detail" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
-                <div class="bg-white rounded-[14px] shadow-2xl border border-[#e7eaf2] w-full max-w-md transform scale-95 transition-transform duration-300 overflow-hidden">
-                    <div class="px-5 py-4 border-b border-[#e7eaf2] flex items-center justify-between bg-[#fafbfd]">
-                        <h3 class="text-base font-black text-[#182033]">Chi tiết chứng từ <span id="detail-invoice-id" class="text-[#5745f5]"></span></h3>
-                        <button id="btn-close-invoice" class="text-[#7b8499] hover:text-[#182033]">
+                <div class="bg-white rounded-[14px] shadow-2xl border border-[#e7eaf2] w-full max-w-2xl max-h-[90vh] flex flex-col transform scale-95 transition-transform duration-300 overflow-hidden mx-4">
+                    <div class="px-5 py-4 border-b border-[#e7eaf2] flex items-center justify-between bg-[#fafbfd] shrink-0">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-[#f0edff] border border-[#e1dcff] flex items-center justify-center text-[#5745f5]">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-black text-[#182033]" id="detail-modal-heading">Chi tiết chứng từ</h3>
+                                <p class="text-[11px] font-bold text-[#5745f5] font-mono mt-0.5" id="detail-invoice-id"></p>
+                            </div>
+                        </div>
+                        <button id="btn-close-invoice" class="text-[#7b8499] hover:text-[#182033] p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
                             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
-                    <div class="p-5 bg-[#f5f6fa] min-h-[150px]">
+                    <div id="invoice-detail-content" class="p-5 bg-[#fafbfd] overflow-y-auto custom-scrollbar flex-1 min-h-[180px]">
                         <!-- Content rendered by JS -->
                     </div>
                 </div>
             </div>
 
-            <!-- Hidden iframe for printing -->
-            <iframe id="print-frame" style="display:none;"></iframe>
+            <!-- Frame ẩn để in -->
+            <iframe id="print-frame" style="position: absolute; width: 0; height: 0; border: none; left: -9999px;"></iframe>
         `;
         
         this.container.innerHTML = html;
@@ -315,10 +323,11 @@ export default class OwnerCashflowView {
             const amountColor = isIncome ? 'text-emerald-700' : 'text-rose-700';
             const amountPrefix = isIncome ? '+' : '-';
             const dateFmt = new Date(t.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute:'2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
-            const isInvoice = !!t.invoice_id;
+            const isInvoice = !!t.invoice_id || !!(t.reference_id && (t.category === 'Bán hàng' || t.category === 'Trả góp' || t.source === 'auto'));
+            const invoiceCodeDisplay = t.invoice_id || (t.reference_id ? `INV-${t.reference_id}` : txCode);
             const invoiceHtml = isInvoice
-                ? `<span class="cursor-pointer hover:underline btn-view-invoice text-[#5745f5]" data-id="${t.invoice_id}">${t.invoice_id}</span>`
-                : `<span class="cursor-pointer hover:underline btn-view-invoice text-[#5745f5]" data-id="${txCode}">${txCode}</span>`;
+                ? `<span class="cursor-pointer hover:underline btn-view-invoice text-[#5745f5] font-black" data-id="${t.invoice_id || invoiceCodeDisplay}" data-tx-id="${t.id}" title="Xem chi tiết hóa đơn gốc">${invoiceCodeDisplay}</span>`
+                : `<span class="cursor-pointer hover:underline btn-view-invoice text-[#5745f5] font-black" data-id="${txCode}" data-tx-id="${t.id}" title="Xem chi tiết chứng từ">${txCode}</span>`;
 
             return `
                 <tr class="hover:bg-[#fafbfd] transition-colors">
@@ -333,7 +342,7 @@ export default class OwnerCashflowView {
                     <td class="p-4 text-right font-black ${amountColor} text-base">${amountPrefix} ${fmt.format(t.amount)}đ</td>
                     <td class="p-4 text-center text-xs font-bold text-[#7b8499]">${t.username ? '@' + t.username : '--'}</td>
                     <td class="p-4 text-center">
-                        <button class="px-2.5 py-1 bg-[#f0edff] text-[#5745f5] text-[11px] font-bold rounded-[6px] border border-[#e1dcff] hover:bg-[#5745f5] hover:text-white transition-colors btn-view-invoice" data-id="${isInvoice ? t.invoice_id : txCode}">Chi tiết</button>
+                        <button class="px-2.5 py-1 bg-[#f0edff] text-[#5745f5] text-[11px] font-bold rounded-[6px] border border-[#e1dcff] hover:bg-[#5745f5] hover:text-white transition-colors btn-view-invoice cursor-pointer" data-id="${isInvoice ? (t.invoice_id || invoiceCodeDisplay) : txCode}" data-tx-id="${t.id}" title="${isInvoice ? 'Xem hóa đơn gốc' : 'Xem chi tiết chứng từ'}">Chi tiết</button>
                     </td>
                 </tr>
             `;

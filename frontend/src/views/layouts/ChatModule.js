@@ -495,27 +495,37 @@ export default class ChatModule {
         history.scrollTop = history.scrollHeight;
     }
 
-    appendImageToBubble(bubbleEl, src, alt = 'Ảnh hóa đơn') {
-        if (!bubbleEl || typeof src !== 'string' || !src.startsWith('/api/bot/orders/')) return;
-        const token = localStorage.getItem('bot_token');
-        const finalSrc = token && !src.includes('token=') ? `${src}${src.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}` : src;
+    appendImageToBubble(bubbleEl, src, alt = 'Ảnh đính kèm') {
+        if (!bubbleEl || typeof src !== 'string' || !src.trim()) return;
+        let finalSrc = src.trim();
+        const isInvoice = finalSrc.startsWith('/api/bot/orders/');
+        if (isInvoice) {
+            const token = localStorage.getItem('bot_token');
+            finalSrc = token && !finalSrc.includes('token=') ? `${finalSrc}${finalSrc.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}` : finalSrc;
+        }
+        if (!finalSrc.startsWith('http://') && !finalSrc.startsWith('https://') && !finalSrc.startsWith('blob:') && !finalSrc.startsWith('data:')) {
+            const backendOrigin = (window.location.port && window.location.port !== '5000') ? 'http://localhost:5000' : '';
+            finalSrc = `${backendOrigin}${finalSrc.startsWith('/') ? '' : '/'}${finalSrc}`;
+        }
         const wrapper = document.createElement('div');
         wrapper.className = 'mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm max-w-[560px]';
         const image = document.createElement('img');
         image.src = finalSrc;
         image.alt = alt;
         image.loading = 'lazy';
-        image.className = 'block h-auto w-full';
+        image.className = 'block max-h-80 w-auto max-w-full cursor-zoom-in rounded-xl object-contain';
+        image.title = 'Bấm để mở ảnh kích thước đầy đủ';
+        image.addEventListener('click', () => window.open(finalSrc, '_blank', 'noopener,noreferrer'));
         image.addEventListener('error', () => {
-            wrapper.innerHTML = `<div class="p-3 text-xs text-indigo-700 bg-indigo-50 flex items-center justify-between">
-                <span>🧾 Không thể hiển thị trước ảnh hóa đơn.</span>
-                <a href="${finalSrc}" target="_blank" class="font-bold underline text-indigo-800">Mở xem hóa đơn</a>
+            wrapper.innerHTML = `<div class="p-3 text-xs text-indigo-700 bg-indigo-50 flex items-center justify-between gap-2">
+                <span>⚠️ ${isInvoice ? 'Không thể hiển thị trước ảnh hóa đơn.' : 'Không thể hiển thị ảnh đính kèm.'}</span>
+                <a href="${finalSrc}" target="_blank" rel="noopener noreferrer" class="font-bold underline text-indigo-800 shrink-0">${isInvoice ? 'Mở xem hóa đơn' : 'Mở xem ảnh'}</a>
             </div>`;
         }, { once: true });
         wrapper.appendChild(image);
         bubbleEl.appendChild(wrapper);
         const history = this.container.querySelector('#chat-history');
-        history.scrollTop = history.scrollHeight;
+        if (history) history.scrollTop = history.scrollHeight;
     }
 
     appendPendingAction(action, onConfirm, onCancel) {
